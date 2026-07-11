@@ -1,0 +1,14 @@
+
+> agente-asistente@0.1.0 dev
+> vinext dev
+
+
+  vinext dev  (Vite 8.0.13)
+
+Port 3000 is in use, trying another one...
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m3001[22m/[39m
+  [32m➜[39m  [1mDebug[22m:   [2m[33mhttp://localhost:[1m3001[22m[2m/__debug[39m[22m
+ GET / 200 in 27ms
+ GET / 200 in 15ms
+ GET / 200 in 12ms
+[2m3:25:49 p. m.[22m [36m[1m[vite][22m[39m [32m.openai/hosting.json changed, restarting server...[39m
