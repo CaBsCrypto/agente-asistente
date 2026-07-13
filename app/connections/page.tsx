@@ -200,6 +200,9 @@ export default function Connections() {
         {visibleConnections.map((connection) => (
           <article className="connection-row" key={connection.name}>
             <div className="connection-name">
+              {connection.focus && (
+                <span className="target-focus">{connection.focus}</span>
+              )}
               <small>{connection.category}</small>
               <h2>{connection.name}</h2>
               <time>{connection.updated}</time>

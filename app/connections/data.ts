@@ -8,6 +8,7 @@ export type ConnectionStage =
 
 export type Connection = {
   name: string;
+  focus?: string;
   category: string;
   stage: ConnectionStage;
   priority: "P0" | "P1" | "P2";
@@ -19,6 +20,18 @@ export type Connection = {
 };
 
 export const connections: Connection[] = [
+  {
+    name: "UNBLCK / Tellus Hub",
+    focus: "Top 1 · active pilot",
+    category: "Local ecosystem",
+    stage: "Partner outreach",
+    priority: "P0",
+    route: "Partner WebMCP -> private access or access request -> assisted onboarding",
+    proof: "Direct relationship with the UNBLCK developer and live private-access application flows.",
+    nextAction: "Co-design member entry, access requests and the internal onboarding assistant.",
+    href: "https://www.unblck.cl/",
+    updated: "Jul 13, 2026",
+  },
   {
     name: "agent-assistant MCP",
     category: "Core protocol",
@@ -237,17 +250,6 @@ export const connections: Connection[] = [
     proof: "Live Bazaar results advertise Google, Apple and DuckDuckGo local search endpoints.",
     nextAction: "Run one capped payment only after validating output quality and provider identity.",
     href: "https://places.use.x402atlas.com/",
-    updated: "Jul 13, 2026",
-  },
-  {
-    name: "UNBLCK / Tellus Hub",
-    category: "Local ecosystem",
-    stage: "Partner outreach",
-    priority: "P0",
-    route: "WebMCP applications + event feed + partner API",
-    proof: "Public hub, accelerator and Stellar grant application flows are live; direct contact is available.",
-    nextAction: "Pilot event discovery and assisted applications; define any paid offer separately.",
-    href: "https://www.unblck.cl/",
     updated: "Jul 13, 2026",
   },
   {
