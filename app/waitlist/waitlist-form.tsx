@@ -106,7 +106,7 @@ export default function WaitlistForm() {
       </label>
 
       <button type="submit" disabled={state === "submitting"}>
-        {state === "submitting" ? "Joining..." : "Join early access"}
+        {state === "submitting" ? "Joining..." : "Waitlist"}
       </button>
 
       {state === "offline" && (
