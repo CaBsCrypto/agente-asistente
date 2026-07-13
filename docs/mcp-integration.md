@@ -71,3 +71,22 @@ npx @modelcontextprotocol/inspector@latest
 - `GET /api/health`
 - `GET /.well-known/mcp`
 - `GET /api/commerce` devuelve el catálogo demo.
+
+## Persistencia durable con Neon
+
+El backend selecciona autom�ticamente su almacenamiento:
+
+- Sin `DATABASE_URL`: memoria temporal para desarrollo y demo.
+- Con `DATABASE_URL`: Neon Postgres con idempotencia durable y auditor�a.
+
+### Activaci�n
+
+1. Crea un proyecto gratuito en Neon.
+2. Copia la conexi�n pooled desde **Connect**.
+3. Guarda el valor como `DATABASE_URL` en `.env.local` y en Vercel.
+4. Ejecuta `npm run db:migrate` una sola vez contra el proyecto.
+5. Vuelve a desplegar y confirma que `/api/health` devuelve `"persistence":"postgres"`.
+
+Nunca publiques la conexi�n en GitHub ni la pegues en conversaciones. La migraci�n crea cinco tablas: intenciones, pol�ticas, autorizaciones, recibos y auditor�a. Las claves de autorizaci�n se almacenan como SHA-256; el token original solo se entrega al solicitante durante la confirmaci�n.
+
+La restricci�n �nica `commerce_intents_idempotency_key_uidx` impide crear dos intenciones con la misma clave incluso cuando dos instancias reciben la petici�n simult�neamente. La restricci�n `receipts_intent_uidx` asegura un solo recibo por intenci�n.
