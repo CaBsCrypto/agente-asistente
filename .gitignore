@@ -44,3 +44,4 @@ next-env.d.ts
 *.log
 
 !.env.example
+.env*.local

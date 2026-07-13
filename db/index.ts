@@ -1,3 +1,22 @@
-import{neon}from"@neondatabase/serverless";import{drizzle}from"drizzle-orm/neon-http";import*as schema from"./schema";
-export function hasDatabase(){return Boolean(process.env.DATABASE_URL)}
-export function getDb(){const url=process.env.DATABASE_URL;if(!url)throw new Error("database_not_configured");return drizzle(neon(url),{schema})}
+﻿import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import * as schema from "./schema";
+
+/**
+ * Vercel Marketplace prefixes integration variables. The project's original
+ * prefix was DATABASE_URL, so Neon's DATABASE_URL is exposed as
+ * DATABASE_URL_DATABASE_URL. Keep the standard name first for portability.
+ */
+export function getDatabaseUrl() {
+  return process.env.DATABASE_URL || process.env.DATABASE_URL_DATABASE_URL;
+}
+
+export function hasDatabase() {
+  return Boolean(getDatabaseUrl());
+}
+
+export function getDb() {
+  const url = getDatabaseUrl();
+  if (!url) throw new Error("database_not_configured");
+  return drizzle(neon(url), { schema });
+}
