@@ -1,5 +1,14 @@
 # agent-assistant
 
+<p align="center">
+  <img
+    src="public/agent-assistant-readme-cover.png"
+    alt="agent-assistant safely connecting finance, local reservations, digital work and travel through policy, approval, payment and fulfillment checkpoints"
+    width="100%"
+  />
+</p>
+
+
 **The non-custodial control layer for AI agents that discover, book, hire and pay.**
 
 Agents can prepare and execute commerce actions under human-defined policies.
@@ -16,6 +25,17 @@ shared intent, approval, execution and evidence contract.
 [Developer guide](https://agente-asistente.vercel.app/developers) |
 [Waitlist](https://agente-asistente.vercel.app/waitlist)
 
+## At a glance
+
+| Product proof | Current result |
+| --- | --- |
+| Durable orchestration | Live on Neon Postgres |
+| Remote agent interface | Seven-tool MCP sandbox |
+| Browser agent interface | Safe WebMCP discovery and preparation |
+| Duplicate execution | Returns the original receipt |
+| Active pilot tracks | DeFindex, UNBLCK, ArcusX and Travala |
+| Funds and wallet keys | Never handled by the current sandbox |
+
 ## Why this exists
 
 AI agents can search the web and call tools, but commerce needs stronger
@@ -29,6 +49,14 @@ guarantees than a generic tool call:
 
 `agent-assistant` provides the transaction control plane between the agent,
 the user, the merchant connector and the payment rail.
+
+### Three participants, one safety contract
+
+| People | Agents | Merchants |
+| --- | --- | --- |
+| Define budgets, providers and confirmation rules | Discover offers and prepare constrained intents | Publish structured offers and fulfillment states |
+| Review the exact action before signing | Execute only with scoped authorization | Receive verified orders through the right connector |
+| Keep control of wallet keys | Reuse receipts safely during retries | Become visible through catalog, API, MCP or WebMCP |
 
 ## Product flow
 
@@ -48,6 +76,24 @@ flowchart LR
 Every mutating action receives an idempotency key. Repeating an already
 executed request returns the original receipt instead of creating another
 transaction.
+
+### From website to agent-ready merchant
+
+```mermaid
+flowchart LR
+    SITE["Merchant or existing website"] --> SCAN["Readiness scan"]
+    SCAN --> PATH{"Best onboarding path"}
+    PATH --> FORM["Hosted offer form"]
+    PATH --> SCRIPT["Installable adapter"]
+    PATH --> API["API or MCP"]
+    PATH --> ENTERPRISE["Marketplace integration"]
+    FORM --> CATALOG["Structured offer catalog"]
+    SCRIPT --> CATALOG
+    API --> CATALOG
+    ENTERPRISE --> CATALOG
+    CATALOG --> AGENTS["Discoverable by agents"]
+    AGENTS --> INTENT["Controlled commerce intent"]
+```
 
 ## Try the proof
 
