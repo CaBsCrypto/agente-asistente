@@ -1,92 +1,99 @@
-# MCP de agente-asistente
+# agent-assistant MCP integration
 
-## Estado
+## Status
 
-Este repositorio expone un servidor MCP remoto funcional en `POST /api/mcp` mediante Streamable HTTP. La implementación actual es un **sandbox demostrativo**: no custodia activos, no firma wallets y no mueve fondos reales.
+The project exposes a working remote MCP server at `POST /api/mcp` over
+Streamable HTTP. It is a public sandbox: it does not custody assets, sign
+wallets or move real funds.
 
-## Conexión
+## Connect
 
 ```json
 {
   "mcpServers": {
-    "agente-asistente": {
+    "agent-assistant": {
       "url": "https://agente-asistente.vercel.app/api/mcp"
     }
   }
 }
 ```
 
-Localmente, usa `http://localhost:3000/api/mcp`. También puedes probarlo con MCP Inspector.
+Use `http://localhost:3000/api/mcp` locally. MCP Inspector can also connect to
+that endpoint.
 
 ```bash
 npx @modelcontextprotocol/inspector@latest
 ```
 
-## Herramientas
+## Tools
 
-- `search_offers`: catálogo público, solo lectura.
-- `get_offer`: detalle de una oferta.
-- `create_intent`: prepara una operación sin ejecutarla; exige `idempotencyKey`.
-- `evaluate_policy`: verifica expiración y límite demo de 100 USDC.
-- `demo_authorize_intent`: confirmación explícita y token temporal; no firma una wallet.
-- `execute_authorized_intent`: produce un recibo simulado; una repetición retorna el recibo original.
-- `get_receipt`: consulta el comprobante.
+- `search_offers`: read-only public offer discovery.
+- `get_offer`: read one offer.
+- `create_intent`: freeze an action without executing it; requires an
+  `idempotencyKey`.
+- `evaluate_policy`: check expiry and the 100 USDC sandbox limit.
+- `demo_authorize_intent`: record explicit confirmation and issue a temporary
+  capability; this is not a wallet signature.
+- `execute_authorized_intent`: create a simulated receipt; repeated execution
+  returns the original receipt.
+- `get_receipt`: retrieve execution evidence.
 
-## Flujo
+## Recommended flow
 
-1. Buscar y seleccionar una oferta.
-2. Crear la intención con una clave idempotente estable.
-3. Evaluar la política.
-4. Mostrar importe, red y condiciones al usuario.
-5. Obtener confirmación explícita.
-6. Ejecutar usando el token temporal.
-7. Guardar y verificar el recibo.
+1. Search and select an offer.
+2. Create an intent with a stable idempotency key.
+3. Evaluate policy.
+4. Show the exact amount, network and conditions to the user.
+5. Obtain explicit confirmation.
+6. Execute with the temporary authorization capability.
+7. Store and verify the receipt.
+8. Verify fulfillment separately.
 
 ## WebMCP
 
-`app/webmcp-registry.tsx` registra herramientas de búsqueda y preparación en `document.modelContext` cuando Chrome ofrece la API. WebMCP necesita una pestaña abierta; el MCP remoto funciona sin interfaz visible. Las acciones de autorización y ejecución no se registran en WebMCP todavía para reducir superficie de riesgo.
+`app/webmcp-registry.tsx` registers offer search and intent preparation through
+`document.modelContext` when Chrome exposes the API. WebMCP requires an open
+browser tab; the remote MCP works headlessly. Authorization and execution are
+not exposed through WebMCP yet, which keeps the first browser surface safer.
 
-## Seguridad y límites actuales
+## Persistence
 
-- Los estados viven en memoria del proceso. Esto permite el demo y las pruebas, pero no ofrece idempotencia durable entre regiones o reinicios.
-- Antes de producción se debe sustituir `InMemoryIntentStore` por Postgres, Redis o D1 con una restricción única sobre `idempotencyKey`.
-- El endpoint demo es público. Producción debe implementar OAuth 2.1 y permisos por herramienta.
-- La ejecución actual genera un identificador determinista, no una transacción blockchain.
-- Nunca se debe introducir una clave privada en este servidor. Privy o la wallet del usuario debe firmar fuera del núcleo.
-- Los conectores reales deben verificar liquidación y fulfillment por separado.
+The backend selects its store automatically:
 
-## Camino a producción
+- Without `DATABASE_URL`: temporary process memory for local development.
+- With `DATABASE_URL`: Neon Postgres with durable idempotency and audit events.
 
-1. Privy y autenticación de usuario.
-2. OAuth para clientes MCP remotos.
-3. almacenamiento durable y auditoría append-only.
-4. firmador no custodial y Stellar testnet.
-5. conector DeFindex y verificación on-chain.
-6. reserva IRL y comprobación de entrega.
-7. límites por comercio, red, categoría y periodo.
-8. rate limiting, revocación, alertas y evals MCP.
+The migration creates tables for intents, policy decisions, authorization
+capabilities, receipts and audit events. Authorization tokens are stored as
+SHA-256 hashes. The unique `commerce_intents_idempotency_key_uidx` constraint
+prevents duplicate intents, and `receipts_intent_uidx` guarantees one receipt
+per intent even when multiple instances receive the same request.
 
-## Salud y descubrimiento
+## Current security boundary
+
+- The public endpoint is a sandbox and still needs OAuth 2.1 and per-tool scopes
+  before production use.
+- Execution creates a deterministic demo reference, not a blockchain
+  transaction.
+- Private keys must never be sent to this server; Privy or the user's wallet
+  should sign outside the orchestration core.
+- Settlement and fulfillment must be verified independently.
+- Rate limits, revocation, alerts and MCP evaluations are still required.
+
+## Path to a real transaction
+
+1. Add user identity and wallet connection.
+2. Add OAuth for remote MCP clients.
+3. Create a user-signed Stellar testnet transaction.
+4. Connect DeFindex and verify the result on-chain.
+5. Preserve the current intent and receipt replay guarantees.
+6. Add an IRL reservation and fulfillment confirmation.
+7. Enforce limits per merchant, network, category and period.
+
+## Health and discovery
 
 - `GET /api/health`
 - `GET /.well-known/mcp`
-- `GET /api/commerce` devuelve el catálogo demo.
-
-## Persistencia durable con Neon
-
-El backend selecciona autom�ticamente su almacenamiento:
-
-- Sin `DATABASE_URL`: memoria temporal para desarrollo y demo.
-- Con `DATABASE_URL`: Neon Postgres con idempotencia durable y auditor�a.
-
-### Activaci�n
-
-1. Crea un proyecto gratuito en Neon.
-2. Copia la conexi�n pooled desde **Connect**.
-3. Guarda el valor como `DATABASE_URL` en `.env.local` y en Vercel.
-4. Ejecuta `npm run db:migrate` una sola vez contra el proyecto.
-5. Vuelve a desplegar y confirma que `/api/health` devuelve `"persistence":"postgres"`.
-
-Nunca publiques la conexi�n en GitHub ni la pegues en conversaciones. La migraci�n crea cinco tablas: intenciones, pol�ticas, autorizaciones, recibos y auditor�a. Las claves de autorizaci�n se almacenan como SHA-256; el token original solo se entrega al solicitante durante la confirmaci�n.
-
-La restricci�n �nica `commerce_intents_idempotency_key_uidx` impide crear dos intenciones con la misma clave incluso cuando dos instancias reciben la petici�n simult�neamente. La restricci�n `receipts_intent_uidx` asegura un solo recibo por intenci�n.
+- `GET /api/commerce`
+- `POST /api/mcp`
+- Product proof: `GET /demo`

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { connections, type ConnectionStage } from "./data";
 
 const stages: ConnectionStage[] = [
@@ -74,9 +75,9 @@ export default function Connections() {
   return (
     <main className="lab shell">
       <nav className="lab-nav">
-        <a className="brand" href="/">
+        <Link className="brand" href="/">
           <b>AA</b>agent-assistant
-        </a>
+        </Link>
         <a href="/developers">Developer docs</a>
       </nav>
 
