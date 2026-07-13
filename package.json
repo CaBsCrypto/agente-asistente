@@ -9,16 +9,19 @@
                     "dev":  "next dev",
                     "build":  "next build",
                     "start":  "next start",
-                    "test":  "npm run build",
+                    "test":  "tsx --test tests/*.test.ts",
                     "lint":  "eslint . --ignore-pattern dist --ignore-pattern .next",
-                    "db:generate":  "drizzle-kit generate"
+                    "db:generate":  "drizzle-kit generate",
+                    "test:build":  "npm run test \u0026\u0026 npm run build"
                 },
     "dependencies":  {
                          "drizzle-orm":  "0.45.2",
+                         "mcp-handler":  "^1.1.0",
                          "next":  "16.2.6",
                          "react":  "19.2.6",
                          "react-dom":  "19.2.6",
-                         "react-loading-skeleton":  "3.5.0"
+                         "react-loading-skeleton":  "3.5.0",
+                         "zod":  "^4.4.3"
                      },
     "devDependencies":  {
                             "@cloudflare/vite-plugin":  "1.37.1",
@@ -33,6 +36,7 @@
                             "eslint-config-next":  "16.2.6",
                             "react-server-dom-webpack":  "19.2.6",
                             "tailwindcss":  "4.2.1",
+                            "tsx":  "^4.23.1",
                             "typescript":  "5.9.3",
                             "vinext":  "0.0.50",
                             "vite":  "8.0.13",

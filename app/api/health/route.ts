@@ -1,0 +1,1 @@
+import{NextResponse}from"next/server";export function GET(){return NextResponse.json({service:"agente-asistente",status:"ok",mode:"demo",custody:false,payments:"simulated",mcp:"/api/mcp",timestamp:new Date().toISOString()})}

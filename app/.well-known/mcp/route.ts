@@ -1,0 +1,1 @@
+import{NextResponse}from"next/server";export function GET(r:Request){const o=new URL(r.url).origin;return NextResponse.json({name:"agente-asistente",description:"Non-custodial commerce control layer for AI agents",transport:"streamable-http",endpoint:`${o}/api/mcp`,mode:"demo",authentication:"public-demo; OAuth required before production"})}

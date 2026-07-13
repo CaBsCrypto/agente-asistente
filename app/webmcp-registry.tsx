@@ -1,0 +1,8 @@
+"use client";
+import{useEffect}from"react";
+type WebMcpTool={name:string;description:string;inputSchema:Record<string,unknown>;execute:(input:Record<string,unknown>)=>Promise<string>;annotations?:Record<string,boolean>};
+declare global{interface Document{modelContext?:{registerTool:(tool:WebMcpTool,options?:{signal?:AbortSignal})=>void}}}
+export default function WebMcpRegistry(){useEffect(()=>{if(!document.modelContext)return;const controller=new AbortController(),register=(tool:WebMcpTool)=>document.modelContext?.registerTool(tool,{signal:controller.signal});
+register({name:"search_agent_offers",description:"Busca servicios y productos disponibles para agentes. Esta acción es de solo lectura.",inputSchema:{type:"object",properties:{query:{type:"string",description:"Texto a buscar"}}},annotations:{readOnlyHint:true,destructiveHint:false},execute:async input=>JSON.stringify(await fetch(`/api/commerce?query=${encodeURIComponent(String(input.query??""))}`).then(r=>r.json()))});
+register({name:"prepare_commerce_intent",description:"Prepara una intención demo sin mover dinero. El usuario deberá revisar y autorizar por separado.",inputSchema:{type:"object",properties:{offerId:{type:"string"},actorId:{type:"string"}},required:["offerId","actorId"]},annotations:{readOnlyHint:false,destructiveHint:false},execute:async input=>JSON.stringify(await fetch("/api/commerce",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"create_intent",offerId:input.offerId,actorId:input.actorId,idempotencyKey:crypto.randomUUID()})}).then(r=>r.json()))});
+return()=>controller.abort()},[]);return null}
