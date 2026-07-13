@@ -1,5 +1,5 @@
 const tools=["search_offers","get_offer","create_intent","evaluate_policy","demo_authorize_intent","execute_authorized_intent","get_receipt"];
-export default function Developers(){return <main className="dev shell"><a className="brand" href="/"><b>AA</b>agent-assistant</a><p className="eyebrow">DEVELOPER PLATFORM</p><h1>Connect any compatible agent to our commerce control layer.</h1><p className="lede">The public sandbox runs a remote MCP over Streamable HTTP. It demonstrates the complete transaction lifecycle without moving real funds.</p><section><h2>Remote MCP endpoint</h2><pre>https://agente-asistente.vercel.app/api/mcp</pre><h2>Client configuration</h2><pre>{`{
+export default function Developers(){return <main className="dev shell"><a className="brand" href="/"><b>AA</b>agent-assistant</a><p className="eyebrow">DEVELOPER PLATFORM</p><h1>Connect any MCP-enabled agent to our commerce control layer.</h1><p className="lede">The public sandbox runs a remote MCP over Streamable HTTP. It demonstrates the complete transaction lifecycle without moving real funds.</p><section><h2>Remote MCP endpoint</h2><pre>https://agente-asistente.vercel.app/api/mcp</pre><h2>Client configuration</h2><pre>{`{
   "mcpServers": {
     "agent-assistant": {
       "url": "https://agente-asistente.vercel.app/api/mcp"
