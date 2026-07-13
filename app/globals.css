@@ -10,3 +10,43 @@
 @media(max-width:1000px){.lab-stats{grid-template-columns:repeat(3,1fr)}.lab-stats button:nth-child(3){border-right:0}.lab-stats button:nth-child(-n+3){border-bottom:1px solid var(--line)}.filter-topline{grid-template-columns:1fr 1fr}.priority-filter{min-width:0}.filter-topline .priority-filter{grid-column:1/-1}.filter-bottomline{align-items:flex-start;flex-direction:column}.clear-filters{align-self:flex-end}}
 @media(max-width:620px){.lab-stats{grid-template-columns:1fr 1fr}.lab-stats button:nth-child(3){border-right:1px solid var(--line)}.lab-stats button:nth-child(even){border-right:0}.lab-stats button:nth-child(-n+4){border-bottom:1px solid var(--line)}.filter-topline{grid-template-columns:1fr}.filter-topline .priority-filter{grid-column:auto}.clear-filters{align-self:flex-start}.filter-buttons{gap:6px}.filter-buttons button{font-size:10px}}
 .target-focus{display:inline-flex;margin:0 0 8px;padding:5px 8px;border-radius:999px;background:var(--amber);color:var(--forest);font:850 9px "SFMono-Regular",Consolas,monospace;text-transform:uppercase;letter-spacing:.08em}.connection-row:has(.target-focus){background:#fff8e6;box-shadow:inset 5px 0 0 var(--amber)}
+/* Waitlist */
+.waitlist-page{min-height:100vh;background:radial-gradient(circle at 8% 16%,#fff1ca 0,transparent 25%),radial-gradient(circle at 92% 72%,#dceadf 0,transparent 28%),var(--paper)}
+.waitlist-nav{height:80px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.waitlist-nav>a:last-child{color:var(--forest);font-size:14px;font-weight:800}
+.waitlist-hero{min-height:720px;padding:74px 0 82px;display:grid;grid-template-columns:1fr .9fr;gap:74px;align-items:center}
+.waitlist-copy h1{font-size:clamp(56px,7vw,94px);line-height:.9;letter-spacing:-.068em;margin:19px 0 27px;max-width:720px}
+.waitlist-lede{font-size:20px;line-height:1.55;color:var(--muted);max-width:650px}
+.waitlist-signals{display:flex;flex-wrap:wrap;gap:8px;margin:28px 0}
+.waitlist-signals span{padding:9px 12px;border:1px solid #bfcfbe;border-radius:999px;background:#edf5ec;color:var(--forest);font-size:11px;font-weight:800}
+.waitlist-proof{margin-top:42px;padding:20px 0;border-block:1px solid var(--line);max-width:560px}
+.waitlist-proof strong{font:800 10px "SFMono-Regular",Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--coral-dark)}
+.waitlist-proof p{margin:8px 0 0;font-weight:750}
+.waitlist-form,.waitlist-success{background:var(--surface);border:1px solid var(--line);border-radius:25px;padding:32px;box-shadow:12px 12px 0 var(--amber)}
+.form-heading span,.waitlist-success>span{font:800 10px "SFMono-Regular",Consolas,monospace;letter-spacing:.11em;color:var(--coral-dark)}
+.form-heading h2,.waitlist-success h2{font-size:34px;letter-spacing:-.045em;margin:9px 0}
+.form-heading p,.waitlist-success p{margin:0 0 24px;color:var(--muted);line-height:1.5}
+.waitlist-form>label,.form-pair label{display:grid;gap:7px}
+.waitlist-form label>span{font-size:11px;font-weight:800;color:#55584f}
+.waitlist-form label small{font-weight:600;color:var(--muted)}
+.waitlist-form input:not([type=checkbox]),.waitlist-form select{width:100%;height:46px;border:1px solid var(--line);border-radius:12px;background:#fbf7ee;padding:0 13px;color:var(--ink);font:650 13px Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;outline:none}
+.waitlist-form input:focus,.waitlist-form select:focus{border-color:var(--forest);box-shadow:0 0 0 3px var(--forest-soft)}
+.form-pair{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:14px}
+.consent{grid-template-columns:18px 1fr!important;align-items:start;margin:20px 0;line-height:1.45}
+.consent input{margin:2px 0;width:16px;height:16px;accent-color:var(--forest)}
+.waitlist-form button{width:100%;border:0;border-radius:999px;padding:15px;background:var(--coral);color:white;font-weight:850;box-shadow:0 5px 0 var(--coral-dark);cursor:pointer}
+.waitlist-form button:disabled{opacity:.65;cursor:wait}
+.form-message{margin:16px 0 0;padding:11px;border-radius:10px;background:#fff0dc;color:#7c431f;font-size:12px;line-height:1.45}
+.form-footnote{display:block;text-align:center;color:var(--muted);font-size:10px;line-height:1.45;margin-top:15px}
+.honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}
+.waitlist-success{min-height:420px;display:flex;flex-direction:column;justify-content:center}
+.waitlist-success a{color:var(--coral-dark);font-weight:800}
+.waitlist-tracks{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:0 0 92px}
+.waitlist-tracks article{padding:27px;border:1px solid var(--line);border-radius:20px;background:#fffaf1}
+.waitlist-tracks b{font:800 11px "SFMono-Regular",Consolas,monospace;color:var(--coral-dark)}
+.waitlist-tracks h2{font-size:25px;margin:18px 0 10px}
+.waitlist-tracks p{margin:0;color:var(--muted);line-height:1.55}
+.waitlist-footer{padding:35px 0 55px;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:var(--muted);font-size:13px}
+.waitlist-footer a{color:var(--forest);font-weight:800}
+@media(max-width:850px){.waitlist-hero{grid-template-columns:1fr;gap:44px}.waitlist-copy h1{font-size:58px}.waitlist-tracks{grid-template-columns:1fr}.waitlist-form,.waitlist-success{box-shadow:8px 8px 0 var(--amber)}}
+@media(max-width:520px){.waitlist-hero{padding-top:50px}.waitlist-copy h1{font-size:48px}.form-pair{grid-template-columns:1fr}.waitlist-form,.waitlist-success{padding:24px}.waitlist-footer{gap:20px;flex-direction:column}}
