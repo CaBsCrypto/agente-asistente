@@ -155,3 +155,17 @@
 @media(max-width:1100px){.admin-kpis{grid-template-columns:1fr 1fr}.admin-filters{grid-template-columns:1.5fr 1fr 1fr}.admin-clear{justify-self:start}.admin-lead-head{display:none}.admin-lead-row{grid-template-columns:1.4fr 1fr .7fr}.admin-lead-row>time{display:none}.admin-lead-row .admin-open{grid-column:3}.admin-lead-detail{grid-template-columns:1fr}.admin-funnel>div{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:760px){.admin-topbar{padding:0 20px}.admin-live,.admin-founder{display:none}.admin-main{width:min(100% - 28px,1320px);padding-top:40px}.admin-heading{grid-template-columns:1fr}.admin-heading-actions{justify-items:start}.admin-heading h1{font-size:52px}.admin-kpis{grid-template-columns:1fr 1fr}.admin-funnel{padding:22px;box-shadow:6px 6px 0 var(--amber)}.admin-funnel>header{align-items:flex-start;gap:14px;flex-direction:column}.admin-funnel>div{grid-template-columns:1fr 1fr}.admin-filters{grid-template-columns:1fr 1fr}.admin-search{grid-column:1/-1}.admin-lead-row{grid-template-columns:1fr 1fr;gap:13px}.admin-person,.admin-signal{grid-column:1/-1}.admin-lead-row .admin-open{grid-column:auto}.admin-detail-editor>div,.admin-detail-facts dl{grid-template-columns:1fr}.admin-workspace-head{align-items:flex-start;flex-direction:column;gap:8px}}
 @media(max-width:480px){.admin-kpis{grid-template-columns:1fr}.admin-filters{grid-template-columns:1fr}.admin-search{grid-column:auto}.admin-funnel>div{grid-template-columns:1fr}.admin-heading h1{font-size:44px}.admin-login-shell{padding:25px;box-shadow:8px 8px 0 var(--amber)}.admin-login-copy h1{font-size:38px}}
+
+/* Simplified waitlist conversion flow */
+.waitlist-hero-simple{min-height:650px;padding-block:62px;align-items:center}
+.waitlist-hero-simple .waitlist-copy h1{max-width:760px}
+.waitlist-proof-simple{margin-top:32px}
+.waitlist-form-simple{align-self:center;padding:36px}
+.waitlist-form-simple .form-heading{margin-bottom:25px}
+.waitlist-form-simple .form-heading h2{font-size:39px;margin-bottom:8px}
+.waitlist-form-simple>label:first-of-type input{height:54px;font-size:15px;border-radius:14px}
+.waitlist-form-simple .consent-simple{margin:18px 0}
+.waitlist-form-simple button{padding:16px;font-size:14px}
+.waitlist-success-simple{min-height:350px}
+@media(max-width:850px){.waitlist-hero-simple{padding-block:52px}.waitlist-form-simple{width:100%}}
+@media(max-width:520px){.waitlist-form-simple{padding:25px}.waitlist-form-simple .form-heading h2{font-size:34px}}

@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 const optionalText = (max: number) =>
   z
@@ -16,6 +16,7 @@ export const waitlistSignupSchema = z.object({
     "agent-builder",
     "partner",
     "investor",
+    "unspecified",
   ]),
   useCase: z.enum([
     "travel",
@@ -25,6 +26,7 @@ export const waitlistSignupSchema = z.object({
     "merchant-tools",
     "agent-integrations",
     "other",
+    "unspecified",
   ]),
   country: optionalText(80),
   company: optionalText(120),

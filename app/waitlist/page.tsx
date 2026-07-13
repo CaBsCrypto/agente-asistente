@@ -1,74 +1,48 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
+import Link from "next/link";
 import WaitlistForm from "./waitlist-form";
 
 export const metadata: Metadata = {
-  title: "Join the waitlist | agent-assistant",
+  title: "Early access | agent-assistant",
   description:
-    "Apply for early access to controlled agent actions across travel, work, local services and on-chain finance.",
+    "Join the private beta for an assistant that can take useful actions under your control.",
 };
-
-const tracks = [
-  [
-    "01",
-    "Use it",
-    "Ask an agent to search, prepare and safely execute useful actions.",
-  ],
-  [
-    "02",
-    "Offer it",
-    "Make your products or services visible and actionable to agents.",
-  ],
-  [
-    "03",
-    "Build on it",
-    "Connect your own assistant through one reusable commerce protocol.",
-  ],
-];
 
 export default function WaitlistPage() {
   return (
     <main className="waitlist-page">
       <nav className="waitlist-nav shell">
-        <a className="brand" href="/">
-          <b>AA</b>agent-assistant
-        </a>
-        <a href="/connections">Integration Lab</a>
+        <Link className="brand" href="/">
+          <b>AA</b>
+          agent-assistant
+        </Link>
+        <Link href="/">Back home</Link>
       </nav>
 
-      <section className="waitlist-hero shell">
+      <section className="waitlist-hero waitlist-hero-simple shell">
         <div className="waitlist-copy">
-          <p className="eyebrow">EARLY ACCESS - LATIN AMERICA TO THE WORLD</p>
-          <h1>Your agent should do more than answer.</h1>
+          <p className="eyebrow">PRIVATE BETA · LATIN AMERICA TO THE WORLD</p>
+          <h1>Be first to delegate real actions.</h1>
           <p className="waitlist-lede">
-            Join the private beta for an assistant that can discover, book,
-            hire and pay while you control every important decision.
+            Join the early group testing an assistant that can research, book,
+            hire and pay—with your approval at every important step.
           </p>
           <div className="waitlist-signals">
-            <span>Non-custodial</span>
-            <span>Explicit approval</span>
-            <span>Verifiable receipts</span>
+            <span>No wallet required</span>
+            <span>No funds enabled</span>
+            <span>You stay in control</span>
           </div>
-          <div className="waitlist-proof">
-            <strong>First integration tracks</strong>
-            <p>DeFindex - UNBLCK - ArcusX - Travala</p>
+          <div className="waitlist-proof waitlist-proof-simple">
+            <strong>What happens next</strong>
+            <p>Join now. We will contact selected testers personally.</p>
           </div>
         </div>
         <WaitlistForm />
       </section>
 
-      <section className="waitlist-tracks shell" aria-label="Early access tracks">
-        {tracks.map(([number, title, description]) => (
-          <article key={number}>
-            <b>{number}</b>
-            <h2>{title}</h2>
-            <p>{description}</p>
-          </article>
-        ))}
-      </section>
-
       <footer className="waitlist-footer shell">
-        <span>Private beta applications are reviewed in waves.</span>
-        <a href="/">Back to agent-assistant</a>
+        <span>Private beta invitations are sent in small waves.</span>
+        <Link href="/connections">Explore integrations</Link>
       </footer>
     </main>
   );

@@ -30,3 +30,18 @@ test("waitlist requires explicit consent and valid categories", () => {
 
   assert.equal(result.success, false);
 });
+test("waitlist accepts the minimal public form", () => {
+  const result = waitlistSignupSchema.parse({
+    email: "early@example.com",
+    role: "unspecified",
+    useCase: "unspecified",
+    source: "website",
+    referral: "",
+    consent: true,
+    website: "",
+  });
+
+  assert.equal(result.email, "early@example.com");
+  assert.equal(result.role, "unspecified");
+  assert.equal(result.useCase, "unspecified");
+});
