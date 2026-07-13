@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -173,6 +173,9 @@ export default function AdminDashboard({
             <i /> Private workspace
           </span>
           <span className="admin-founder">{founderName}</span>
+          <Link className="admin-stellar-link" href="/admin/stellar">
+            Stellar Lab
+          </Link>
           <button onClick={signOut}>Sign out</button>
         </div>
       </header>
@@ -188,6 +191,7 @@ export default function AdminDashboard({
             </p>
           </div>
           <div className="admin-heading-actions">
+            <Link href="/admin/stellar">Open Privy + Stellar Lab</Link>
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/api/admin/waitlist/export">Export CSV</a>
             <small>YC-ready pipeline · Updated live</small>

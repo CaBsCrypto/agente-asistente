@@ -16,8 +16,9 @@ People keep authority. Merchants become discoverable and actionable through a
 shared intent, approval, execution and evidence contract.
 
 > **Current stage:** public sandbox. Durable orchestration and replay protection
-> are live; wallet signatures, network settlement and partner fulfillment are
-> still simulated. No real funds or private keys are handled.
+> are live. A founder-only Privy + Stellar Testnet wallet/signature laboratory
+> is implemented; network settlement and partner fulfillment are still
+> pending. No mainnet funds or private keys are handled.
 
 [Live product](https://agente-asistente.vercel.app) |
 [90-second demo](https://agente-asistente.vercel.app/demo) |
@@ -123,7 +124,7 @@ audit events and receipt uniqueness are real.
 | Duplicate-intent protection | Live | Unique idempotency constraint |
 | Duplicate-execution protection | Live | One receipt per intent |
 | Founder waitlist operations | Live | Protected `/admin` workspace |
-| Wallet signature | Next milestone | Currently simulated |
+| Privy Stellar wallet and signature | Founder test lab | Protected `/admin/stellar` |
 | Stellar testnet settlement | Next milestone | No transaction submitted yet |
 | Partner fulfillment verification | Partner pilot | Pending integration |
 
@@ -249,10 +250,15 @@ ADMIN_USERNAME=founder
 ADMIN_PASSWORD_HASH=
 ADMIN_SESSION_SECRET=
 ADMIN_EMAILS=
+PRIVY_APP_ID=
+PRIVY_APP_SECRET=
 ```
 
 Never commit database credentials, admin secrets, authorization capabilities
 or wallet keys.
+
+The protected [Privy + Stellar Testnet guide](docs/privy-stellar-testnet.md)
+explains the first wallet, Friendbot, Horizon and signature-verification proof.
 
 ### Database and validation
 
