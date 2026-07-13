@@ -18,6 +18,8 @@
     },
     "dependencies": {
         "@neondatabase/serverless": "^1.1.0",
+        "@privy-io/node": "0.26.0",
+        "@privy-io/react-auth": "3.35.0",
         "@stellar/stellar-sdk": "^16.0.1",
         "drizzle-orm": "0.45.2",
         "mcp-handler": "^1.1.0",

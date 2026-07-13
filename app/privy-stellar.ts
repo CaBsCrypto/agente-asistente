@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { PrivyClient } from "@privy-io/node";
 import { Keypair, StrKey } from "@stellar/stellar-sdk";
 
 const PRIVY_API_URL = "https://api.privy.io/v1";
@@ -10,6 +11,12 @@ type PrivyWalletResponse = {
   id?: string;
   address?: string;
   chain_type?: string;
+  external_id?: string;
+};
+
+type PrivyWalletListResponse = {
+  data?: PrivyWalletResponse[];
+  next_cursor?: string;
 };
 
 type PrivyRawSignResponse = {
@@ -77,6 +84,15 @@ export function getPrivyStellarReadiness() {
   };
 }
 
+function getPrivyClient() {
+  const { appId, appSecret } = requiredPrivyCredentials();
+  return new PrivyClient({ appId, appSecret });
+}
+
+export async function verifyPrivyAccessToken(accessToken: string) {
+  if (!accessToken.trim()) throw new Error("privy_access_token_missing");
+  return getPrivyClient().utils().auth().verifyAccessToken(accessToken);
+}
 export function isValidStellarAddress(address: string) {
   return StrKey.isValidEd25519PublicKey(address);
 }
@@ -118,6 +134,90 @@ export async function createPrivyStellarWallet(label?: string) {
   };
 }
 
+export function getPrivyUserWalletExternalId(userId: string) {
+  const digest = createHash("sha256").update(userId).digest("hex");
+  return "aa_stellar_" + digest.slice(0, 40);
+}
+
+async function listUserStellarWallets(userId: string) {
+  const query = new URLSearchParams({
+    user_id: userId,
+    chain_type: "stellar",
+    limit: "100",
+  });
+  const result = await privyRequest<PrivyWalletListResponse>(
+    "/wallets?" + query.toString(),
+    { method: "GET" },
+  );
+
+  return (result.data ?? []).filter(
+    (wallet) =>
+      wallet.id &&
+      wallet.address &&
+      isValidStellarAddress(wallet.address) &&
+      wallet.chain_type === "stellar",
+  );
+}
+
+export async function getOrCreateUserStellarWallet(userId: string) {
+  if (!userId.startsWith("did:privy:")) {
+    throw new Error("invalid_privy_user_id");
+  }
+
+  const externalId = getPrivyUserWalletExternalId(userId);
+  const current = await listUserStellarWallets(userId);
+  const existing =
+    current.find((wallet) => wallet.external_id === externalId) ?? current[0];
+
+  if (existing?.id && existing.address) {
+    return {
+      id: existing.id,
+      address: existing.address,
+      chainType: "stellar",
+      created: false,
+      owner: "user" as const,
+    };
+  }
+
+  try {
+    const wallet = await privyRequest<PrivyWalletResponse>("/wallets", {
+      method: "POST",
+      headers: { "privy-idempotency-key": externalId },
+      body: JSON.stringify({
+        chain_type: "stellar",
+        display_name: "Agent Assistant Wallet",
+        external_id: externalId,
+        owner: { user_id: userId },
+      }),
+    });
+
+    if (!wallet.id || !wallet.address || !isValidStellarAddress(wallet.address)) {
+      throw new Error("privy_invalid_stellar_wallet_response");
+    }
+
+    return {
+      id: wallet.id,
+      address: wallet.address,
+      chainType: "stellar",
+      created: true,
+      owner: "user" as const,
+    };
+  } catch (error) {
+    const afterRace = await listUserStellarWallets(userId).catch(() => []);
+    const recovered =
+      afterRace.find((wallet) => wallet.external_id === externalId) ?? afterRace[0];
+    if (recovered?.id && recovered.address) {
+      return {
+        id: recovered.id,
+        address: recovered.address,
+        chainType: "stellar",
+        created: false,
+        owner: "user" as const,
+      };
+    }
+    throw error;
+  }
+}
 export async function fundStellarTestnetWallet(address: string) {
   if (!isValidStellarAddress(address)) {
     throw new Error("invalid_stellar_address");
