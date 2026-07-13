@@ -15,6 +15,13 @@
       "when": 1783928244817,
       "tag": "0001_living_deadpool",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783930810466,
+      "tag": "0002_fluffy_zeigeist",
+      "breakpoints": true
     }
   ]
 }
