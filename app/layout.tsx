@@ -1,3 +1,3 @@
 import type{Metadata}from"next";import"./globals.css";import WebMcpRegistry from"./webmcp-registry";
-export const metadata:Metadata={title:"agente-asistente · Control para agentes que actúan",description:"Infraestructura no custodial para acciones reales realizadas por agentes."};
-export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="es"><body><WebMcpRegistry/>{children}</body></html>}
+export const metadata:Metadata={title:"agent-assistant | Control for agents that take action",description:"Non-custodial commerce infrastructure for AI agents."};
+export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body><WebMcpRegistry/>{children}</body></html>}
