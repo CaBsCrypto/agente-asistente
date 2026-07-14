@@ -17,6 +17,7 @@
         "build:sites": "vinext build"
     },
     "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.26.0",
         "@neondatabase/serverless": "^1.1.0",
         "@privy-io/node": "0.26.0",
         "@privy-io/react-auth": "3.35.0",

@@ -210,7 +210,25 @@ export default function AgentChat({
         </header>
 
         {connectionNotice && (
-          <p className="agent-connection-notice">{connectionNotice}</p>
+          <div className="agent-connection-notice">
+            <span>{connectionNotice}</span>
+            {connections.some(
+              (connection) =>
+                connection.provider === "notion" &&
+                connection.status === "active",
+            ) && (
+              <button
+                type="button"
+                onClick={() =>
+                  void sendMessage(
+                    "Search my Notion workspace for pending project tasks",
+                  )
+                }
+              >
+                Run first search
+              </button>
+            )}
+          </div>
         )}
 
         <div className="agent-chat-thread" aria-live="polite">
@@ -298,7 +316,7 @@ export default function AgentChat({
                 if (draft.trim()) void sendMessage(draft);
               }
             }}
-            placeholder="Ask to connect DeFindex, find travel, prepare a payment..."
+            placeholder="Ask your agent to search Notion, check a connection or prepare an action..."
             rows={2}
             maxLength={2000}
           />
@@ -340,7 +358,27 @@ export default function AgentChat({
         )}
         <section>
           <strong>PERSONAL HELP</strong>
-          <button onClick={() => void sendMessage("Connect me to Notion")}>Notion</button>
+          <button
+            onClick={() =>
+              void sendMessage(
+                connections.some(
+                  (connection) =>
+                    connection.provider === "notion" &&
+                    connection.status === "active",
+                )
+                  ? "Search my Notion workspace for pending project tasks"
+                  : "Connect me to Notion",
+              )
+            }
+          >
+            {connections.some(
+              (connection) =>
+                connection.provider === "notion" &&
+                connection.status === "active",
+            )
+              ? "Search Notion"
+              : "Connect Notion"}
+          </button>
           <button onClick={() => void sendMessage("Connect me to Trello")}>Trello</button>
           <button onClick={() => void sendMessage("Connect me to Google Calendar")}>Calendar</button>
           <button onClick={() => void sendMessage("Connect me to Google Drive")}>Drive</button>

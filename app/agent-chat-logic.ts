@@ -103,10 +103,19 @@ function connectionReply(
       ...(connection.name === "Notion MCP" && !isConnected
         ? [{ label: "Connect Notion", connect: "notion" }]
         : []),
-      {
-        label: "Prepare " + connection.name + " plan",
-        message: "Prepare the safest first test for " + connection.name,
-      },
+      ...(connection.name === "Notion MCP" && isConnected
+        ? [
+            {
+              label: "Search Notion",
+              message: "Search my Notion workspace for pending project tasks",
+            },
+          ]
+        : [
+            {
+              label: "Prepare " + connection.name + " plan",
+              message: "Prepare the safest first test for " + connection.name,
+            },
+          ]),
       {
         label: "What is missing?",
         message:

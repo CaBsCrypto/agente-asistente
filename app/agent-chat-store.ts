@@ -10,6 +10,7 @@ import {
 } from "@/db/schema";
 import { buildAgentReply, findRequestedConnection } from "@/app/agent-chat-logic";
 import { getStellarTestnetAccount } from "@/app/privy-stellar";
+import { searchNotion } from "@/app/connectors/notion-mcp";
 
 export type StoredAgentMessage = {
   id: string;
@@ -158,10 +159,83 @@ export async function sendAgentMessage(userId: string, content: string) {
         ),
       ),
   ]);
-  const reply = buildAgentReply(content, {
-    wallet,
-    connectedProviders: activeConnections.map((item) => item.provider),
-  });
+  const connectedProviders = activeConnections.map((item) => item.provider);
+  const normalizedContent = content
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+  const requestsNotionSearch =
+    connectedProviders.includes("notion") &&
+    (normalizedContent.includes("notion") ||
+      normalizedContent.includes("workspace")) &&
+    [
+      "search",
+      "find",
+      "look for",
+      "busca",
+      "buscar",
+      "encuentra",
+      "tarea",
+      "task",
+      "pendiente",
+      "document",
+      "pagina",
+      "page",
+    ].some((term) => normalizedContent.includes(term));
+
+  let reply;
+  if (requestsNotionSearch) {
+    try {
+      const result = await searchNotion(userId, content);
+      reply = {
+        content: [
+          "I searched your connected Notion workspace using **" +
+            result.tool +
+            "**.",
+          result.text,
+        ].join("\n\n"),
+        connection: {
+          name: "Notion MCP",
+          stage: "Connected" as const,
+          priority: "P0" as const,
+        },
+        actions: [
+          {
+            label: "Search again",
+            message: "Search my Notion workspace for pending project tasks",
+          },
+          { label: "Open Notion", href: "https://www.notion.so/" },
+        ],
+      };
+    } catch (error) {
+      const code =
+        error instanceof Error
+          ? error.message.split(":")[0]
+          : "notion_search_failed";
+      const reconnect =
+        code === "notion_reauth_required" || code === "notion_not_connected";
+      reply = {
+        content: reconnect
+          ? "Your Notion authorization must be renewed before I can search the workspace."
+          : "I reached your Notion connection, but the first search did not complete. Nothing was changed. You can retry safely.",
+        connection: {
+          name: "Notion MCP",
+          stage: reconnect ? ("Credentials needed" as const) : ("Connected" as const),
+          priority: "P0" as const,
+        },
+        actions: reconnect
+          ? [{ label: "Reconnect Notion", connect: "notion" }]
+          : [
+              {
+                label: "Retry Notion search",
+                message: "Search my Notion workspace for pending project tasks",
+              },
+            ],
+      };
+    }
+  } else {
+    reply = buildAgentReply(content, { wallet, connectedProviders });
+  }
   const assistantMessage = {
     id: randomUUID(),
     conversationId: id,

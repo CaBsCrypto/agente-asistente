@@ -247,6 +247,9 @@ export async function completeNotionOAuth(code: string, state: string) {
         transport: "streamable-http",
         resource: MCP_RESOURCE,
         tokenType: tokens.token_type ?? "Bearer",
+        clientId: pending.clientId,
+        clientSecretEncrypted: pending.clientSecretEncrypted,
+        tokenEndpoint: pending.tokenEndpoint,
       },
       updatedAt: new Date(),
     })
@@ -267,6 +270,9 @@ export async function completeNotionOAuth(code: string, state: string) {
           transport: "streamable-http",
           resource: MCP_RESOURCE,
           tokenType: tokens.token_type ?? "Bearer",
+          clientId: pending.clientId,
+          clientSecretEncrypted: pending.clientSecretEncrypted,
+          tokenEndpoint: pending.tokenEndpoint,
         },
         updatedAt: new Date(),
       },
@@ -287,4 +293,99 @@ export async function listUserConnections(userId: string) {
     })
     .from(agentExternalConnections)
     .where(eq(agentExternalConnections.userId, userId));
+}
+export async function getNotionAccessToken(userId: string) {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(agentExternalConnections)
+    .where(
+      and(
+        eq(agentExternalConnections.userId, userId),
+        eq(agentExternalConnections.provider, PROVIDER),
+      ),
+    )
+    .limit(1);
+  const connection = rows[0];
+  if (!connection || connection.status !== "active") {
+    throw new Error("notion_not_connected");
+  }
+
+  if (
+    !connection.tokenExpiresAt ||
+    connection.tokenExpiresAt.getTime() > Date.now() + 60_000
+  ) {
+    return decryptConnectorSecret(connection.accessTokenEncrypted);
+  }
+
+  if (!connection.refreshTokenEncrypted) {
+    await db
+      .update(agentExternalConnections)
+      .set({ status: "reauth_required", updatedAt: new Date() })
+      .where(eq(agentExternalConnections.id, connection.id));
+    throw new Error("notion_reauth_required");
+  }
+
+  const metadata = connection.metadata ?? {};
+  const clientId =
+    typeof metadata.clientId === "string" ? metadata.clientId : null;
+  const tokenEndpoint =
+    typeof metadata.tokenEndpoint === "string"
+      ? metadata.tokenEndpoint
+      : "https://mcp.notion.com/token";
+  if (!clientId) throw new Error("notion_refresh_metadata_missing");
+
+  const params = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: decryptConnectorSecret(connection.refreshTokenEncrypted),
+    client_id: clientId,
+    resource: MCP_RESOURCE,
+  });
+  if (typeof metadata.clientSecretEncrypted === "string") {
+    params.set(
+      "client_secret",
+      decryptConnectorSecret(metadata.clientSecretEncrypted),
+    );
+  }
+
+  const response = await fetch(tokenEndpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: params.toString(),
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    await db
+      .update(agentExternalConnections)
+      .set({ status: "reauth_required", updatedAt: new Date() })
+      .where(eq(agentExternalConnections.id, connection.id));
+    throw new Error("notion_reauth_required");
+  }
+
+  const refreshed = (await response.json()) as TokenResponse;
+  if (!refreshed.access_token) throw new Error("notion_refresh_failed");
+  const tokenExpiresAt = refreshed.expires_in
+    ? new Date(Date.now() + refreshed.expires_in * 1000)
+    : null;
+
+  await db
+    .update(agentExternalConnections)
+    .set({
+      status: "active",
+      accessTokenEncrypted: encrypt(refreshed.access_token),
+      refreshTokenEncrypted: refreshed.refresh_token
+        ? encrypt(refreshed.refresh_token)
+        : connection.refreshTokenEncrypted,
+      tokenExpiresAt,
+      scopes: refreshed.scope
+        ? refreshed.scope.split(" ").filter(Boolean)
+        : connection.scopes,
+      updatedAt: new Date(),
+    })
+    .where(eq(agentExternalConnections.id, connection.id));
+
+  return refreshed.access_token;
 }
