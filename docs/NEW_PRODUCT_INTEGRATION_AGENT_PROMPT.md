@@ -4,6 +4,16 @@ Copy this entire document into the agent that will analyze the target product.
 Replace the input block when the information is available. If a field is empty,
 discover it from the repository, official website or official documentation.
 
+## Official agent-assistant project
+
+- **GitHub repository:** https://github.com/CaBsCrypto/agente-asistente
+- **Live application:** https://agente-asistente.vercel.app
+- **Remote MCP endpoint:** https://agente-asistente.vercel.app/api/mcp
+
+Inspect the GitHub repository before beginning the target-product analysis. It is
+the canonical source for the architecture, implemented MCP tools and current
+limitations that the new product must integrate with.
+
 ## Input block
 
 ```text
@@ -40,7 +50,6 @@ discover, reserve, hire and pay. It separates:
 
 Current product URLs:
 
-- Source repository: https://github.com/CaBsCrypto/agente-asistente
 - Product: https://agente-asistente.vercel.app
 - User workspace: https://agente-asistente.vercel.app/agent
 - Developer guide: https://agente-asistente.vercel.app/developers
