@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import { usePrivy } from "@privy-io/react-auth";
 import { useEffect, useRef, useState } from "react";
 
@@ -23,6 +25,29 @@ type BootstrapResult = {
     balances: { asset: string; balance: string }[];
   };
   activation: "active" | "activated" | "pending";
+};
+
+
+type TravelHotel = {
+  hotelId: string;
+  packageId: string;
+  name: string;
+  thumbnail?: string;
+  rating?: number | null;
+  star?: number | null;
+  totalPriceUSD: number;
+  pricePerNightUSD: number;
+  currency: string;
+  mealType?: string;
+  address?: string;
+  refundability?: string;
+  cancellationPolicyString?: string;
+};
+
+type TravelSearchResult = {
+  sessionId: string;
+  searchedAt: string;
+  hotels: TravelHotel[];
 };
 
 function shortAddress(address: string) {
@@ -60,6 +85,10 @@ function PrivyAgent() {
   const [result, setResult] = useState<BootstrapResult | null>(null);
   const [status, setStatus] = useState<"idle" | "creating" | "ready" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [travelResult, setTravelResult] = useState<TravelSearchResult | null>(null);
+  const [travelStatus, setTravelStatus] = useState<"idle" | "searching" | "error">("idle");
+  const [travelError, setTravelError] = useState<string | null>(null);
+  const [selectedHotel, setSelectedHotel] = useState<TravelHotel | null>(null);
   const bootstrappedFor = useRef<string | null>(null);
 
   async function bootstrap(force = false) {
@@ -101,6 +130,40 @@ function PrivyAgent() {
     setResult(null);
     setStatus("idle");
     await logout();
+  }
+
+
+  async function searchTravel(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setTravelStatus("searching");
+    setTravelError(null);
+    setSelectedHotel(null);
+    try {
+      const token = await getAccessToken();
+      if (!token) throw new Error("Authentication token unavailable");
+      const response = await fetch("/api/agent/travel/search", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          location: String(form.get("location") ?? ""),
+          checkIn: String(form.get("checkIn") ?? ""),
+          checkOut: String(form.get("checkOut") ?? ""),
+          guests: Number(form.get("guests") ?? 1),
+          maxPrice: Number(form.get("maxPrice") ?? 0) || undefined,
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? "Travel search failed");
+      setTravelResult(body);
+      setTravelStatus("idle");
+    } catch (caught) {
+      setTravelError(caught instanceof Error ? caught.message : "Travel search failed");
+      setTravelStatus("error");
+    }
   }
 
   if (!ready) {
@@ -167,6 +230,7 @@ function PrivyAgent() {
       )}
 
       {result && (
+        <>
         <div className="agent-wallet-grid">
           <article className="agent-wallet-card">
             <header><span>STELLAR WALLET</span><b>{result.activation === "pending" ? "PENDING" : "ACTIVE"}</b></header>
@@ -197,6 +261,89 @@ function PrivyAgent() {
             <a href="/demo">Continue to the action console</a>
           </div>
         </div>
+
+        <section className="agent-travel">
+          <header>
+            <div>
+              <p className="eyebrow">LIVE TRAVALA SEARCH</p>
+              <h2>Ask your agent to find a place to stay.</h2>
+              <p>Real hotel inventory and prices. Search only: booking and payment remain disabled.</p>
+            </div>
+            <span>READ-ONLY MCP</span>
+          </header>
+
+          <form onSubmit={searchTravel}>
+            <label>Where<input name="location" placeholder="Santiago, Chile" required minLength={2} /></label>
+            <label>Check-in<input name="checkIn" type="date" required /></label>
+            <label>Check-out<input name="checkOut" type="date" required /></label>
+            <label>
+              Guests
+              <select name="guests" defaultValue="2">
+                {[1, 2, 3, 4, 5, 6].map((count) => (
+                  <option key={count} value={count}>{count}</option>
+                ))}
+              </select>
+            </label>
+            <label>Max USD/night<input name="maxPrice" type="number" min="1" max="10000" placeholder="200" /></label>
+            <button disabled={travelStatus === "searching"}>
+              {travelStatus === "searching" ? "Searching Travala..." : "Search hotels"}
+            </button>
+          </form>
+
+          {travelError && <p className="agent-travel-error">{travelError}</p>}
+
+          {travelResult && (
+            <>
+              <div className="agent-travel-summary">
+                <strong>{travelResult.hotels.length} live options found</strong>
+                <span>Prices can change until a booking is confirmed.</span>
+              </div>
+              <div className="agent-hotel-list">
+                {travelResult.hotels.map((hotel) => (
+                  <article key={hotel.packageId} className={selectedHotel?.packageId === hotel.packageId ? "selected" : ""}>
+                    {hotel.thumbnail ? (
+                      <img src={hotel.thumbnail} alt="" loading="lazy" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="agent-hotel-placeholder">TRAVALA</div>
+                    )}
+                    <div>
+                      <small>{hotel.star ? hotel.star + "-STAR HOTEL" : "HOTEL"}</small>
+                      <h3>{hotel.name}</h3>
+                      <p>{hotel.address ?? hotel.refundability ?? "Live Travala inventory"}</p>
+                      <div className="agent-hotel-meta">
+                        {hotel.rating != null && <span>Rating <b>{hotel.rating}</b></span>}
+                        {hotel.refundability && <span>{hotel.refundability}</span>}
+                        {hotel.mealType && <span>{hotel.mealType.replaceAll("_", " ")}</span>}
+                      </div>
+                    </div>
+                    <footer>
+                      <strong>{"$" + hotel.totalPriceUSD.toFixed(2)}</strong>
+                      <small>{"$" + hotel.pricePerNightUSD.toFixed(2)} / night</small>
+                      <button type="button" onClick={() => setSelectedHotel(hotel)}>
+                        {selectedHotel?.packageId === hotel.packageId ? "Selected" : "Select"}
+                      </button>
+                    </footer>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
+
+          {selectedHotel && (
+            <aside className="agent-travel-selection">
+              <div>
+                <p className="eyebrow">PREPARED FOR REVIEW</p>
+                <h3>{selectedHotel.name}</h3>
+                <p>{selectedHotel.cancellationPolicyString ?? "Review final conditions before booking."}</p>
+              </div>
+              <div>
+                <strong>{"$" + selectedHotel.totalPriceUSD.toFixed(2)} USD</strong>
+                <span>Booking disabled in the Stellar MVP</span>
+              </div>
+            </aside>
+          )}
+        </section>
+        </>
       )}
     </section>
   );
