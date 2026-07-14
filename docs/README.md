@@ -8,8 +8,10 @@ This directory is the source of truth for operating, demonstrating and extending
 
 1. Read the [current product status](product-status.md).
 2. Rehearse the [90-second live demo](live-demo.md).
-3. Use only claims marked **Live** or **Sandbox** in external materials.
-4. Use the [CoinMarketCap pilot brief](coinmarketcap-partner-pilot.md) for outreach.
+3. Complete the [YC application answer bank](yc-application.md).
+4. Follow the [YC closeout roadmap](yc-closeout-roadmap.md).
+5. Use only claims marked **Live** or **Sandbox** in external materials.
+6. Use the [CoinMarketCap pilot brief](coinmarketcap-partner-pilot.md) for outreach.
 
 ### Developers and integrations
 

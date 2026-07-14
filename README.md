@@ -269,6 +269,8 @@ Start at the [documentation index](docs/README.md).
 - [Developer guide](docs/developer-guide.md)
 - [Product status](docs/product-status.md)
 - [90-second demo](docs/live-demo.md)
+- [YC application answer bank](docs/yc-application.md)
+- [YC closeout roadmap](docs/yc-closeout-roadmap.md)
 - [Bidirectional MCP gateway](docs/mcp-gateway.md)
 - [MCP integration](docs/mcp-integration.md)
 - [Privy and Stellar Testnet](docs/privy-stellar-testnet.md)

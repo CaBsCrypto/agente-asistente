@@ -58,6 +58,14 @@ const stageCopy: Record<Stage, [string, string]> = {
   executed: ["05", "Receipt created"],
   protected: ["06", "Replay blocked"],
 };
+const narration: Record<Stage, string> = {
+  select: "The agent starts from a structured offer instead of guessing merchant, asset or amount.",
+  prepared: "The exact action and idempotency key are now frozen before any approval is requested.",
+  policy: "Policy checks passed. The execution is still blocked until the user confirms this exact action.",
+  authorized: "Approval is scoped to this intent and expires. It is not a reusable permission to spend.",
+  executed: "The backend created one durable receipt. Now retry the same execution to test replay safety.",
+  protected: "The retry returned the original receipt. No second execution or duplicate receipt was created.",
+};
 
 function makeKey() {
   return `demo-${crypto.randomUUID()}`;
@@ -198,6 +206,11 @@ export default function ActionConsole() {
           </li>
         ))}
       </ol>
+
+      <div className="action-narration" aria-live="polite">
+        <span>WHAT TO SAY NOW</span>
+        <p>{narration[stage]}</p>
+      </div>
 
       <div className="action-workspace">
         <div className="action-builder">
