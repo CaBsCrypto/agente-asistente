@@ -40,6 +40,7 @@ discover, reserve, hire and pay. It separates:
 
 Current product URLs:
 
+- Source repository: https://github.com/CaBsCrypto/agente-asistente
 - Product: https://agente-asistente.vercel.app
 - User workspace: https://agente-asistente.vercel.app/agent
 - Developer guide: https://agente-asistente.vercel.app/developers
@@ -47,6 +48,11 @@ Current product URLs:
 - Remote MCP: https://agente-asistente.vercel.app/api/mcp
 - MCP discovery: https://agente-asistente.vercel.app/.well-known/mcp
 - Health: https://agente-asistente.vercel.app/api/health
+
+Treat the source repository as the canonical reference for current behavior.
+Before proposing an adapter, inspect its README, developer documentation, MCP
+route and existing connection definitions. Do not assume that a landing-page
+claim is already implemented; confirm it in code or through a safe live test.
 
 The YC MVP is **Stellar Testnet only**. EVM and Solana are future architecture,
 not current product promises. Never introduce another chain into the proposed
