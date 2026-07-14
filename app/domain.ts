@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-export type Network="stellar-testnet"|"base-sepolia"|"offchain-demo";export type Kind="finance"|"reservation"|"task"|"travel";
+export type Network="stellar-testnet"|"base-sepolia"|"offchain-demo";export type Kind="finance"|"reservation"|"task"|"travel"|"product"|"service";
 export type Offer={id:string;merchant:string;title:string;description:string;kind:Kind;amount:number;currency:"USDC";network:Network;availability:"demo"|"testnet"|"partner_pending"};
 export type Intent={id:string;offerId:string;actorId:string;amount:number;currency:"USDC";network:Network;status:"prepared"|"policy_approved"|"authorized"|"executed"|"rejected";idempotencyKey:string;createdAt:string;expiresAt:string;policy?:{allowed:boolean;reasons:string[];evaluatedAt:string;policyVersion:"demo-v1"};authorization?:{token:string;authorizedAt:string;expiresAt:string};receipt?:Receipt};
 export type Receipt={id:string;intentId:string;status:"simulated-settled";network:Network;amount:number;currency:"USDC";transactionRef:string;executedAt:string;fulfillment:"pending-partner-confirmation";replayed:boolean};

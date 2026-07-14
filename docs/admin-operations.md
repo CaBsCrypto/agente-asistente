@@ -1,4 +1,4 @@
-﻿# Founder admin operations
+# Founder admin operations
 
 The private workspace lives at `/admin`. It is server-protected and must never
 be linked from the public navigation.
@@ -40,3 +40,11 @@ comma-separated allowlist for authenticated workspace users.
 - Rotate the founder password if it is shared or lost.
 - Use notes for business context, not payment credentials or sensitive identity
   documents.
+
+
+## MCP service providers
+
+- Open `/admin/providers` to create a provider identity and its first scoped MCP key.
+- Copy the raw key immediately; the application stores only its SHA-256 hash.
+- Deliver pilot keys through a secure channel, never email or chat history.
+- Provider token rotation and revocation controls are the next operational milestone.

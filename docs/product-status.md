@@ -24,6 +24,8 @@ This document separates deployed proof from product vision. Status definitions l
 
 | Capability | Status | Evidence | Next proof |
 | --- | --- | --- | --- |
+| Personal agent MCP | Development foundation | Privy bearer bridge and three scoped tools | Add OAuth 2.1 consent for external clients |
+| Service provider MCP | Development foundation | Hashed scoped keys and offer administration | Add UI, rotation, orders and fulfillment |
 | Durable commerce intent | Sandbox | Neon record and idempotency key | Bind to real payment XDR |
 | Policy evaluation | Sandbox | Persisted decision and demo limit | Per-user and merchant limits |
 | Explicit demo approval | Sandbox | Short-lived hashed capability | Transaction-scoped Privy approval |

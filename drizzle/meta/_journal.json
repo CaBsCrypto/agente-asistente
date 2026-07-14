@@ -50,6 +50,13 @@
       "when": 1784014309458,
       "tag": "0006_wandering_red_wolf",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784016883725,
+      "tag": "0007_familiar_mephistopheles",
+      "breakpoints": true
     }
   ]
 }

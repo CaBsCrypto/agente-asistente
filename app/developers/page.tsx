@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const tools = [
+const sandboxTools = [
   "search_offers",
   "get_offer",
   "create_intent",
@@ -27,63 +27,79 @@ export default function Developers() {
         <b>AA</b>agent-assistant
       </Link>
       <p className="eyebrow">DEVELOPER PLATFORM</p>
-      <h1>Connect an agent, application or merchant to the control layer.</h1>
+      <h1>Use our agent, publish a service, or connect an external tool.</h1>
       <p className="lede">
-        Start with the public remote MCP sandbox, inspect the architecture, or
-        implement one scoped outbound connector. Payment settlement remains
-        simulated until the first Privy-signed Stellar Testnet transaction.
+        The gateway now separates a public commerce sandbox, an authenticated
+        personal-agent MCP and a scoped provider-admin MCP. Payment settlement
+        remains simulated until the first Privy-signed Stellar Testnet proof.
       </p>
 
       <section>
         <h2>Choose your path</h2>
         <ul>
-          <li><strong>Agent developer:</strong> call our seven inbound MCP tools.</li>
-          <li><strong>Frontend developer:</strong> use the commerce HTTP sandbox.</li>
           <li>
-            <strong>Provider or merchant:</strong> expose an API or MCP tool and
-            define authentication, execution and fulfillment separately.
+            <strong>Use agent-assistant:</strong> connect to the personal MCP
+            with the user&apos;s authority.
+          </li>
+          <li>
+            <strong>Publish services:</strong> use a scoped provider key to
+            manage offers that agents can discover.
+          </li>
+          <li>
+            <strong>Connect your product:</strong> expose an API or MCP tool
+            that our outbound connector can call after consent.
           </li>
         </ul>
         <p>
           <a href="https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/developer-guide.md">
-            Complete developer guide
+            Developer guide
           </a>
-          {" · "}
+          {" | "}
           <a href="https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/architecture.md">
-            Architecture and flows
+            Architecture
           </a>
-          {" · "}
+          {" | "}
+          <a href="https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/mcp-gateway.md">
+            MCP gateway guide
+          </a>
+          {" | "}
           <a href="https://github.com/CaBsCrypto/agente-asistente">
-            GitHub repository
+            GitHub
           </a>
         </p>
       </section>
 
       <section>
-        <h2>Remote MCP endpoint</h2>
+        <h2>MCP gateway endpoints</h2>
+        <p><strong>Commerce sandbox</strong></p>
         <pre>https://agente-asistente.vercel.app/api/mcp</pre>
-        <h2>Client configuration</h2>
-        <pre>{clientConfig}</pre>
+        <p><strong>Personal agent (Privy bearer)</strong></p>
+        <pre>https://agente-asistente.vercel.app/api/mcp/agent</pre>
+        <p><strong>Service provider admin (scoped provider key)</strong></p>
+        <pre>https://agente-asistente.vercel.app/api/mcp/provider</pre>
       </section>
 
       <section>
-        <h2>Available tools</h2>
+        <h2>Sandbox client configuration</h2>
+        <pre>{clientConfig}</pre>
+        <h2>Commerce tools</h2>
         <div className="tool-list">
-          {tools.map((tool) => <code key={tool}>{tool}</code>)}
+          {sandboxTools.map((tool) => <code key={tool}>{tool}</code>)}
         </div>
       </section>
 
       <section>
         <h2>Security contract</h2>
         <ul>
+          <li>Personal and provider principals are isolated.</li>
+          <li>Provider keys are hashed and scoped.</li>
+          <li>Publishing is separate from drafting an offer.</li>
           <li>Creating an intent never moves funds.</li>
-          <li>Policy is evaluated before authorization.</li>
-          <li>Demo authorization expires after five minutes.</li>
           <li>The same idempotency key returns the original intent.</li>
           <li>Repeated execution returns the original receipt.</li>
           <li>
-            Production mutation requires OAuth, identity, wallet approval and
-            durable evidence.
+            Public personal-agent access still requires OAuth 2.1, consent,
+            rotation and revocation before launch.
           </li>
         </ul>
       </section>

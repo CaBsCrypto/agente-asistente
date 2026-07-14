@@ -1,5 +1,7 @@
 # MCP integration
 
+> For the personal-agent and provider-admin surfaces, read the [bidirectional MCP gateway](mcp-gateway.md).
+
 agent-assistant participates in MCP in two directions:
 
 - **Inbound MCP:** other agents call agent-assistant commerce tools.

@@ -33,6 +33,8 @@ Status meanings are shared across all project documentation:
 | Travala hotel discovery | Live, read-only | Public Travala Travel MCP |
 | Intent, policy and replay protection | Sandbox | Durable intent and one receipt per execution |
 | Public inbound MCP | Sandbox | Seven tools at /api/mcp |
+| Personal agent MCP | Development foundation | Privy bearer identity at /api/mcp/agent |
+| Service provider MCP | Development foundation | Scoped catalog administration at /api/mcp/provider |
 | Chrome WebMCP | Experimental sandbox | Offer discovery and intent preparation |
 | Wallet-signed Stellar payment | Planned, next proof | No transaction submitted by the product yet |
 | DeFindex, UNBLCK and ArcusX | Planned partner pilots | Contact or integration path only |
@@ -218,7 +220,10 @@ npm run db:migrate
 | /waitlist | Early-access capture |
 | /admin | Protected founder dashboard |
 | /admin/stellar | Founder Stellar test lab |
+| /admin/providers | Provision scoped service-provider MCP keys |
 | /api/mcp | Public sandbox MCP server |
+| /api/mcp/agent | Authenticated personal agent MCP |
+| /api/mcp/provider | Scoped provider catalog MCP |
 | /api/commerce | Commerce orchestration API |
 | /api/health | Runtime and persistence status |
 | /.well-known/mcp | MCP discovery metadata |
@@ -253,6 +258,7 @@ Start at the [documentation index](docs/README.md).
 - [Developer guide](docs/developer-guide.md)
 - [Product status](docs/product-status.md)
 - [90-second demo](docs/live-demo.md)
+- [Bidirectional MCP gateway](docs/mcp-gateway.md)
 - [MCP integration](docs/mcp-integration.md)
 - [Privy and Stellar Testnet](docs/privy-stellar-testnet.md)
 - [CoinMarketCap partner pilot](docs/coinmarketcap-partner-pilot.md)
