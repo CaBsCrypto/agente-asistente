@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { usePrivy } from "@privy-io/react-auth";
+import AgentChat from "./agent-chat";
 import { useEffect, useRef, useState } from "react";
 
 type BootstrapResult = {
@@ -211,7 +212,7 @@ function PrivyAgent() {
       <header>
         <div>
           <p className="eyebrow">YOUR AGENT</p>
-          <h1>{status === "ready" ? "Wallet ready. Agent ready." : "Creating your Stellar wallet..."}</h1>
+          <h1>{status === "ready" ? "Your agent is ready." : "Creating your Stellar wallet..."}</h1>
           <p>{result?.profile.email ?? user?.email?.address ?? "Authenticated with Privy"}</p>
         </div>
         <button className="agent-signout" onClick={() => void signOut()}>Sign out</button>
@@ -234,6 +235,16 @@ function PrivyAgent() {
 
       {result && (
         <>
+        <AgentChat
+          email={result.profile.email ?? user?.email?.address ?? "Privy account"}
+          walletAddress={result.wallet.address}
+          walletBalance={
+            result.account.balances.find((balance) => balance.asset === "XLM")?.balance ??
+            "0"
+          }
+          getAccessToken={getAccessToken}
+        />
+
         <div className="agent-wallet-grid">
           <article className="agent-wallet-card">
             <header><span>STELLAR WALLET</span><b>{result.activation === "pending" ? "PENDING" : "ACTIVE"}</b></header>
