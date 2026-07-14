@@ -1,255 +1,131 @@
 # agent-assistant
 
 <p align="center">
-  <img
-    src="public/agent-assistant-readme-cover.png"
-    alt="agent-assistant safely connecting finance, local reservations, digital work and travel through policy, approval, payment and fulfillment checkpoints"
-    width="100%"
-  />
+  <img src="public/agent-assistant-readme-cover.png" alt="agent-assistant connects people, agents, applications and payments through explicit permissions" width="100%" />
 </p>
 
+**A permissioned personal agent that connects to apps, prepares commerce actions and will pay from a user-owned wallet.**
 
-**The non-custodial control layer for AI agents that discover, book, hire and pay.**
+The product combines a simple chat for end users with MCP, WebMCP and API surfaces for developers. Sensitive actions are constrained by identity, policy, explicit approval, idempotency and durable evidence.
 
-Agents can prepare and execute commerce actions under human-defined policies.
-People keep authority. Merchants become discoverable and actionable through a
-shared intent, approval, execution and evidence contract.
+> **Honest MVP boundary:** authentication, Stellar wallet creation, CoinMarketCap data, persistent user state and the commerce safety demo are real. Notion is implemented and awaiting complete user validation. Wallet-signed payments, DeFindex execution, merchant fulfillment and mainnet settlement are not live.
 
-> **Current stage:** public sandbox. Durable orchestration, replay protection and
-> automatic Privy account onboarding are implemented. Every authenticated user is
-> assigned one user-owned Stellar wallet and activated on testnet. Real payment
-> authorization, mainnet settlement and partner fulfillment remain disabled.
+[Live product](https://agente-asistente.vercel.app) · [Open the agent](https://agente-asistente.vercel.app/agent) · [Safety demo](https://agente-asistente.vercel.app/demo) · [Integration Lab](https://agente-asistente.vercel.app/connections) · [Waitlist](https://agente-asistente.vercel.app/waitlist)
 
-[Live product](https://agente-asistente.vercel.app) |
-[Create an agent](https://agente-asistente.vercel.app/agent) |
-[90-second demo](https://agente-asistente.vercel.app/demo) |
-[Integration Lab](https://agente-asistente.vercel.app/connections) |
-[Developer guide](https://agente-asistente.vercel.app/developers) |
-[Waitlist](https://agente-asistente.vercel.app/waitlist)
+## What works now
 
-## At a glance
+Status meanings are shared across all project documentation:
 
-| Product proof | Current result |
+- **Live:** deployed and verified against a real external system.
+- **Ready to validate:** implemented, but missing a complete user acceptance test.
+- **Sandbox:** working product proof with simulated execution or settlement.
+- **Planned:** researched or designed, not implemented.
+
+| Capability | Status | Current proof |
+| --- | --- | --- |
+| Google/email login | Live | Privy authentication on /agent |
+| Automatic Stellar wallet | Live | One user-owned wallet, activated on Stellar Testnet |
+| Wallet balance and explorer link | Live | Horizon account lookup |
+| Persistent chat and user state | Live | Neon Postgres |
+| CoinMarketCap quotes | Live, read-only | Official Trial Pro API |
+| CoinMarketCap watchlist | Live, read-only | Per-user persistent watchlist |
+| Notion OAuth and search | Ready to validate, read-only | OAuth PKCE, encrypted tokens and official Notion MCP |
+| Travala hotel discovery | Live, read-only | Public Travala Travel MCP |
+| Intent, policy and replay protection | Sandbox | Durable intent and one receipt per execution |
+| Public inbound MCP | Sandbox | Seven tools at /api/mcp |
+| Chrome WebMCP | Experimental sandbox | Offer discovery and intent preparation |
+| Wallet-signed Stellar payment | Planned, next proof | No transaction submitted by the product yet |
+| DeFindex, UNBLCK and ArcusX | Planned partner pilots | Contact or integration path only |
+| Gmail, Drive, Calendar and Trello | Planned | Catalog entries only |
+
+The dated source of truth is [docs/product-status.md](docs/product-status.md).
+
+## Try the real product
+
+### 1. Create the agent and wallet
+
+1. Open [the agent](https://agente-asistente.vercel.app/agent).
+2. Sign in with Google or email through Privy.
+3. The server verifies the Privy access token and creates one user-owned Stellar wallet when needed.
+4. The wallet is activated on Stellar Testnet and displayed with its balance and explorer link.
+
+The application does not generate a password or expose a seed phrase. Login establishes identity; it does not authorize a payment.
+
+### 2. Query CoinMarketCap
+
+Try these prompts:
+
+~~~text
+What is the current XLM price on CoinMarketCap?
+Add XLM to my CoinMarketCap watchlist
+Show my crypto watchlist
+~~~
+
+Quotes come from CoinMarketCap and include a timestamp. This connection cannot trade or move funds.
+
+### 3. Connect Notion
+
+Use **Connect Notion** in the agent, approve access in Notion, then try:
+
+~~~text
+Search my Notion for agent payments
+Find my YC notes in Notion
+~~~
+
+OAuth tokens are encrypted before storage in Neon. Until production consent and a search succeed for a real user, this integration remains **Ready to validate**.
+
+### 4. Test duplicate-resistant execution
+
+Open the [Safety demo](https://agente-asistente.vercel.app/demo), create an intent, evaluate policy, approve it and execute twice. The second request returns the original receipt.
+
+Settlement is simulated. Persistence, authorization hashes, audit records and receipt uniqueness are real.
+
+## Product model
+
+~~~mermaid
+flowchart LR
+    U["User in chat"] --> ID["Privy identity"]
+    ID --> A["Agent and tool router"]
+    A --> P["Policy and explicit approval"]
+    A --> N["Notion MCP"]
+    A --> C["CoinMarketCap API"]
+    A --> T["Travala MCP"]
+    P --> W["User-owned Stellar wallet"]
+    W --> S["Stellar Testnet"]
+    A <--> DB["Neon state and audit trail"]
+~~~
+
+| Audience | Experience |
 | --- | --- |
-| Durable orchestration | Live on Neon Postgres |
-| Remote agent interface | Seven-tool MCP sandbox |
-| Browser agent interface | Safe WebMCP discovery and preparation |
-| Duplicate execution | Returns the original receipt |
-| Active pilot tracks | DeFindex, UNBLCK, ArcusX and Travala |
-| User identity and wallet | Privy login + native SDK user-owned Stellar wallet |
-| Funds and wallet keys | Never handled by the orchestration layer |
+| End user | Login, automatic wallet, chat, connections, permissions and history |
+| Developer or merchant | MCP/API tools, structured offers, intents, policy, receipts and integration guides |
 
-## Why this exists
+### Safe action lifecycle
 
-AI agents can search the web and call tools, but commerce needs stronger
-guarantees than a generic tool call:
-
-- What exactly did the user authorize?
-- Which budget, merchant, network and expiry rules applied?
-- How do we prevent retries from charging twice?
-- How do we prove payment and delivery independently?
-- How can a business become visible and usable by many different agents?
-
-`agent-assistant` provides the transaction control plane between the agent,
-the user, the merchant connector and the payment rail.
-
-### Three participants, one safety contract
-
-| People | Agents | Merchants |
-| --- | --- | --- |
-| Define budgets, providers and confirmation rules | Discover offers and prepare constrained intents | Publish structured offers and fulfillment states |
-| Review the exact action before signing | Execute only with scoped authorization | Receive verified orders through the right connector |
-| Keep control of wallet keys | Reuse receipts safely during retries | Become visible through catalog, API, MCP or WebMCP |
-
-## Product flow
-
-```mermaid
+~~~mermaid
 flowchart LR
-    A["Human goal"] --> B["Agent discovery"]
-    B --> C["Frozen intent"]
-    C --> D["Policy checks"]
-    D --> E["Explicit approval"]
-    E --> F["Connector execution"]
-    F --> G["Payment evidence"]
-    F --> H["Fulfillment evidence"]
-    G --> I["Durable receipt"]
-    H --> I
-```
+    D["Discover"] --> I["Freeze intent"]
+    I --> R["Evaluate rules"]
+    R --> A["Ask for approval"]
+    A --> E["Execute once"]
+    E --> V["Verify settlement"]
+    V --> F["Verify fulfillment"]
+    F --> X["Durable receipt"]
+~~~
 
-Every mutating action receives an idempotency key. Repeating an already
-executed request returns the original receipt instead of creating another
-transaction.
+Payment and fulfillment are separate. A transaction hash proves network settlement; it does not prove that a hotel, task or physical product was delivered.
 
-### From website to agent-ready merchant
+## MCP and WebMCP
 
-```mermaid
-flowchart LR
-    SITE["Merchant or existing website"] --> SCAN["Readiness scan"]
-    SCAN --> PATH{"Best onboarding path"}
-    PATH --> FORM["Hosted offer form"]
-    PATH --> SCRIPT["Installable adapter"]
-    PATH --> API["API or MCP"]
-    PATH --> ENTERPRISE["Marketplace integration"]
-    FORM --> CATALOG["Structured offer catalog"]
-    SCRIPT --> CATALOG
-    API --> CATALOG
-    ENTERPRISE --> CATALOG
-    CATALOG --> AGENTS["Discoverable by agents"]
-    AGENTS --> INTENT["Controlled commerce intent"]
-```
+Public sandbox endpoint:
 
-## Automatic account onboarding
-
-The public `/agent` route implements the intended zero-wallet-setup experience:
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant P as Privy
-    participant A as agent-assistant
-    participant S as Stellar Testnet
-    U->>P: Continue with email, Google or passkey
-    P-->>U: Authenticated session
-    U->>A: Bootstrap with Privy access token
-    A->>P: Verify token and resolve user ID
-    A->>P: Get or create one user-owned Stellar wallet
-    A->>S: Activate new account through Friendbot
-    A-->>U: Open agent workspace with wallet ready
-```
-
-Privy supports Stellar natively as a Tier 2 wallet chain. The server uses the
-official @privy-io/node SDK to verify the access token, list the user's Stellar
-wallets, create one with chain_type "stellar" and assign the Privy user as its
-owner. @stellar/stellar-sdk remains responsible for chain-specific transaction
-construction and signature verification.
-
-A deterministic external ID and Privy idempotency key prevent duplicate wallets
-during retries or concurrent onboarding requests. There is no password
-generated by agent-assistant and no seed phrase shown at signup. Login
-establishes identity only; future payments must still pass spend policy and
-obtain a transaction-scoped wallet authorization.
-
-### Multichain model
-
-One Privy user can own multiple wallets, but a "multichain account" is not one
-private key or one address for every network:
-
-| Wallet family | Networks | Product status |
-| --- | --- | --- |
-| Stellar | Stellar Testnet, later mainnet | Active now |
-| Ethereum/EVM | Base, BNB Chain, Avalanche and other EVM networks | Architecture-ready, disabled |
-| Solana/SVM | Solana and SVM networks | Architecture-ready, disabled |
-
-Base, BNB Chain and Avalanche can reuse an Ethereum/EVM wallet family. Stellar
-and Solana require their own wallets. The current application therefore creates
-only the Stellar wallet, while its wallet architecture explicitly reserves EVM
-and Solana as future families. Privy's gated Digital Asset Accounts product is
-not required for this MVP.
-
-Required environment variables:
-
-```text
-NEXT_PUBLIC_PRIVY_APP_ID=
-PRIVY_APP_ID=
-PRIVY_APP_SECRET=
-# Optional for domain-specific client configuration
-NEXT_PUBLIC_PRIVY_CLIENT_ID=
-```
-
-`NEXT_PUBLIC_PRIVY_APP_ID` and `PRIVY_APP_ID` normally contain the same Privy
-App ID. `PRIVY_APP_SECRET` is server-only and must never be exposed in browser
-code or committed to Git.
-
-## Try the proof
-
-Open the [live Action Console](https://agente-asistente.vercel.app/demo):
-
-1. Select DeFindex, UNBLCK, ArcusX or Travala.
-2. Create a durable commerce intent.
-3. Evaluate the spend policy.
-4. Approve the exact action.
-5. Execute the sandbox action and create a receipt.
-6. Execute it again and verify that the original receipt is replayed.
-
-The interface labels the safety boundary throughout the flow. Settlement is
-simulated, while Postgres persistence, policy records, authorization hashes,
-audit events and receipt uniqueness are real.
-
-## What works today
-
-| Capability | Status | Evidence |
-| --- | --- | --- |
-| Public landing and product narrative | Live | Production deployment |
-| Guided replay-protection demo | Live | `/demo` |
-| Remote MCP over Streamable HTTP | Live sandbox | `/api/mcp` |
-| Chrome WebMCP discovery and intent preparation | Implemented | Safe browser tools only |
-| Durable commerce intents | Live | Neon Postgres |
-| Policy decisions and audit events | Live | Persisted records |
-| Duplicate-intent protection | Live | Unique idempotency constraint |
-| Duplicate-execution protection | Live | One receipt per intent |
-| Founder waitlist operations | Live | Protected `/admin` workspace |
-| Privy account + native SDK Stellar wallet | Implemented | Public `/agent` |
-| Privy Stellar signature harness | Founder test lab | Protected `/admin/stellar` |
-| Stellar testnet settlement | Next milestone | No transaction submitted yet |
-| Partner fulfillment verification | Partner pilot | Pending integration |
-
-## Architecture
-
-```mermaid
-flowchart TB
-    subgraph Clients
-        CHAT["Agent or chat"]
-        WEB["Chrome WebMCP"]
-        UI["Action Console"]
-    end
-
-    subgraph Control["agent-assistant control layer"]
-        MCP["Remote MCP"]
-        API["Commerce API"]
-        INTENT["Intent and policy engine"]
-        AUTH["Short-lived authorization"]
-        RECEIPT["Receipt and audit service"]
-    end
-
-    subgraph Data
-        PG["Neon Postgres"]
-    end
-
-    subgraph Connectors["Current and planned connectors"]
-        DEFI["DeFindex"]
-        LOCAL["UNBLCK"]
-        TASKS["ArcusX"]
-        TRAVEL["Travala"]
-        PAY["Stellar and x402"]
-    end
-
-    CHAT --> MCP
-    WEB --> API
-    UI --> API
-    MCP --> INTENT
-    API --> INTENT
-    INTENT --> AUTH
-    AUTH --> RECEIPT
-    INTENT <--> PG
-    RECEIPT <--> PG
-    AUTH --> Connectors
-```
-
-The orchestration core never needs a user's private key. The intended
-production model is: the agent proposes, policy decides, the user-controlled
-wallet signs, and the connector verifies settlement and fulfillment.
-
-## Remote MCP
-
-Production endpoint:
-
-```text
+~~~text
 https://agente-asistente.vercel.app/api/mcp
-```
+~~~
 
 Example client configuration:
 
-```json
+~~~json
 {
   "mcpServers": {
     "agent-assistant": {
@@ -257,158 +133,133 @@ Example client configuration:
     }
   }
 }
-```
-
-### Available tools
+~~~
 
 | Tool | Purpose | Mutates state |
 | --- | --- | --- |
-| `search_offers` | Discover agent-ready offers | No |
-| `get_offer` | Read one structured offer | No |
-| `create_intent` | Freeze an action with an idempotency key | Yes |
-| `evaluate_policy` | Apply expiry and sandbox spend rules | Yes |
-| `demo_authorize_intent` | Record explicit sandbox confirmation | Yes |
-| `execute_authorized_intent` | Create or replay one receipt | Yes |
-| `get_receipt` | Retrieve execution evidence | No |
+| search_offers | Discover structured offers | No |
+| get_offer | Read an offer | No |
+| create_intent | Freeze an action under an idempotency key | Yes |
+| evaluate_policy | Apply expiry, network and demo spending rules | Yes |
+| demo_authorize_intent | Record sandbox confirmation | Yes |
+| execute_authorized_intent | Create or replay one sandbox receipt | Yes |
+| get_receipt | Retrieve execution evidence | No |
 
-The MCP endpoint is public for sandbox testing. Production execution will
-require OAuth 2.1, per-tool scopes, rate limits and user-bound authorization.
+Inbound MCP lets other agents use agent-assistant. Outbound connectors let agent-assistant use Notion, CoinMarketCap and Travala. These directions may use MCP, OAuth or a conventional API.
 
-## WebMCP
+Chrome WebMCP registers search_agent_offers and prepare_commerce_intent. Wallet authorization and execution are intentionally excluded.
 
-When Chrome exposes `document.modelContext`, the site registers two
-browser-scoped tools:
-
-- `search_agent_offers`
-- `prepare_commerce_intent`
-
-Authorization and execution are intentionally excluded from WebMCP for now.
-The remote MCP works without an open browser tab; WebMCP acts on the page that
-the user is currently viewing.
+See [docs/mcp-integration.md](docs/mcp-integration.md) for the complete contract.
 
 ## Local development
 
 ### Requirements
 
-- Node.js `>=22.13.0`
-- A Neon Postgres connection for durable local state, or memory mode for a
-  lightweight sandbox
+- Node.js 22.13.0 or newer
+- npm
+- Neon Postgres for persistent state
+- Privy credentials for authentication and Stellar wallets
 
-### Start
+### Install
 
-```bash
+~~~bash
 git clone https://github.com/CaBsCrypto/agente-asistente.git
 cd agente-asistente
 npm install
 copy .env.example .env.local
-npm run dev
-```
-
-Open `http://localhost:3000`. Without `DATABASE_URL`, commerce state uses
-process memory and disappears when the server restarts.
-
-### Environment
-
-```dotenv
-DATABASE_URL=
-ADMIN_USERNAME=founder
-ADMIN_PASSWORD_HASH=
-ADMIN_SESSION_SECRET=
-ADMIN_EMAILS=
-PRIVY_APP_ID=
-PRIVY_APP_SECRET=
-```
-
-Never commit database credentials, admin secrets, authorization capabilities
-or wallet keys.
-
-The protected [Privy + Stellar Testnet guide](docs/privy-stellar-testnet.md)
-explains the first wallet, Friendbot, Horizon and signature-verification proof.
-
-### Database and validation
-
-```bash
 npm run db:migrate
+npm run dev
+~~~
+
+Open http://localhost:3000. Commerce orchestration can use process memory without DATABASE_URL, but waitlist, user history and connections require Neon.
+
+### Environment variables
+
+| Variable | Required for | Exposure |
+| --- | --- | --- |
+| DATABASE_URL | Neon persistence | Server only |
+| NEXT_PUBLIC_PRIVY_APP_ID | Privy browser client | Public identifier |
+| NEXT_PUBLIC_PRIVY_CLIENT_ID | Optional domain-specific Privy client | Public identifier |
+| PRIVY_APP_ID | Server-side Privy operations | Server only |
+| PRIVY_APP_SECRET | Token verification and wallet API | Secret, server only |
+| CONNECTOR_ENCRYPTION_KEY | OAuth token encryption | Secret, server only |
+| ADMIN_USERNAME | Founder admin login | Server only |
+| ADMIN_PASSWORD_HASH | Founder admin login | Secret, server only |
+| ADMIN_SESSION_SECRET | Signed admin session | Secret, server only |
+| ADMIN_EMAILS | Optional founder allowlist | Server only |
+
+Never commit .env.local, credentials, OAuth tokens, admin secrets or wallet keys.
+
+### Validate
+
+~~~bash
 npm test
 npm run lint
 npm run build
-```
+~~~
 
-## Main surfaces
+Database commands:
+
+~~~bash
+npm run db:generate
+npm run db:migrate
+~~~
+
+## Main routes
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Product landing |
-| `/demo` | Guided intent and replay-protection proof |
-| `/connections` | Prioritized integration tracker |
-| `/developers` | Public MCP documentation |
-| `/waitlist` | Early-access capture |
-| `/admin` | Protected founder operations |
-| `/api/commerce` | Commerce orchestration API |
-| `/api/mcp` | Remote MCP server |
-| `/api/health` | Runtime and persistence status |
-| `/.well-known/mcp` | MCP discovery metadata |
+| / | Product landing |
+| /login | Privy login entry point |
+| /agent | Authenticated chat, wallet and connections |
+| /demo | Intent, authorization and replay-safety proof |
+| /connections | Integration research and priority tracker |
+| /developers | Public developer entry point |
+| /waitlist | Early-access capture |
+| /admin | Protected founder dashboard |
+| /admin/stellar | Founder Stellar test lab |
+| /api/mcp | Public sandbox MCP server |
+| /api/commerce | Commerce orchestration API |
+| /api/health | Runtime and persistence status |
+| /.well-known/mcp | MCP discovery metadata |
 
-## Pilot strategy
+## Immediate roadmap
 
-1. **DeFindex:** first user-signed Stellar testnet action and on-chain receipt.
-2. **UNBLCK:** real-world access request or reversible workspace reservation.
-3. **ArcusX:** task, budget, delivery and dispute lifecycle.
-4. **Travala:** global travel discovery first; paid booking only after a safe
-   test environment is available.
+1. Complete the real-user Notion OAuth and search acceptance test.
+2. Build one explicitly approved, Privy-signed Stellar Testnet payment.
+3. Persist its transaction hash and make retries return the same receipt.
+4. Connect that proof to one controlled partner or DeFindex test flow.
+5. Collect three design-partner commitments.
+6. Move CoinMarketCap toward an official API, MCP or x402 pilot.
 
-The Integration Lab tracks additional commerce, payments, wallet, scheduling
-and voice surfaces without presenting research as a completed connection.
-
-## Roadmap
-
-### Now - reproducible product proof
-
-- Durable intents, policy decisions and audit events
-- Public MCP and WebMCP discovery
-- Visible duplicate-execution demonstration
-- Waitlist and partner pipeline
-
-### Next - real testnet execution
-
-- User identity and wallet connection
-- User-signed Stellar testnet transaction
-- DeFindex adapter and on-chain verification
-- Same receipt returned for every retry
-
-### Then - merchant and partner network
-
-- OAuth 2.1 and scoped MCP access
-- Merchant onboarding through hosted catalog, API, MCP or WebMCP
-- Fulfillment confirmation, cancellation and refund states
-- Base Sepolia and x402 test flows
-- Reversible reservations with an IRL partner
+For YC, the strongest claim is: **a user can create a permissioned agent, receive a real Testnet wallet, connect real data sources and see the safety mechanism that will prevent duplicate payments; the next proof is one reproducible wallet-signed payment.**
 
 ## Security principles
 
-- **No custody:** private keys remain with the user or wallet provider.
-- **Least authority:** an agent receives only the permissions needed for one
-  action or constrained policy.
-- **Explicit intent:** merchant, amount, network and expiry are frozen before
-  approval.
-- **Replay safety:** duplicate requests return prior results.
-- **Separated evidence:** payment does not imply fulfillment.
-- **Honest status:** simulated behavior is never presented as production money
-  movement.
+- **Non-custodial:** the orchestration layer never needs the private key.
+- **Least privilege:** each connection receives only the required scopes.
+- **Explicit authority:** identity, connection consent and payment approval are separate.
+- **Frozen intent:** merchant, amount, network and expiry are fixed before approval.
+- **Replay safety:** duplicate execution returns the previous result.
+- **Encrypted credentials:** external OAuth tokens are encrypted at rest.
+- **Independent evidence:** settlement and fulfillment are verified separately.
+- **Honest status:** research, sandbox behavior and production integrations are not conflated.
 
 ## Documentation
 
-- [`docs/live-demo.md`](docs/live-demo.md)
-- [`docs/mcp-integration.md`](docs/mcp-integration.md)
-- [`docs/waitlist-operations.md`](docs/waitlist-operations.md)
-- [`docs/admin-operations.md`](docs/admin-operations.md)
+Start at the [documentation index](docs/README.md).
 
-## Project status
+- [Product status](docs/product-status.md)
+- [90-second demo](docs/live-demo.md)
+- [MCP integration](docs/mcp-integration.md)
+- [Privy and Stellar Testnet](docs/privy-stellar-testnet.md)
+- [CoinMarketCap partner pilot](docs/coinmarketcap-partner-pilot.md)
+- [Admin operations](docs/admin-operations.md)
+- [Waitlist operations](docs/waitlist-operations.md)
+- [New integration agent prompt](docs/NEW_PRODUCT_INTEGRATION_AGENT_PROMPT.md)
 
-This is an early-stage, solo-founder project being built in Latin America for a
-global agent economy. The immediate goal is a reproducible Stellar testnet
-transaction, three design partners and evidence that businesses want to become
-discoverable and actionable by agents.
+## Project
 
-Join the [waitlist](https://agente-asistente.vercel.app/waitlist) or propose a
-pilot through the [Integration Lab](https://agente-asistente.vercel.app/connections).
+agent-assistant is an early-stage, solo-founder project built in Latin America for a global agent economy. The first wedge is a trusted personal agent with real connections and a user-owned Stellar wallet. The long-term infrastructure helps businesses become discoverable, actionable and payable by agents.
+
+Join the [waitlist](https://agente-asistente.vercel.app/waitlist) or propose a pilot through the [Integration Lab](https://agente-asistente.vercel.app/connections).

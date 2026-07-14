@@ -1,62 +1,85 @@
 # Privy + Stellar Testnet
 
-The public /agent onboarding and the founder lab at /admin/stellar use Privy's
-native Stellar wallet support together with @stellar/stellar-sdk.
+The public /agent onboarding and founder lab at /admin/stellar use Privy native Stellar support with @stellar/stellar-sdk.
 
 ## Current architecture
 
-- Privy authenticates the user and verifies the access token.
+~~~mermaid
+sequenceDiagram
+    participant U as User
+    participant P as Privy
+    participant A as agent-assistant
+    participant H as Stellar Horizon
+    U->>P: Sign in with Google or email
+    P-->>U: Access token
+    U->>A: Bootstrap authenticated agent
+    A->>P: Verify token and resolve user
+    A->>P: Get or create user-owned Stellar wallet
+    A->>H: Activate new Testnet account through Friendbot
+    A->>H: Read account and balances
+    A-->>U: Wallet-ready chat
+~~~
+
+- Privy authenticates the user and verifies the access token server-side.
 - @privy-io/node lists and creates wallets with chain type stellar.
-- The public wallet owner is the authenticated Privy user.
-- A deterministic external ID and SDK idempotency key prevent duplicate wallets.
-- Friendbot activates the address on Stellar Testnet.
-- Horizon returns the real testnet account and balances.
-- Privy performs raw Ed25519 signing.
-- @stellar/stellar-sdk verifies signatures and will build transaction XDR.
+- The authenticated Privy user owns the wallet.
+- A deterministic external ID and SDK idempotency key prevent duplicates.
+- Friendbot activates new addresses on Stellar Testnet.
+- Horizon returns the real account and balances.
+- The founder lab verifies raw Ed25519 signing.
+- @stellar/stellar-sdk constructs transactions and submits to the network.
 
-Stellar is a Privy Tier 2 chain. Privy provides wallet creation, address
-derivation, embedded ownership, exports and cryptographic signing. Stellar code
-is still required to build and submit chain-specific transactions.
-
-## Multichain direction
-
-A single Privy identity can own several wallets:
-
-- Stellar wallet: active now.
-- Ethereum/EVM wallet: future; can operate across Base, BNB Chain, Avalanche
-  and other EVM networks.
-- Solana wallet: future.
-
-These are separate wallet families under one user identity, not one universal
-private key. Only Stellar is enabled in the current onboarding.
+There is no application-generated password and no seed phrase shown during signup. The orchestration layer does not need the private key.
 
 ## What is real
 
-- Public Privy authentication and server token verification.
-- Automatic user-owned Stellar wallet provisioning.
-- Duplicate-resistant wallet creation.
+- Privy Google/email authentication.
+- Server-side access-token verification.
+- Automatic, duplicate-resistant Stellar wallet provisioning.
 - Stellar Testnet activation and balance lookup.
-- Founder-only signature verification proof.
+- Explorer-visible account.
+- Founder-only raw signature verification harness.
 
-## What remains
+## What is not yet real
 
-- A complete payment transaction XDR.
+- Complete payment transaction XDR.
 - Transaction-scoped user authorization.
-- Horizon submission with durable replay protection.
-- Mainnet, merchant settlement and fulfillment evidence.
-- Optional EVM or Solana wallet provisioning.
+- Horizon payment submission from the product.
+- Durable on-chain transaction receipt and replay proof.
+- Mainnet settlement, reconciliation or fulfillment evidence.
+
+An activated account with Testnet XLM proves wallet provisioning. It does not prove the agent completed a payment.
 
 ## Environment
 
-    NEXT_PUBLIC_PRIVY_APP_ID=your-app-id
-    PRIVY_APP_ID=your-app-id
-    PRIVY_APP_SECRET=your-app-secret
+~~~dotenv
+NEXT_PUBLIC_PRIVY_APP_ID=your-app-id
+PRIVY_APP_ID=your-app-id
+PRIVY_APP_SECRET=your-app-secret
+NEXT_PUBLIC_PRIVY_CLIENT_ID=optional-client-id
+~~~
 
-Never expose PRIVY_APP_SECRET to a Client Component, logs or source control.
+NEXT_PUBLIC_PRIVY_APP_ID and PRIVY_APP_ID normally refer to the same application. PRIVY_APP_SECRET must never reach a Client Component, log, screenshot or commit.
 
-## Next proof
+## Multichain direction
 
-Build one Stellar Testnet payment XDR, freeze amount and destination in a
-commerce intent, request explicit approval, sign through Privy, submit once to
-Horizon and persist the transaction hash as the receipt. Repeating the same
-idempotency key must return the original receipt.
+| Wallet family | Networks | Status |
+| --- | --- | --- |
+| Stellar | Stellar Testnet, later mainnet | Active now |
+| Ethereum/EVM | Base, BNB Chain, Avalanche and other EVM networks | Disabled, future |
+| Solana/SVM | Solana and SVM networks | Disabled, future |
+
+This is one identity with multiple wallets, not one universal address or key. The YC MVP intentionally creates only the Stellar wallet.
+
+## Next payment proof
+
+1. Create an intent containing destination, XLM amount, network and expiry.
+2. Apply spend policy.
+3. Build the Stellar Testnet transaction XDR.
+4. Show the exact transaction and request scoped approval.
+5. Sign through the user Privy wallet.
+6. Submit once to Horizon.
+7. Persist the transaction hash and ledger result.
+8. On retry, return the stored receipt without signing or submitting again.
+
+Mainnet remains disabled until this flow has deterministic tests, observable failures and a documented recovery path.
