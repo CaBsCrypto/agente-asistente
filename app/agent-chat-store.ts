@@ -11,6 +11,13 @@ import {
 import { buildAgentReply, findRequestedConnection } from "@/app/agent-chat-logic";
 import { getStellarTestnetAccount } from "@/app/privy-stellar";
 import { searchNotion } from "@/app/connectors/notion-mcp";
+import {
+  addToMarketWatchlist,
+  extractMarketSymbol,
+  formatMarketQuote,
+  getCoinMarketCapQuote,
+  listMarketWatchlist,
+} from "@/app/connectors/coinmarketcap";
 
 export type StoredAgentMessage = {
   id: string;
@@ -162,8 +169,35 @@ export async function sendAgentMessage(userId: string, content: string) {
   const connectedProviders = activeConnections.map((item) => item.provider);
   const normalizedContent = content
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+  const marketSymbol = extractMarketSymbol(content);
+  const requestsWatchlistAdd =
+    Boolean(marketSymbol) &&
+    ["add", "agrega", "agregar", "suma", "follow", "seguir"].some((term) =>
+      normalizedContent.includes(term),
+    ) &&
+    (normalizedContent.includes("watchlist") ||
+      normalizedContent.includes("lista"));
+  const requestsWatchlist =
+    (normalizedContent.includes("watchlist") ||
+      normalizedContent.includes("lista de seguimiento")) &&
+    ["show", "list", "muestra", "mostrar", "ver"].some((term) =>
+      normalizedContent.includes(term),
+    );
+  const requestsMarketQuote =
+    Boolean(marketSymbol) &&
+    [
+      "price",
+      "precio",
+      "quote",
+      "cotiza",
+      "market cap",
+      "coinmarketcap",
+      "coin market cap",
+      "cmc",
+    ].some((term) => normalizedContent.includes(term));
+
   const requestsNotionSearch =
     connectedProviders.includes("notion") &&
     (normalizedContent.includes("notion") ||
@@ -231,6 +265,164 @@ export async function sendAgentMessage(userId: string, content: string) {
                 message: "Search my Notion workspace for pending project tasks",
               },
             ],
+      };
+    }
+  } else if (requestsWatchlistAdd && marketSymbol) {
+    try {
+      const quote = await getCoinMarketCapQuote(marketSymbol);
+      await addToMarketWatchlist(userId, quote.symbol);
+      reply = {
+        content: [
+          quote.symbol + " is now on your persistent CoinMarketCap watchlist.",
+          formatMarketQuote(quote),
+        ].join("\n\n"),
+        connection: {
+          name: "CoinMarketCap Agent Hub",
+          stage: "Read-only connected" as const,
+          priority: "P0" as const,
+        },
+        actions: [
+          { label: "Show watchlist", message: "Show my crypto watchlist" },
+          {
+            label: "Check another asset",
+            message: "What is the current BTC price on CoinMarketCap?",
+          },
+        ],
+      };
+    } catch {
+      reply = {
+        content:
+          "CoinMarketCap could not validate that asset, so I did not add anything to your watchlist.",
+        connection: {
+          name: "CoinMarketCap Agent Hub",
+          stage: "Read-only connected" as const,
+          priority: "P0" as const,
+        },
+        actions: [
+          {
+            label: "Try XLM",
+            message: "Add XLM to my CoinMarketCap watchlist",
+          },
+        ],
+      };
+    }
+  } else if (requestsWatchlist) {
+    const watchlist = await listMarketWatchlist(userId);
+    if (!watchlist.length) {
+      reply = {
+        content:
+          "Your CoinMarketCap watchlist is empty. Add an asset to begin tracking real market data.",
+        connection: {
+          name: "CoinMarketCap Agent Hub",
+          stage: "Read-only connected" as const,
+          priority: "P0" as const,
+        },
+        actions: [
+          {
+            label: "Add XLM",
+            message: "Add XLM to my CoinMarketCap watchlist",
+          },
+          {
+            label: "Add BTC",
+            message: "Add BTC to my CoinMarketCap watchlist",
+          },
+        ],
+      };
+    } else {
+      const results = await Promise.allSettled(
+        watchlist.slice(0, 8).map((item) =>
+          getCoinMarketCapQuote(item.symbol),
+        ),
+      );
+      const rows = results
+        .filter(
+          (result): result is PromiseFulfilledResult<
+            Awaited<ReturnType<typeof getCoinMarketCapQuote>>
+          > => result.status === "fulfilled",
+        )
+        .map((result) => {
+          const quote = result.value;
+          const change =
+            quote.change24h === null
+              ? "n/a"
+              : (quote.change24h >= 0 ? "+" : "") +
+                quote.change24h.toFixed(2) +
+                "%";
+          return (
+            "**" +
+            quote.symbol +
+            "** $" +
+            quote.price.toLocaleString("en-US", {
+              maximumFractionDigits: quote.price < 1 ? 6 : 2,
+            }) +
+            " | 24h " +
+            change
+          );
+        });
+      reply = {
+        content: [
+          "**Your CoinMarketCap watchlist**",
+          rows.join("\n") || "Live quotes are temporarily unavailable.",
+          "Read-only market data. No trading action was performed.",
+        ].join("\n\n"),
+        connection: {
+          name: "CoinMarketCap Agent Hub",
+          stage: "Read-only connected" as const,
+          priority: "P0" as const,
+        },
+        actions: [
+          {
+            label: "Add another asset",
+            message: "Add ETH to my CoinMarketCap watchlist",
+          },
+          {
+            label: "Refresh",
+            message: "Show my crypto watchlist",
+          },
+        ],
+      };
+    }
+  } else if (requestsMarketQuote && marketSymbol) {
+    try {
+      const quote = await getCoinMarketCapQuote(marketSymbol);
+      reply = {
+        content: formatMarketQuote(quote),
+        connection: {
+          name: "CoinMarketCap Agent Hub",
+          stage: "Read-only connected" as const,
+          priority: "P0" as const,
+        },
+        actions: [
+          {
+            label: "Add to watchlist",
+            message:
+              "Add " + quote.symbol + " to my CoinMarketCap watchlist",
+          },
+          {
+            label: "Check BTC",
+            message: "What is the current BTC price on CoinMarketCap?",
+          },
+        ],
+      };
+    } catch (error) {
+      const code =
+        error instanceof Error ? error.message : "cmc_request_failed";
+      reply = {
+        content:
+          code === "cmc_rate_limited"
+            ? "CoinMarketCap's keyless trial is temporarily rate-limited. No cached price was presented as live."
+            : "CoinMarketCap could not return a verified quote for that asset.",
+        connection: {
+          name: "CoinMarketCap Agent Hub",
+          stage: "Read-only connected" as const,
+          priority: "P0" as const,
+        },
+        actions: [
+          {
+            label: "Retry XLM",
+            message: "What is the current XLM price on CoinMarketCap?",
+          },
+        ],
       };
     }
   } else {

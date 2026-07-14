@@ -345,17 +345,18 @@ export default function AgentChat({
         >
           Verify wallet on-chain
         </a>
-        {connections.length > 0 && (
-          <div className="agent-connected-apps">
-            <strong>CONNECTED APPS</strong>
-            {connections.map((connection) => (
-              <span key={connection.provider}>
-                {connection.provider === "notion" ? "Notion" : connection.provider}
-                <i>{connection.status}</i>
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="agent-connected-apps">
+          <strong>LIVE CAPABILITIES</strong>
+          <span>
+            CoinMarketCap <i>read only</i>
+          </span>
+          {connections.map((connection) => (
+            <span key={connection.provider}>
+              {connection.provider === "notion" ? "Notion" : connection.provider}
+              <i>{connection.status}</i>
+            </span>
+          ))}
+        </div>
         <section>
           <strong>PERSONAL HELP</strong>
           <button
@@ -379,11 +380,23 @@ export default function AgentChat({
               ? "Search Notion"
               : "Connect Notion"}
           </button>
-          <button onClick={() => void sendMessage("Connect me to Trello")}>Trello</button>
-          <button onClick={() => void sendMessage("Connect me to Google Calendar")}>Calendar</button>
-          <button onClick={() => void sendMessage("Connect me to Google Drive")}>Drive</button>
-          <button onClick={() => void sendMessage("Connect me to Gmail")}>Gmail</button>
+          <button
+            onClick={() =>
+              void sendMessage(
+                "What is the current XLM price on CoinMarketCap?",
+              )
+            }
+          >
+            XLM price
+          </button>
+          <button
+            onClick={() => void sendMessage("Show my crypto watchlist")}
+          >
+            Watchlist
+          </button>
           <button onClick={() => void sendMessage("Connect me to DeFindex")}>DeFindex</button>
+          <button onClick={() => void sendMessage("Connect me to Travala")}>Travala</button>
+          <button onClick={() => void sendMessage("What can I connect to?")}>Connections</button>
         </section>
       </aside>
     </section>

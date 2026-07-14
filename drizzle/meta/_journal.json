@@ -43,6 +43,13 @@
       "when": 1784010177915,
       "tag": "0005_exotic_vector",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784014309458,
+      "tag": "0006_wandering_red_wolf",
+      "breakpoints": true
     }
   ]
 }

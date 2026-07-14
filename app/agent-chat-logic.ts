@@ -110,12 +110,23 @@ function connectionReply(
               message: "Search my Notion workspace for pending project tasks",
             },
           ]
-        : [
-            {
-              label: "Prepare " + connection.name + " plan",
-              message: "Prepare the safest first test for " + connection.name,
-            },
-          ]),
+        : connection.name === "CoinMarketCap Agent Hub"
+          ? [
+              {
+                label: "Check XLM price",
+                message: "What is the current XLM price on CoinMarketCap?",
+              },
+              {
+                label: "Show watchlist",
+                message: "Show my crypto watchlist",
+              },
+            ]
+          : [
+              {
+                label: "Prepare " + connection.name + " plan",
+                message: "Prepare the safest first test for " + connection.name,
+              },
+            ]),
       {
         label: "What is missing?",
         message:
