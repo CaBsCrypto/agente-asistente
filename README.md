@@ -249,6 +249,8 @@ For YC, the strongest claim is: **a user can create a permissioned agent, receiv
 
 Start at the [documentation index](docs/README.md).
 
+- [Architecture and flows](docs/architecture.md)
+- [Developer guide](docs/developer-guide.md)
 - [Product status](docs/product-status.md)
 - [90-second demo](docs/live-demo.md)
 - [MCP integration](docs/mcp-integration.md)

@@ -13,9 +13,11 @@ This directory is the source of truth for operating, demonstrating and extending
 
 ### Developers and integrations
 
-1. Read the [MCP integration guide](mcp-integration.md).
-2. Read the [Privy + Stellar architecture](privy-stellar-testnet.md).
-3. Send the [new product integration prompt](NEW_PRODUCT_INTEGRATION_AGENT_PROMPT.md) to an implementation agent or partner engineer.
+1. Read the [developer guide](developer-guide.md).
+2. Review the [architecture diagrams](architecture.md).
+3. Read the [MCP integration guide](mcp-integration.md).
+4. Read the [Privy + Stellar architecture](privy-stellar-testnet.md).
+5. Send the [new product integration prompt](NEW_PRODUCT_INTEGRATION_AGENT_PROMPT.md) to an implementation agent or partner engineer.
 
 ### Founder operations
 
