@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AgentOnboarding from "./agent-onboarding";
+import { LanguageControl } from "../language-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,8 @@ export default function AgentPage() {
         </Link>
         <div>
           <span>PRIVY + STELLAR</span>
-          <Link href="/demo">Action console</Link>
+          <LanguageControl compact />
+          <Link href="/demo">Demo</Link>
         </div>
       </nav>
       <AgentOnboarding configured={configured} />

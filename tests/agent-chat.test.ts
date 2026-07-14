@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildAgentReply,
+  detectAgentLanguage,
   findRequestedConnection,
 } from "../app/agent-chat-logic";
 
@@ -78,4 +79,35 @@ test("offers concrete starting points for an ambiguous request", () => {
   const reply = buildAgentReply("I want my agent to do something useful");
   assert.ok(reply.actions.some((action) => action.message?.includes("DeFindex")));
   assert.ok(reply.actions.some((action) => action.message?.includes("Travala")));
+});
+test("supports Portuguese connection commands and replies", () => {
+  assert.equal(detectAgentLanguage("Quero conectar minha carteira"), "pt");
+  assert.equal(findRequestedConnection("Conecte-me ao Notion")?.name, "Notion MCP");
+  assert.equal(findRequestedConnection("Pesquise uma viagem na Travala")?.name, "Travala Travel MCP");
+
+  const reply = buildAgentReply("Mostre o saldo da minha carteira", {
+    wallet: {
+      address: "GBCTAHK3J56T4F2CSU3MQYQUMFO5ZS4IE3ZJGHOKFOYAAEN4ZAKAY5RZ",
+      balance: "10000.0000000",
+      network: "Stellar Testnet",
+    },
+  });
+
+  assert.match(reply.content, /Sua wallet ativa/);
+  assert.match(reply.content, /autorização explícita/);
+  assert.ok(reply.actions.some((action) => action.label === "Explorar DeFindex"));
+});
+
+test("keeps financial fields canonical in Portuguese Testnet guidance", () => {
+  const reply = buildAgentReply("Inicie meu teste na Testnet", {
+    wallet: {
+      address: "GBCTAHK3J56T4F2CSU3MQYQUMFO5ZS4IE3ZJGHOKFOYAAEN4ZAKAY5RZ",
+      balance: "10.0000000",
+      network: "Stellar Testnet",
+    },
+  });
+
+  assert.match(reply.content, /1 XLM/);
+  assert.match(reply.content, /USDC/);
+  assert.match(reply.content, /Mainnet está desativada/);
 });

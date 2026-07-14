@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLocale } from "../language-toggle";
 
+const chatUi = {
+  en: { agent: "Your agent", controlled: "Stellar Testnet · policy-controlled", memory: "NEON MEMORY ON", loading: "Loading your conversation...", thinking: "Checking capabilities and safety boundaries", placeholder: "Ask your agent to search Notion, check a connection or prepare an action...", send: "Send", boundary: "The agent can prepare actions. Payments and irreversible operations always require scoped authorization.", context: "LIVE CONTEXT", contextTitle: "Ready to act, within your rules.", identity: "Identity", balance: "Balance", network: "Network", verify: "Verify wallet on-chain", capabilities: "LIVE CAPABILITIES", readOnly: "read only", help: "PERSONAL HELP", notionConnect: "Connect Notion", notionSearch: "Search Notion", firstSearch: "Run first search", price: "XLM price", watchlist: "Watchlist", proof: "Testnet proof", connections: "Connections", notionConnectPrompt: "Connect me to Notion", notionSearchPrompt: "Search my Notion workspace for pending project tasks", pricePrompt: "What is the current XLM price on CoinMarketCap?", watchlistPrompt: "Show my crypto watchlist", proofPrompt: "Start my DeFindex Testnet proof", travalaPrompt: "Connect me to Travala", connectionsPrompt: "What can I connect to?" },
+  es: { agent: "Tu agente", controlled: "Stellar Testnet · controlado por políticas", memory: "MEMORIA NEON ACTIVA", loading: "Cargando tu conversación...", thinking: "Revisando capacidades y límites de seguridad", placeholder: "Pide a tu agente buscar en Notion, revisar una conexión o preparar una acción...", send: "Enviar", boundary: "El agente puede preparar acciones. Pagos y operaciones irreversibles siempre requieren autorización específica.", context: "CONTEXTO EN VIVO", contextTitle: "Listo para actuar dentro de tus reglas.", identity: "Identidad", balance: "Saldo", network: "Red", verify: "Verificar wallet on-chain", capabilities: "CAPACIDADES ACTIVAS", readOnly: "solo lectura", help: "AYUDA PERSONAL", notionConnect: "Conectar Notion", notionSearch: "Buscar en Notion", firstSearch: "Primera búsqueda", price: "Precio XLM", watchlist: "Watchlist", proof: "Prueba Testnet", connections: "Conexiones", notionConnectPrompt: "Conéctame con Notion", notionSearchPrompt: "Busca en mi Notion las tareas pendientes", pricePrompt: "¿Cuál es el precio actual de XLM en CoinMarketCap?", watchlistPrompt: "Muéstrame mi watchlist de criptomonedas", proofPrompt: "Inicia mi prueba DeFindex en Testnet", travalaPrompt: "Conéctame con Travala", connectionsPrompt: "¿Qué puedo conectar?" },
+  pt: { agent: "Seu agente", controlled: "Stellar Testnet · controlado por políticas", memory: "MEMÓRIA NEON ATIVA", loading: "Carregando sua conversa...", thinking: "Verificando capacidades e limites de segurança", placeholder: "Peça ao agente para pesquisar no Notion, verificar uma conexão ou preparar uma ação...", send: "Enviar", boundary: "O agente pode preparar ações. Pagamentos e operações irreversíveis sempre exigem autorização específica.", context: "CONTEXTO AO VIVO", contextTitle: "Pronto para agir dentro das suas regras.", identity: "Identidade", balance: "Saldo", network: "Rede", verify: "Verificar wallet on-chain", capabilities: "CAPACIDADES ATIVAS", readOnly: "somente leitura", help: "AJUDA PESSOAL", notionConnect: "Conectar Notion", notionSearch: "Pesquisar no Notion", firstSearch: "Primeira pesquisa", price: "Preço do XLM", watchlist: "Watchlist", proof: "Prova Testnet", connections: "Conexões", notionConnectPrompt: "Conecte-me ao Notion", notionSearchPrompt: "Pesquise no meu Notion as tarefas pendentes", pricePrompt: "Qual é o preço atual do XLM no CoinMarketCap?", watchlistPrompt: "Mostre minha watchlist de criptomoedas", proofPrompt: "Inicie minha prova DeFindex na Testnet", travalaPrompt: "Conecte-me à Travala", connectionsPrompt: "O que posso conectar?" },
+};
 type ChatAction = {
   label: string;
   message?: string;
@@ -85,6 +91,8 @@ export default function AgentChat({
   walletBalance: string;
   getAccessToken: () => Promise<string | null>;
 }) {
+  const { locale } = useLocale();
+  const ui = chatUi[locale];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "sending" | "error">(
     "loading",
@@ -335,11 +343,11 @@ export default function AgentChat({
           <div>
             <span className="agent-online-dot" />
             <div>
-              <strong>Your agent</strong>
-              <small>Stellar Testnet · policy-controlled</small>
+              <strong>{ui.agent}</strong>
+              <small>{ui.controlled}</small>
             </div>
           </div>
-          <span className="agent-chat-memory">NEON MEMORY ON</span>
+          <span className="agent-chat-memory">{ui.memory}</span>
         </header>
 
         {connectionNotice && (
@@ -354,11 +362,11 @@ export default function AgentChat({
                 type="button"
                 onClick={() =>
                   void sendMessage(
-                    "Search my Notion workspace for pending project tasks",
+                    ui.notionSearchPrompt,
                   )
                 }
               >
-                Run first search
+                {ui.firstSearch}
               </button>
             )}
           </div>
@@ -368,7 +376,7 @@ export default function AgentChat({
           {status === "loading" && (
             <div className="agent-chat-loading">
               <i />
-              <span>Loading your conversation...</span>
+              <span>{ui.loading}</span>
             </div>
           )}
 
@@ -430,7 +438,7 @@ export default function AgentChat({
           {status === "sending" && (
             <div className="agent-chat-typing">
               <i /><i /><i />
-              <span>Checking capabilities and safety boundaries</span>
+              <span>{ui.thinking}</span>
             </div>
           )}
           <div ref={endRef} />
@@ -505,7 +513,7 @@ export default function AgentChat({
                 <h4>{defindexApproval.preview.title}</h4>
                 <p>{defindexApproval.preview.description}</p>
                 <dl>
-                  <div><dt>Network</dt><dd>{defindexApproval.preview.network}</dd></div>
+                  <div><dt>{ui.network}</dt><dd>{defindexApproval.preview.network}</dd></div>
                   <div><dt>Asset</dt><dd>{defindexApproval.preview.asset}</dd></div>
                   <div><dt>Amount</dt><dd>{defindexApproval.preview.amount}</dd></div>
                   <div><dt>Destination</dt><dd>{defindexApproval.preview.destination}</dd></div>
@@ -537,39 +545,39 @@ export default function AgentChat({
                 if (draft.trim()) void sendMessage(draft);
               }
             }}
-            placeholder="Ask your agent to search Notion, check a connection or prepare an action..."
+            placeholder={ui.placeholder}
             rows={2}
             maxLength={2000}
           />
-          <button disabled={!draft.trim() || status === "sending"}>Send</button>
+          <button disabled={!draft.trim() || status === "sending"}>{ui.send}</button>
         </form>
         <small className="agent-chat-boundary">
-          The agent can prepare actions. Payments and irreversible operations always require scoped authorization.
+          {ui.boundary}
         </small>
       </div>
 
       <aside className="agent-chat-context">
         <div>
-          <p className="eyebrow">LIVE CONTEXT</p>
-          <h2>Ready to act, within your rules.</h2>
+          <p className="eyebrow">{ui.context}</p>
+          <h2>{ui.contextTitle}</h2>
         </div>
         <dl>
-          <div><dt>Identity</dt><dd>{email}</dd></div>
+          <div><dt>{ui.identity}</dt><dd>{email}</dd></div>
           <div><dt>Wallet</dt><dd>{walletAddress.slice(0, 8) + "..." + walletAddress.slice(-6)}</dd></div>
-          <div><dt>Balance</dt><dd>{walletBalance} XLM</dd></div>
-          <div><dt>Network</dt><dd>Stellar Testnet</dd></div>
+          <div><dt>{ui.balance}</dt><dd>{walletBalance} XLM</dd></div>
+          <div><dt>{ui.network}</dt><dd>Stellar Testnet</dd></div>
         </dl>
         <a
           href={"https://stellar.expert/explorer/testnet/account/" + walletAddress}
           target="_blank"
           rel="noreferrer"
         >
-          Verify wallet on-chain
+          {ui.verify}
         </a>
         <div className="agent-connected-apps">
-          <strong>LIVE CAPABILITIES</strong>
+          <strong>{ui.capabilities}</strong>
           <span>
-            CoinMarketCap <i>read only</i>
+            CoinMarketCap <i>{ui.readOnly}</i>
           </span>
           {connections.map((connection) => (
             <span key={connection.provider}>
@@ -579,7 +587,7 @@ export default function AgentChat({
           ))}
         </div>
         <section>
-          <strong>PERSONAL HELP</strong>
+          <strong>{ui.help}</strong>
           <button
             onClick={() =>
               void sendMessage(
@@ -588,8 +596,8 @@ export default function AgentChat({
                     connection.provider === "notion" &&
                     connection.status === "active",
                 )
-                  ? "Search my Notion workspace for pending project tasks"
-                  : "Connect me to Notion",
+                  ? ui.notionSearchPrompt
+                  : ui.notionConnectPrompt,
               )
             }
           >
@@ -598,26 +606,26 @@ export default function AgentChat({
                 connection.provider === "notion" &&
                 connection.status === "active",
             )
-              ? "Search Notion"
-              : "Connect Notion"}
+              ? ui.notionSearch
+              : ui.notionConnect}
           </button>
           <button
             onClick={() =>
               void sendMessage(
-                "What is the current XLM price on CoinMarketCap?",
+                ui.pricePrompt,
               )
             }
           >
-            XLM price
+            {ui.price}
           </button>
           <button
-            onClick={() => void sendMessage("Show my crypto watchlist")}
+            onClick={() => void sendMessage(ui.watchlistPrompt)}
           >
-            Watchlist
+            {ui.watchlist}
           </button>
-          <button onClick={() => void sendMessage("Start my DeFindex Testnet proof")}>Testnet proof</button>
-          <button onClick={() => void sendMessage("Connect me to Travala")}>Travala</button>
-          <button onClick={() => void sendMessage("What can I connect to?")}>Connections</button>
+          <button onClick={() => void sendMessage(ui.proofPrompt)}>{ui.proof}</button>
+          <button onClick={() => void sendMessage(ui.travalaPrompt)}>Travala</button>
+          <button onClick={() => void sendMessage(ui.connectionsPrompt)}>{ui.connections}</button>
         </section>
       </aside>
     </section>

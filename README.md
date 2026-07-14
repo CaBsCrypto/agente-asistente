@@ -24,6 +24,7 @@ Status meanings are shared across all project documentation:
 | Capability | Status | Current proof |
 | --- | --- | --- |
 | Google/email login | Live | Privy authentication on /agent |
+| EN/ES/PT experience | Live | Persistent locale on landing, login and public portals; multilingual core agent commands | Expand all technical evidence and partner copy |
 | Automatic Stellar wallet | Live | One user-owned wallet, activated on Stellar Testnet |
 | Wallet balance and explorer link | Live | Horizon account lookup |
 | Persistent chat and user state | Live | Neon Postgres |

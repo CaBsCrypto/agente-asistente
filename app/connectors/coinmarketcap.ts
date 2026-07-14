@@ -181,13 +181,22 @@ export async function listMarketWatchlist(userId: string) {
     .limit(20);
 }
 
-export function formatMarketQuote(quote: MarketQuote) {
-  const money = new Intl.NumberFormat("en-US", {
+export function formatMarketQuote(
+  quote: MarketQuote,
+  language: "en" | "es" | "pt" = "en",
+) {
+  const locale = language === "pt" ? "pt-BR" : language === "es" ? "es-CL" : "en-US";
+  const labels = {
+    en: { price: "Price", marketCap: "Market cap", volume: "24h volume", rank: "CMC rank", updated: "Updated", source: "Source", access: "read-only" },
+    es: { price: "Precio", marketCap: "Capitalización", volume: "Volumen 24h", rank: "Ranking CMC", updated: "Actualizado", source: "Fuente", access: "solo lectura" },
+    pt: { price: "Preço", marketCap: "Capitalização", volume: "Volume 24h", rank: "Ranking CMC", updated: "Atualizado", source: "Fonte", access: "somente leitura" },
+  }[language];
+  const money = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: quote.price < 1 ? 6 : 2,
   });
-  const compact = new Intl.NumberFormat("en-US", {
+  const compact = new Intl.NumberFormat(locale, {
     notation: "compact",
     maximumFractionDigits: 2,
   });
@@ -196,14 +205,14 @@ export function formatMarketQuote(quote: MarketQuote) {
 
   return [
     "**" + quote.name + " (" + quote.symbol + ")**",
-    "Price: **" + money.format(quote.price) + "**",
+    labels.price + ": **" + money.format(quote.price) + "**",
     "24h: " + percent(quote.change24h) + " · 7d: " + percent(quote.change7d),
-    "Market cap: " +
+    labels.marketCap + ": " +
       (quote.marketCap === null ? "n/a" : "$" + compact.format(quote.marketCap)) +
-      " · 24h volume: " +
+      " · " + labels.volume + ": " +
       (quote.volume24h === null ? "n/a" : "$" + compact.format(quote.volume24h)),
-    "CMC rank: " + (quote.rank ?? "n/a"),
-    "Updated: " + quote.updatedAt,
-    "Source: CoinMarketCap Trial Pro API (read-only)",
+    labels.rank + ": " + (quote.rank ?? "n/a"),
+    labels.updated + ": " + quote.updatedAt,
+    labels.source + ": CoinMarketCap Trial Pro API (" + labels.access + ")",
   ].join("\n\n");
 }

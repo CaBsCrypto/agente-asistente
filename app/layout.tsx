@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://agente-asistente.vercel.app"),
   title: "agent-assistant | Agents act. You stay in control.",
   description:
-    "A bilingual, non-custodial action and commerce layer for people, AI agents, developers and businesses.",
+    "A trilingual, non-custodial action and commerce layer for people, AI agents, developers and businesses.",
   openGraph: {
     title: "agent-assistant | Agents act. You stay in control.",
     description:

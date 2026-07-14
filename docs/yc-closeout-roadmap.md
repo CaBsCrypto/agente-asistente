@@ -19,7 +19,7 @@ Until the application and recording are complete:
 
 Completed or available now:
 
-- Bilingual landing and developer portal.
+- Trilingual EN/ES/PT landing and developer portal.
 - Privy login and automatic Stellar wallet.
 - Live external read-only connections.
 - Public and provider-facing MCP foundations.

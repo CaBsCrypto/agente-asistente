@@ -8,7 +8,7 @@ import {
   agentMessages,
   agentWallets,
 } from "@/db/schema";
-import { buildAgentReply, findRequestedConnection } from "@/app/agent-chat-logic";
+import { buildAgentReply, detectAgentLanguage, findRequestedConnection } from "@/app/agent-chat-logic";
 import { getStellarTestnetAccount } from "@/app/privy-stellar";
 import { searchNotion } from "@/app/connectors/notion-mcp";
 import {
@@ -169,11 +169,14 @@ export async function sendAgentMessage(userId: string, content: string) {
   const normalizedContent = content
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+    .toLowerCase();  const language = detectAgentLanguage(content);
+  const local = (english: string, portuguese: string) =>
+    language === "pt" ? portuguese : english;
+
   const marketSymbol = extractMarketSymbol(content);
   const requestsWatchlistAdd =
     Boolean(marketSymbol) &&
-    ["add", "agrega", "agregar", "suma", "follow", "seguir"].some((term) =>
+    ["add", "agrega", "agregar", "suma", "follow", "seguir", "adicione", "adicionar", "coloque", "acompanhar"].some((term) =>
       normalizedContent.includes(term),
     ) &&
     (normalizedContent.includes("watchlist") ||
@@ -181,7 +184,7 @@ export async function sendAgentMessage(userId: string, content: string) {
   const requestsWatchlist =
     (normalizedContent.includes("watchlist") ||
       normalizedContent.includes("lista de seguimiento")) &&
-    ["show", "list", "muestra", "mostrar", "ver"].some((term) =>
+    ["show", "list", "muestra", "mostrar", "ver", "mostre", "listar"].some((term) =>
       normalizedContent.includes(term),
     );
   const requestsMarketQuote =
@@ -189,6 +192,8 @@ export async function sendAgentMessage(userId: string, content: string) {
     [
       "price",
       "precio",
+      "preco",
+      "cotacao",
       "quote",
       "cotiza",
       "market cap",
@@ -208,7 +213,11 @@ export async function sendAgentMessage(userId: string, content: string) {
       "busca",
       "buscar",
       "encuentra",
+      "pesquise",
+      "procure",
+      "encontre",
       "tarea",
+      "tarefas",
       "task",
       "pendiente",
       "document",
@@ -222,7 +231,7 @@ export async function sendAgentMessage(userId: string, content: string) {
       const result = await searchNotion(userId, content);
       reply = {
         content: [
-          "I searched your connected Notion workspace using **" +
+          local("I searched your connected Notion workspace using **", "Pesquisei seu workspace conectado do Notion usando **") +
             result.tool +
             "**.",
           result.text,
@@ -234,10 +243,10 @@ export async function sendAgentMessage(userId: string, content: string) {
         },
         actions: [
           {
-            label: "Search again",
-            message: "Search my Notion workspace for pending project tasks",
+            label: local("Search again", "Pesquisar novamente"),
+            message: language === "pt" ? "Pesquise no meu Notion as tarefas pendentes" : "Search my Notion workspace for pending project tasks",
           },
-          { label: "Open Notion", href: "https://www.notion.so/" },
+          { label: local("Open Notion", "Abrir Notion"), href: "https://www.notion.so/" },
         ],
       };
     } catch (error) {
@@ -249,19 +258,19 @@ export async function sendAgentMessage(userId: string, content: string) {
         code === "notion_reauth_required" || code === "notion_not_connected";
       reply = {
         content: reconnect
-          ? "Your Notion authorization must be renewed before I can search the workspace."
-          : "I reached your Notion connection, but the first search did not complete. Nothing was changed. You can retry safely.",
+          ? local("Your Notion authorization must be renewed before I can search the workspace.", "Sua autorização do Notion precisa ser renovada antes da pesquisa.")
+          : local("I reached your Notion connection, but the first search did not complete. Nothing was changed. You can retry safely.", "A conexão com o Notion respondeu, mas a pesquisa não terminou. Nada foi alterado e você pode tentar novamente com segurança."),
         connection: {
           name: "Notion MCP",
           stage: reconnect ? ("Credentials needed" as const) : ("Connected" as const),
           priority: "P0" as const,
         },
         actions: reconnect
-          ? [{ label: "Reconnect Notion", connect: "notion" }]
+          ? [{ label: local("Reconnect Notion", "Reconectar Notion"), connect: "notion" }]
           : [
               {
-                label: "Retry Notion search",
-                message: "Search my Notion workspace for pending project tasks",
+                label: local("Retry Notion search", "Tentar pesquisa no Notion"),
+                message: language === "pt" ? "Pesquise no meu Notion as tarefas pendentes" : "Search my Notion workspace for pending project tasks",
               },
             ],
       };
@@ -272,8 +281,8 @@ export async function sendAgentMessage(userId: string, content: string) {
       await addToMarketWatchlist(userId, quote.symbol);
       reply = {
         content: [
-          quote.symbol + " is now on your persistent CoinMarketCap watchlist.",
-          formatMarketQuote(quote),
+          quote.symbol + local(" is now on your persistent CoinMarketCap watchlist.", " agora está na sua watchlist persistente do CoinMarketCap."),
+          formatMarketQuote(quote, language),
         ].join("\n\n"),
         connection: {
           name: "CoinMarketCap Agent Hub",
@@ -281,17 +290,17 @@ export async function sendAgentMessage(userId: string, content: string) {
           priority: "P0" as const,
         },
         actions: [
-          { label: "Show watchlist", message: "Show my crypto watchlist" },
+          { label: local("Show watchlist", "Mostrar watchlist"), message: language === "pt" ? "Mostre minha watchlist de criptomoedas" : "Show my crypto watchlist" },
           {
-            label: "Check another asset",
-            message: "What is the current BTC price on CoinMarketCap?",
+            label: local("Check another asset", "Ver outro ativo"),
+            message: language === "pt" ? "Qual é o preço atual do BTC no CoinMarketCap?" : "What is the current BTC price on CoinMarketCap?",
           },
         ],
       };
     } catch {
       reply = {
         content:
-          "CoinMarketCap could not validate that asset, so I did not add anything to your watchlist.",
+          local("CoinMarketCap could not validate that asset, so I did not add anything to your watchlist.", "O CoinMarketCap não conseguiu validar esse ativo, então nada foi adicionado à sua watchlist."),
         connection: {
           name: "CoinMarketCap Agent Hub",
           stage: "Read-only connected" as const,
@@ -299,8 +308,8 @@ export async function sendAgentMessage(userId: string, content: string) {
         },
         actions: [
           {
-            label: "Try XLM",
-            message: "Add XLM to my CoinMarketCap watchlist",
+            label: local("Try XLM", "Tentar XLM"),
+            message: language === "pt" ? "Adicione XLM à minha watchlist do CoinMarketCap" : "Add XLM to my CoinMarketCap watchlist",
           },
         ],
       };
@@ -310,7 +319,7 @@ export async function sendAgentMessage(userId: string, content: string) {
     if (!watchlist.length) {
       reply = {
         content:
-          "Your CoinMarketCap watchlist is empty. Add an asset to begin tracking real market data.",
+          local("Your CoinMarketCap watchlist is empty. Add an asset to begin tracking real market data.", "Sua watchlist do CoinMarketCap está vazia. Adicione um ativo para acompanhar dados reais de mercado."),
         connection: {
           name: "CoinMarketCap Agent Hub",
           stage: "Read-only connected" as const,
@@ -318,12 +327,12 @@ export async function sendAgentMessage(userId: string, content: string) {
         },
         actions: [
           {
-            label: "Add XLM",
-            message: "Add XLM to my CoinMarketCap watchlist",
+            label: local("Add XLM", "Adicionar XLM"),
+            message: language === "pt" ? "Adicione XLM à minha watchlist do CoinMarketCap" : "Add XLM to my CoinMarketCap watchlist",
           },
           {
-            label: "Add BTC",
-            message: "Add BTC to my CoinMarketCap watchlist",
+            label: local("Add BTC", "Adicionar BTC"),
+            message: language === "pt" ? "Adicione BTC à minha watchlist do CoinMarketCap" : "Add BTC to my CoinMarketCap watchlist",
           },
         ],
       };
@@ -360,9 +369,9 @@ export async function sendAgentMessage(userId: string, content: string) {
         });
       reply = {
         content: [
-          "**Your CoinMarketCap watchlist**",
-          rows.join("\n") || "Live quotes are temporarily unavailable.",
-          "Read-only market data. No trading action was performed.",
+          local("**Your CoinMarketCap watchlist**", "**Sua watchlist do CoinMarketCap**"),
+          rows.join("\n") || local("Live quotes are temporarily unavailable.", "As cotações ao vivo estão temporariamente indisponíveis."),
+          local("Read-only market data. No trading action was performed.", "Dados de mercado somente para leitura. Nenhuma operação foi executada."),
         ].join("\n\n"),
         connection: {
           name: "CoinMarketCap Agent Hub",
@@ -371,12 +380,12 @@ export async function sendAgentMessage(userId: string, content: string) {
         },
         actions: [
           {
-            label: "Add another asset",
-            message: "Add ETH to my CoinMarketCap watchlist",
+            label: local("Add another asset", "Adicionar outro ativo"),
+            message: language === "pt" ? "Adicione ETH à minha watchlist do CoinMarketCap" : "Add ETH to my CoinMarketCap watchlist",
           },
           {
-            label: "Refresh",
-            message: "Show my crypto watchlist",
+            label: local("Refresh", "Atualizar"),
+            message: language === "pt" ? "Mostre minha watchlist de criptomoedas" : "Show my crypto watchlist",
           },
         ],
       };
@@ -385,7 +394,7 @@ export async function sendAgentMessage(userId: string, content: string) {
     try {
       const quote = await getCoinMarketCapQuote(marketSymbol);
       reply = {
-        content: formatMarketQuote(quote),
+        content: formatMarketQuote(quote, language),
         connection: {
           name: "CoinMarketCap Agent Hub",
           stage: "Read-only connected" as const,
@@ -393,13 +402,13 @@ export async function sendAgentMessage(userId: string, content: string) {
         },
         actions: [
           {
-            label: "Add to watchlist",
+            label: local("Add to watchlist", "Adicionar à watchlist"),
             message:
-              "Add " + quote.symbol + " to my CoinMarketCap watchlist",
+              language === "pt" ? "Adicione " + quote.symbol + " à minha watchlist do CoinMarketCap" : "Add " + quote.symbol + " to my CoinMarketCap watchlist",
           },
           {
-            label: "Check BTC",
-            message: "What is the current BTC price on CoinMarketCap?",
+            label: local("Check BTC", "Ver BTC"),
+            message: language === "pt" ? "Qual é o preço atual do BTC no CoinMarketCap?" : "What is the current BTC price on CoinMarketCap?",
           },
         ],
       };
@@ -409,8 +418,8 @@ export async function sendAgentMessage(userId: string, content: string) {
       reply = {
         content:
           code === "cmc_rate_limited"
-            ? "CoinMarketCap's keyless trial is temporarily rate-limited. No cached price was presented as live."
-            : "CoinMarketCap could not return a verified quote for that asset.",
+            ? local("CoinMarketCap's keyless trial is temporarily rate-limited. No cached price was presented as live.", "O trial sem chave do CoinMarketCap está temporariamente limitado. Nenhum preço em cache foi apresentado como ao vivo.")
+            : local("CoinMarketCap could not return a verified quote for that asset.", "O CoinMarketCap não conseguiu retornar uma cotação verificada para esse ativo."),
         connection: {
           name: "CoinMarketCap Agent Hub",
           stage: "Read-only connected" as const,
@@ -418,8 +427,8 @@ export async function sendAgentMessage(userId: string, content: string) {
         },
         actions: [
           {
-            label: "Retry XLM",
-            message: "What is the current XLM price on CoinMarketCap?",
+            label: local("Retry XLM", "Tentar XLM novamente"),
+            message: language === "pt" ? "Qual é o preço atual do XLM no CoinMarketCap?" : "What is the current XLM price on CoinMarketCap?",
           },
         ],
       };

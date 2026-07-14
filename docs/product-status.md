@@ -9,7 +9,8 @@ This document separates deployed proof from product vision. Status definitions l
 | Capability | Status | Evidence | Next proof |
 | --- | --- | --- | --- |
 | Privy Google/email login | Live | Production /agent authentication | Measure completed onboarding |
-| Bilingual developer portal | Live | EN/ES paths, MCP quickstart, embedded architecture and provider/onbound onboarding | Add interactive MCP playground |
+| Portuguese product entry | Live | Persistent EN/ES/PT locale, localized login and core Portuguese agent commands | Translate remaining technical evidence copy |
+| Trilingual developer portal | Live | EN/ES/PT paths, MCP quickstart, embedded architecture and provider/onbound onboarding | Add interactive MCP playground |
 | Automatic Stellar wallet | Live | Privy-owned Stellar address per user | Add recovery/support runbook |
 | Stellar Testnet activation | Live | Horizon account and explorer record | Record activation latency |
 | Wallet balance | Live | Horizon balance response | Add refresh/error telemetry |

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import LoginPanel from "./login-panel";
+import { LanguageControl } from "../language-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export default function LoginPage() {
           <b>AA</b>
           agent-assistant
         </Link>
-        <Link className="login-back" href="/">Back to home</Link>
+        <div className="lab-nav-actions"><LanguageControl compact /><Link className="login-back" href="/">Home</Link></div>
       </nav>
       <LoginPanel configured={configured} />
     </main>

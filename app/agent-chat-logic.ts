@@ -1,5 +1,7 @@
 import { connections, type Connection } from "@/app/connections/data";
 
+export type AgentLanguage = "en" | "es" | "pt";
+
 export type AgentChatAction = {
   label: string;
   message?: string;
@@ -18,234 +20,153 @@ export type AgentChatReply = {
 };
 
 export type AgentChatContext = {
-  wallet?: {
-    address: string;
-    balance: string | null;
-    network: string;
-  } | null;
+  wallet?: { address: string; balance: string | null; network: string } | null;
   connectedProviders?: string[];
 };
 
 function normalized(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+const languageSignals: Record<"es" | "pt", string[]> = {
+  es: ["quiero", "conectame", "muestrame", "billetera", "prueba", "puedes", "busquemos", "archivo", "correo", "viaje", "mi cuenta"],
+  pt: ["quero", "conecte", "conectar ao", "mostre", "minha", "meu", "carteira", "teste", "voce", "nao", "pesquise", "arquivo", "viagem", "cotacao", "preco"],
+};
+
+export function detectAgentLanguage(message: string): AgentLanguage {
+  const query = ` ${normalized(message)} `;
+  const score = (language: "es" | "pt") =>
+    languageSignals[language].reduce((total, signal) => total + (query.includes(normalized(signal)) ? 1 : 0), 0);
+  const pt = score("pt");
+  const es = score("es");
+  if (pt > es && pt > 0) return "pt";
+  if (es > 0) return "es";
+  return "en";
 }
 
 const aliases: Record<string, string[]> = {
   DeFindex: ["defindex", "de findex", "findex"],
-  "UNBLCK / Tellus Hub": ["unblck", "unblock", "tellus", "innovation hub"],
+  "UNBLCK / Tellus Hub": ["unblck", "unblock", "tellus", "innovation hub", "hub de inovacao"],
   ArcusX: ["arcusx", "arcus", "arkusx", "arkus"],
-  "Travala Travel MCP": ["travala", "travel", "hotel", "viaje"],
+  "Travala Travel MCP": ["travala", "travel", "hotel", "viaje", "viagem", "hospedagem"],
   "Apify MCP": ["apify"],
   "Shopify Storefront MCP": ["shopify"],
-  "Cal.com MCP": ["cal.com", "cal booking", "reserva cal"],
-  "Notion MCP": ["notion", "wiki", "notas", "notes"],
-  Trello: ["trello", "tablero", "board", "cards", "tarjetas"],
-  "Google Calendar": ["google calendar", "google calendario", "agenda"],
-  "Google Drive": ["google drive", "drive", "archivos", "files", "documentos"],
-  Gmail: ["gmail", "correo", "email", "mail"],
-  "Privy wallet orchestration": ["privy", "wallet", "billetera"],
+  "Cal.com MCP": ["cal.com", "cal booking", "reserva cal", "agendamento cal"],
+  "Notion MCP": ["notion", "wiki", "notas", "notes", "anotacoes"],
+  Trello: ["trello", "tablero", "board", "cards", "tarjetas", "quadro", "cartoes"],
+  "Google Calendar": ["google calendar", "google calendario", "agenda", "calendario"],
+  "Google Drive": ["google drive", "drive", "archivos", "files", "documentos", "arquivos"],
+  Gmail: ["gmail", "correo", "email", "mail", "e-mail"],
+  "Privy wallet orchestration": ["privy", "wallet", "billetera", "carteira"],
   "x402 Bazaar": ["x402", "bazaar"],
   "CoinGecko Market Data": ["coingecko", "coin gecko"],
   "CoinMarketCap Agent Hub": ["coinmarketcap", "coin market cap", "cmc"],
   TradingView: ["tradingview", "trading view"],
 };
 
+const stageLabels: Record<AgentLanguage, Partial<Record<Connection["stage"], string>>> = {
+  en: {},
+  es: { Connected: "Conectado", "Read-only connected": "Conectado en lectura", "Ready to test": "Listo para probar", "Credentials needed": "Requiere credenciales", "Partner outreach": "Contacto con partner", Research: "Investigación" },
+  pt: { Connected: "Conectado", "Read-only connected": "Conectado somente para leitura", "Ready to test": "Pronto para testar", "Credentials needed": "Requer credenciais", "Partner outreach": "Contato com parceiro", Research: "Pesquisa" },
+};
+
+const text = {
+  en: {
+    current: "is currently", connectedAuth: "Your authorization is stored encrypted on the server and can be used only through this agent.", planning: "I can prepare its reversible first test and document the credentials, permissions and evidence still required.", safeConnected: "I can use the available capability, but any financial or irreversible action still requires explicit review.", safePending: "I will not claim the external connection is active until access and evidence are complete.",
+    connectNotion: "Connect Notion", searchNotion: "Search Notion", checkXlm: "Check XLM price", showWatchlist: "Show watchlist", preparePlan: "Prepare plan", missing: "What is missing?", source: "Open official source",
+    walletPending: "Your Privy session is active, but the Stellar Testnet wallet setup has not finished yet. Reopen the workspace or retry setup before preparing an on-chain action.", retryWallet: "Retry wallet setup",
+    testnet: (balance: string) => `You are already in **Stellar Testnet**. Your personal Privy wallet is active with ${balance} XLM balance.\n\nThe safest proof is: inspect this wallet, activate the exact USDC trustline, review a 1 XLM DeFindex deposit, explicitly authorize the signature and verify the receipt on Stellar Expert. No Mainnet funds are enabled.`, startProof: "Start Testnet proof", showWallet: "Show my wallet",
+    noWallet: "Your Privy identity is connected, but I do not have a persisted Stellar wallet record yet. Reopen the workspace so the safe wallet bootstrap can complete.",
+    wallet: (network: string, address: string, balance: string) => `Your active wallet is on **${network}**.\n\nAddress: ${address}\n\nCurrent XLM balance: **${balance}**.\n\nI can use this address to prepare Testnet intents, but I cannot sign or submit a payment without your explicit authorization.`, explore: "Explore DeFindex", preparePayment: "Prepare a test payment",
+    connectIntro: "I can connect a service through a safe sequence: discover its real interface, identify credentials, prepare a reversible test, request authorization and preserve evidence. Choose one active pilot track.",
+    help: "I can inspect your Stellar Testnet context, explain and prepare integrations, search connected read-only services, create controlled commerce intents and guide approvals. Wallet creation and on-chain validation are real; partner execution and payments remain gated until each connector is proven.", exploreConnections: "Explore connections", connectNotionShort: "Connect Notion", searchTravel: "Search travel",
+    fallback: "I understand the goal, but I need one concrete target to prepare a safe action. Tell me what you want to connect, discover, reserve or pay—or choose one starting point below.", connectDefindex: "Connect DeFindex", connectArcus: "Connect ArcusX", exploreTravel: "Explore travel",
+  },
+  es: {
+    current: "está actualmente", connectedAuth: "Tu autorización está cifrada en el servidor y solo puede utilizarse mediante este agente.", planning: "Puedo preparar su primera prueba reversible y documentar las credenciales, permisos y evidencias pendientes.", safeConnected: "Puedo usar la capacidad disponible, pero toda acción financiera o irreversible requiere una revisión explícita.", safePending: "No afirmaré que la conexión está activa hasta completar el acceso y la evidencia.",
+    connectNotion: "Conectar Notion", searchNotion: "Buscar en Notion", checkXlm: "Ver precio de XLM", showWatchlist: "Mostrar watchlist", preparePlan: "Preparar plan", missing: "¿Qué falta?", source: "Abrir fuente oficial",
+    walletPending: "Tu sesión Privy está activa, pero la configuración de la wallet Stellar Testnet aún no termina. Reabre el workspace o reintenta antes de preparar una acción on-chain.", retryWallet: "Reintentar wallet",
+    testnet: (balance: string) => `Ya estás en **Stellar Testnet**. Tu wallet personal de Privy está activa con ${balance} XLM.\n\nLa prueba más segura es revisar esta wallet, activar la trustline USDC exacta, revisar un depósito de 1 XLM en DeFindex, autorizar la firma y verificar el recibo en Stellar Expert. Mainnet está desactivada.`, startProof: "Iniciar prueba Testnet", showWallet: "Mostrar mi wallet",
+    noWallet: "Tu identidad Privy está conectada, pero aún no existe un registro persistente de la wallet Stellar. Reabre el workspace para completar el onboarding seguro.",
+    wallet: (network: string, address: string, balance: string) => `Tu wallet activa está en **${network}**.\n\nDirección: ${address}\n\nSaldo XLM actual: **${balance}**.\n\nPuedo preparar intents en Testnet con esta dirección, pero no firmar ni enviar un pago sin tu autorización explícita.`, explore: "Explorar DeFindex", preparePayment: "Preparar pago de prueba",
+    connectIntro: "Puedo conectar un servicio mediante una secuencia segura: descubrir su interfaz real, identificar credenciales, preparar una prueba reversible, solicitar autorización y conservar evidencia. Elige un piloto activo.",
+    help: "Puedo revisar tu contexto de Stellar Testnet, preparar integraciones, buscar en servicios conectados de solo lectura, crear intents controlados y guiar aprobaciones. La wallet y la validación on-chain son reales; la ejecución de partners y pagos permanece bloqueada hasta validar cada conector.", exploreConnections: "Explorar conexiones", connectNotionShort: "Conectar Notion", searchTravel: "Buscar viajes",
+    fallback: "Entiendo el objetivo, pero necesito un destino concreto para preparar una acción segura. Dime qué quieres conectar, descubrir, reservar o pagar, o elige un punto de inicio.", connectDefindex: "Conectar DeFindex", connectArcus: "Conectar ArcusX", exploreTravel: "Explorar viajes",
+  },
+  pt: {
+    current: "está atualmente", connectedAuth: "Sua autorização está criptografada no servidor e só pode ser usada por este agente.", planning: "Posso preparar o primeiro teste reversível e documentar as credenciais, permissões e evidências ainda necessárias.", safeConnected: "Posso usar a capacidade disponível, mas qualquer ação financeira ou irreversível ainda exige revisão explícita.", safePending: "Não afirmarei que a conexão está ativa até que o acesso e a evidência estejam completos.",
+    connectNotion: "Conectar Notion", searchNotion: "Pesquisar no Notion", checkXlm: "Ver preço do XLM", showWatchlist: "Mostrar watchlist", preparePlan: "Preparar plano", missing: "O que falta?", source: "Abrir fonte oficial",
+    walletPending: "Sua sessão Privy está ativa, mas a configuração da wallet Stellar Testnet ainda não terminou. Reabra o workspace ou tente novamente antes de preparar uma ação on-chain.", retryWallet: "Tentar wallet novamente",
+    testnet: (balance: string) => `Você já está na **Stellar Testnet**. Sua wallet pessoal da Privy está ativa com ${balance} XLM.\n\nA prova mais segura é revisar esta wallet, ativar a trustline USDC exata, revisar um depósito de 1 XLM na DeFindex, autorizar a assinatura e verificar o recibo no Stellar Expert. A Mainnet está desativada.`, startProof: "Iniciar prova Testnet", showWallet: "Mostrar minha wallet",
+    noWallet: "Sua identidade Privy está conectada, mas ainda não existe um registro persistente da wallet Stellar. Reabra o workspace para concluir o onboarding seguro.",
+    wallet: (network: string, address: string, balance: string) => `Sua wallet ativa está na **${network}**.\n\nEndereço: ${address}\n\nSaldo XLM atual: **${balance}**.\n\nPosso preparar intents na Testnet com este endereço, mas não posso assinar ou enviar um pagamento sem sua autorização explícita.`, explore: "Explorar DeFindex", preparePayment: "Preparar pagamento de teste",
+    connectIntro: "Posso conectar um serviço por uma sequência segura: descobrir sua interface real, identificar credenciais, preparar um teste reversível, solicitar autorização e preservar evidências. Escolha um piloto ativo.",
+    help: "Posso revisar seu contexto Stellar Testnet, preparar integrações, pesquisar serviços conectados somente para leitura, criar intents controlados e orientar aprovações. A wallet e a validação on-chain são reais; execução de parceiros e pagamentos permanecem bloqueados até cada conector ser validado.", exploreConnections: "Explorar conexões", connectNotionShort: "Conectar Notion", searchTravel: "Pesquisar viagens",
+    fallback: "Entendo o objetivo, mas preciso de um destino concreto para preparar uma ação segura. Diga o que você quer conectar, descobrir, reservar ou pagar, ou escolha um ponto de partida.", connectDefindex: "Conectar DeFindex", connectArcus: "Conectar ArcusX", exploreTravel: "Explorar viagens",
+  },
+};
+
 export function findRequestedConnection(message: string) {
   const query = normalized(message);
-
   for (const connection of connections) {
     const terms = aliases[connection.name] ?? [connection.name];
     if (terms.some((term) => query.includes(normalized(term)))) return connection;
   }
-
   return null;
 }
 
-function connectionReply(
-  connection: Connection,
-  context: AgentChatContext,
-): AgentChatReply {
-  const isConnected =
-    connection.name === "Notion MCP" &&
-    context.connectedProviders?.includes("notion");
-  const effectiveStage: Connection["stage"] = isConnected
-    ? "Connected"
-    : connection.stage;
-  const safeBoundary =
-    effectiveStage === "Connected" || effectiveStage === "Read-only connected"
-      ? "I can use the capability that is already available, but any financial or irreversible action will still require an explicit review."
-      : "I can prepare the integration and its test plan now, but I will not claim the external connection is active until the required access and proof are complete.";
+function connectionReply(connection: Connection, context: AgentChatContext, language: AgentLanguage): AgentChatReply {
+  const t = text[language];
+  const isConnected = connection.name === "Notion MCP" && context.connectedProviders?.includes("notion");
+  const effectiveStage: Connection["stage"] = isConnected ? "Connected" : connection.stage;
+  const visibleStage = stageLabels[language][effectiveStage] ?? effectiveStage;
+  const details = isConnected ? t.connectedAuth : language === "en" ? `${connection.proof}\n\nNext step: ${connection.nextAction}` : t.planning;
+  const safeBoundary = effectiveStage === "Connected" || effectiveStage === "Read-only connected" ? t.safeConnected : t.safePending;
+  const messages = {
+    en: { notionSearch: "Search my Notion workspace for pending project tasks", xlm: "What is the current XLM price on CoinMarketCap?", watchlist: "Show my crypto watchlist", plan: `Prepare the safest first test for ${connection.name}`, missing: `What credentials, permissions and proof are missing for ${connection.name}?` },
+    es: { notionSearch: "Busca en mi Notion las tareas pendientes", xlm: "¿Cuál es el precio actual de XLM en CoinMarketCap?", watchlist: "Muéstrame mi watchlist de criptomonedas", plan: `Prepara la primera prueba segura para ${connection.name}`, missing: `¿Qué credenciales, permisos y evidencias faltan para ${connection.name}?` },
+    pt: { notionSearch: "Pesquise no meu Notion as tarefas pendentes", xlm: "Qual é o preço atual do XLM no CoinMarketCap?", watchlist: "Mostre minha watchlist de criptomoedas", plan: `Prepare o primeiro teste seguro para ${connection.name}`, missing: `Quais credenciais, permissões e evidências faltam para ${connection.name}?` },
+  }[language];
 
   return {
-    content: [
-      connection.name +
-        " is currently **" +
-        effectiveStage +
-        "** (" +
-        connection.priority +
-        ").",
-      ...(isConnected
-        ? [
-            "Your authorization is stored encrypted on the server and can be used only through this agent.",
-          ]
-        : [connection.proof, "Next step: " + connection.nextAction]),
-      safeBoundary,
-    ].join("\n\n"),
-    connection: {
-      name: connection.name,
-      stage: effectiveStage,
-      priority: connection.priority,
-    },
+    content: `${connection.name} ${t.current} **${visibleStage}** (${connection.priority}).\n\n${details}\n\n${safeBoundary}`,
+    connection: { name: connection.name, stage: effectiveStage, priority: connection.priority },
     actions: [
-      ...(connection.name === "Notion MCP" && !isConnected
-        ? [{ label: "Connect Notion", connect: "notion" }]
-        : []),
-      ...(connection.name === "Notion MCP" && isConnected
-        ? [
-            {
-              label: "Search Notion",
-              message: "Search my Notion workspace for pending project tasks",
-            },
-          ]
-        : connection.name === "CoinMarketCap Agent Hub"
-          ? [
-              {
-                label: "Check XLM price",
-                message: "What is the current XLM price on CoinMarketCap?",
-              },
-              {
-                label: "Show watchlist",
-                message: "Show my crypto watchlist",
-              },
-            ]
-          : [
-              {
-                label: "Prepare " + connection.name + " plan",
-                message: "Prepare the safest first test for " + connection.name,
-              },
-            ]),
-      {
-        label: "What is missing?",
-        message:
-          "What credentials, permissions and proof are missing for " +
-          connection.name +
-          "?",
-      },
-      { label: "Open official source", href: connection.href },
+      ...(connection.name === "Notion MCP" && !isConnected ? [{ label: t.connectNotion, connect: "notion" }] : []),
+      ...(connection.name === "Notion MCP" && isConnected ? [{ label: t.searchNotion, message: messages.notionSearch }] : connection.name === "CoinMarketCap Agent Hub" ? [{ label: t.checkXlm, message: messages.xlm }, { label: t.showWatchlist, message: messages.watchlist }] : [{ label: `${t.preparePlan}: ${connection.name}`, message: messages.plan }]),
+      { label: t.missing, message: messages.missing },
+      { label: t.source, href: connection.href },
     ],
   };
 }
 
-export function buildAgentReply(
-  message: string,
-  context: AgentChatContext = {},
-): AgentChatReply {
+export function buildAgentReply(message: string, context: AgentChatContext = {}): AgentChatReply {
   const query = normalized(message);
+  const language = detectAgentLanguage(message);
+  const t = text[language];
   const connection = findRequestedConnection(message);
 
-  if (
-    query.includes("testnet") ||
-    query.includes("prueba onchain") ||
-    query.includes("probar onchain")
-  ) {
-    if (!context.wallet) {
-      return {
-        content:
-          "Your Privy session is active, but the Stellar Testnet wallet setup has not finished yet. Reopen the workspace or retry the wallet setup before preparing an on-chain action.",
-        actions: [
-          { label: "Retry wallet setup", message: "Retry my Stellar wallet setup" },
-        ],
-      };
-    }
-
-    return {
-      content:
-        "You are already in **Stellar Testnet**. Your personal Privy wallet is active with " +
-        (context.wallet.balance ?? "an unavailable") +
-        " XLM balance.\n\nThe safest proof is: inspect this wallet, activate its exact USDC trustline, review a 1 XLM DeFindex deposit, explicitly authorize the signature and verify the receipt on Stellar Expert. No Mainnet funds are enabled.",
-      actions: [
-        { label: "Start Testnet proof", message: "Start my DeFindex Testnet proof" },
-        { label: "Show my wallet", message: "Show my wallet balance" },
-      ],
-    };
+  if (["testnet", "prueba onchain", "probar onchain", "teste onchain", "testar onchain", "prova onchain"].some((term) => query.includes(term))) {
+    if (!context.wallet) return { content: t.walletPending, actions: [{ label: t.retryWallet, message: language === "pt" ? "Tente configurar minha wallet Stellar novamente" : language === "es" ? "Reintenta configurar mi wallet Stellar" : "Retry my Stellar wallet setup" }] };
+    return { content: t.testnet(context.wallet.balance ?? (language === "pt" ? "saldo indisponível" : language === "es" ? "saldo no disponible" : "an unavailable")), actions: [{ label: t.startProof, message: language === "pt" ? "Inicie minha prova DeFindex na Testnet" : language === "es" ? "Inicia mi prueba DeFindex en Testnet" : "Start my DeFindex Testnet proof" }, { label: t.showWallet, message: language === "pt" ? "Mostre o saldo da minha wallet" : language === "es" ? "Muestra el saldo de mi wallet" : "Show my wallet balance" }] };
   }
 
-  if (
-    query.includes("balance") ||
-    query.includes("saldo") ||
-    query.includes("wallet") ||
-    query.includes("billetera")
-  ) {
-    if (!context.wallet) {
-      return {
-        content:
-          "Your Privy identity is connected, but I do not have a persisted Stellar wallet record yet. Reopen the agent workspace so the safe wallet bootstrap can complete.",
-        actions: [{ label: "Retry wallet setup", message: "Retry my Stellar wallet setup" }],
-      };
-    }
-
-    const balance = context.wallet.balance ?? "not available";
-    return {
-      content:
-        "Your active wallet is on **" + context.wallet.network + "**.\n\n" +
-        "Address: " + context.wallet.address + "\n\n" +
-        "Current XLM balance: **" + balance + "**.\n\n" +
-        "I can use this address to prepare Testnet intents, but I cannot sign or submit a payment without your explicit authorization.",
-      actions: [
-        { label: "Explore DeFindex", message: "Connect me to DeFindex" },
-        { label: "Prepare a test payment", message: "Prepare a 1 XLM Testnet payment" },
-      ],
-    };
+  if (["balance", "saldo", "wallet", "billetera", "carteira"].some((term) => query.includes(term))) {
+    if (!context.wallet) return { content: t.noWallet, actions: [{ label: t.retryWallet, message: language === "pt" ? "Tente configurar minha wallet Stellar novamente" : language === "es" ? "Reintenta configurar mi wallet Stellar" : "Retry my Stellar wallet setup" }] };
+    const balance = context.wallet.balance ?? (language === "pt" ? "indisponível" : language === "es" ? "no disponible" : "not available");
+    return { content: t.wallet(context.wallet.network, context.wallet.address, balance), actions: [{ label: t.explore, message: language === "pt" ? "Conecte-me à DeFindex" : language === "es" ? "Conéctame con DeFindex" : "Connect me to DeFindex" }, { label: t.preparePayment, message: language === "pt" ? "Prepare um pagamento de teste de 1 XLM" : language === "es" ? "Prepara un pago de prueba de 1 XLM" : "Prepare a 1 XLM Testnet payment" }] };
   }
 
-  if (connection) return connectionReply(connection, context);
+  if (connection) return connectionReply(connection, context, language);
 
-  if (
-    query.includes("connect") ||
-    query.includes("conecta") ||
-    query.includes("integrat")
-  ) {
-    return {
-      content:
-        "I can help you connect a service through a safe sequence: discover its real interface, identify credentials, prepare a reversible test, request authorization and preserve evidence. Choose one of our active pilot tracks.",
-      actions: [
-        { label: "Notion", message: "Connect me to Notion" },
-        { label: "Trello", message: "Connect me to Trello" },
-        { label: "Google Calendar", message: "Connect me to Google Calendar" },
-        { label: "DeFindex", message: "Connect me to DeFindex" },
-      ],
-    };
+  if (["connect", "conecta", "conecte", "conectar", "integrat", "integrar"].some((term) => query.includes(term))) {
+    const languageMessages = language === "pt" ? ["Conecte-me ao Notion", "Conecte-me ao Trello", "Conecte-me ao Google Calendar", "Conecte-me à DeFindex"] : language === "es" ? ["Conéctame con Notion", "Conéctame con Trello", "Conéctame con Google Calendar", "Conéctame con DeFindex"] : ["Connect me to Notion", "Connect me to Trello", "Connect me to Google Calendar", "Connect me to DeFindex"];
+    return { content: t.connectIntro, actions: ["Notion", "Trello", "Google Calendar", "DeFindex"].map((label, index) => ({ label, message: languageMessages[index] })) };
   }
 
-  if (
-    query.includes("que puedes") ||
-    query.includes("what can") ||
-    query.includes("help") ||
-    query.includes("ayuda")
-  ) {
-    return {
-      content:
-        "I can inspect your Stellar Testnet context, explain and prepare integrations, search connected read-only services, create controlled commerce intents and guide approvals. Today, wallet creation and on-chain validation are real; partner execution and payments remain gated until each connector is proven.",
-      actions: [
-        { label: "Show my wallet", message: "Show my wallet balance" },
-        { label: "Explore connections", message: "What can I connect to?" },
-        { label: "Connect Notion", message: "Connect me to Notion" },
-        { label: "Search travel", message: "Connect me to Travala" },
-      ],
-    };
+  if (["que puedes", "what can", "help", "ayuda", "o que voce", "ajuda", "pode fazer"].some((term) => query.includes(term))) {
+    return { content: t.help, actions: [{ label: t.showWallet, message: language === "pt" ? "Mostre o saldo da minha wallet" : language === "es" ? "Muestra el saldo de mi wallet" : "Show my wallet balance" }, { label: t.exploreConnections, message: language === "pt" ? "O que posso conectar?" : language === "es" ? "¿Qué puedo conectar?" : "What can I connect to?" }, { label: t.connectNotionShort, message: language === "pt" ? "Conecte-me ao Notion" : language === "es" ? "Conéctame con Notion" : "Connect me to Notion" }, { label: t.searchTravel, message: language === "pt" ? "Conecte-me à Travala" : language === "es" ? "Conéctame con Travala" : "Connect me to Travala" }] };
   }
 
-  return {
-    content:
-      "I understand the goal, but I need one concrete target to prepare a safe action. Tell me what you want to connect, discover, reserve or pay—or choose one of the starting points below.",
-    actions: [
-      { label: "Connect DeFindex", message: "Connect me to DeFindex" },
-      { label: "Connect ArcusX", message: "Connect me to ArcusX" },
-      { label: "Explore travel", message: "Connect me to Travala" },
-      { label: "Show wallet", message: "Show my wallet balance" },
-    ],
-  };
+  return { content: t.fallback, actions: [{ label: t.connectDefindex, message: language === "pt" ? "Conecte-me à DeFindex" : language === "es" ? "Conéctame con DeFindex" : "Connect me to DeFindex" }, { label: t.connectArcus, message: language === "pt" ? "Conecte-me à ArcusX" : language === "es" ? "Conéctame con ArcusX" : "Connect me to ArcusX" }, { label: t.exploreTravel, message: language === "pt" ? "Conecte-me à Travala" : language === "es" ? "Conéctame con Travala" : "Connect me to Travala" }, { label: t.showWallet, message: language === "pt" ? "Mostre o saldo da minha wallet" : language === "es" ? "Muestra el saldo de mi wallet" : "Show my wallet balance" }] };
 }

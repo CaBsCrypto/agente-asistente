@@ -53,6 +53,8 @@ test("loads and normalizes a CoinMarketCap keyless quote", async () => {
   assert.equal(quote.rank, 13);
   assert.equal(quote.source, "CoinMarketCap");
   assert.match(formatMarketQuote(quote), /read-only/);
+  assert.match(formatMarketQuote(quote, "pt"), /Preço/);
+  assert.match(formatMarketQuote(quote, "pt"), /somente leitura/);
 });
 
 test("does not present an absent CoinMarketCap asset as a quote", async () => {

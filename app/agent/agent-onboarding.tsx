@@ -5,7 +5,13 @@
 import { usePrivy } from "@privy-io/react-auth";
 import AgentChat from "./agent-chat";
 import { useEffect, useRef, useState } from "react";
+import { type Locale, useLocale } from "../language-toggle";
 
+const onboardingUi = {
+  en: { loading: "Preparing secure sign-in...", entryEyebrow: "YOUR ALWAYS-READY AGENT", entryTitle: "Sign in once. Your Stellar wallet arrives with you.", entryText: "Continue with email, Google or a passkey. Privy creates the identity; agent-assistant immediately provisions one user-owned Stellar wallet.", create: "Create my agent", boundary: "No seed phrase or wallet password required during onboarding.", onboarding: "AUTOMATIC ONBOARDING", steps: ["Authenticate with Privy", "Create a user-owned Stellar wallet", "Activate it on Stellar Testnet", "Open the agent workspace"], workspace: "YOUR AGENT", ready: "Your agent is ready.", creating: "Creating your Stellar wallet...", authenticated: "Authenticated with Privy", signout: "Sign out", provisioning: "Provisioning automatically", pipeline: "Identity · wallet ownership · Testnet activation", error: "We could not finish wallet provisioning.", retry: "Retry safely" },
+  es: { loading: "Preparando ingreso seguro...", entryEyebrow: "TU AGENTE SIEMPRE LISTO", entryTitle: "Ingresa una vez. Tu wallet Stellar llega contigo.", entryText: "Continúa con email, Google o passkey. Privy crea la identidad y agent-assistant provisiona inmediatamente una wallet Stellar propiedad del usuario.", create: "Crear mi agente", boundary: "No necesitas seed phrase ni contraseña de wallet durante el onboarding.", onboarding: "ONBOARDING AUTOMÁTICO", steps: ["Autenticar con Privy", "Crear una wallet Stellar del usuario", "Activarla en Stellar Testnet", "Abrir el workspace del agente"], workspace: "TU AGENTE", ready: "Tu agente está listo.", creating: "Creando tu wallet Stellar...", authenticated: "Autenticado con Privy", signout: "Cerrar sesión", provisioning: "Provisionando automáticamente", pipeline: "Identidad · propiedad de wallet · activación Testnet", error: "No pudimos terminar la creación de la wallet.", retry: "Reintentar de forma segura" },
+  pt: { loading: "Preparando login seguro...", entryEyebrow: "SEU AGENTE SEMPRE PRONTO", entryTitle: "Entre uma vez. Sua wallet Stellar acompanha você.", entryText: "Continue com email, Google ou passkey. A Privy cria a identidade e agent-assistant provisiona imediatamente uma wallet Stellar do usuário.", create: "Criar meu agente", boundary: "Nenhuma seed phrase ou senha de wallet é necessária durante o onboarding.", onboarding: "ONBOARDING AUTOMÁTICO", steps: ["Autenticar com Privy", "Criar uma wallet Stellar do usuário", "Ativá-la na Stellar Testnet", "Abrir o workspace do agente"], workspace: "SEU AGENTE", ready: "Seu agente está pronto.", creating: "Criando sua wallet Stellar...", authenticated: "Autenticado com Privy", signout: "Sair", provisioning: "Provisionando automaticamente", pipeline: "Identidade · propriedade da wallet · ativação Testnet", error: "Não foi possível concluir a criação da wallet.", retry: "Tentar novamente com segurança" },
+};
 type BootstrapResult = {
   user: { id: string; email: string | null };
   profile: { id: string; email: string | null; status: string };
@@ -59,8 +65,9 @@ function shortAddress(address: string) {
 }
 
 export default function AgentOnboarding({ configured }: { configured: boolean }) {
+  const { locale } = useLocale();
   if (!configured) return <PrivySetupRequired />;
-  return <PrivyAgent />;
+  return <PrivyAgent locale={locale} />;
 }
 
 function PrivySetupRequired() {
@@ -84,7 +91,8 @@ function PrivySetupRequired() {
   );
 }
 
-function PrivyAgent() {
+function PrivyAgent({ locale }: { locale: Locale }) {
+  const t = onboardingUi[locale];
   const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
   const [result, setResult] = useState<BootstrapResult | null>(null);
   const [status, setStatus] = useState<"idle" | "creating" | "ready" | "error">("idle");
@@ -174,7 +182,7 @@ function PrivyAgent() {
     return (
       <section className="agent-entry shell agent-loading">
         <i />
-        <strong>Preparing secure sign-in...</strong>
+        <strong>{t.loading}</strong>
       </section>
     );
   }
@@ -183,24 +191,23 @@ function PrivyAgent() {
     return (
       <section className="agent-entry shell">
         <div>
-          <p className="eyebrow">YOUR ALWAYS-READY AGENT</p>
-          <h1>Sign in once. Your Stellar wallet arrives with you.</h1>
+          <p className="eyebrow">{t.entryEyebrow}</p>
+          <h1>{t.entryTitle}</h1>
           <p>
-            Continue with email, Google or a passkey. Privy creates the identity;
-            agent-assistant provisions one user-owned Stellar wallet through Privy immediately.
+            {t.entryText}
           </p>
           <button className="agent-primary" onClick={() => login()}>
-            Create my agent
+            {t.create}
           </button>
-          <small>No seed phrase or wallet password required during onboarding.</small>
+          <small>{t.boundary}</small>
         </div>
         <aside className="agent-onboarding-preview">
-          <header><span>AUTOMATIC ONBOARDING</span><b>TESTNET</b></header>
+          <header><span>{t.onboarding}</span><b>TESTNET</b></header>
           <ol>
-            <li><b>01</b><span>Authenticate with Privy</span></li>
-            <li><b>02</b><span>Create a user-owned Stellar wallet</span></li>
-            <li><b>03</b><span>Activate it on Stellar Testnet</span></li>
-            <li><b>04</b><span>Open the agent workspace</span></li>
+            <li><b>01</b><span>{t.steps[0]}</span></li>
+            <li><b>02</b><span>{t.steps[1]}</span></li>
+            <li><b>03</b><span>{t.steps[2]}</span></li>
+            <li><b>04</b><span>{t.steps[3]}</span></li>
           </ol>
         </aside>
       </section>
@@ -211,25 +218,25 @@ function PrivyAgent() {
     <section className="agent-workspace shell">
       <header>
         <div>
-          <p className="eyebrow">YOUR AGENT</p>
-          <h1>{status === "ready" ? "Your agent is ready." : "Creating your Stellar wallet..."}</h1>
-          <p>{result?.profile.email ?? user?.email?.address ?? "Authenticated with Privy"}</p>
+          <p className="eyebrow">{t.workspace}</p>
+          <h1>{status === "ready" ? t.ready : t.creating}</h1>
+          <p>{result?.profile.email ?? user?.email?.address ?? t.authenticated}</p>
         </div>
-        <button className="agent-signout" onClick={() => void signOut()}>Sign out</button>
+        <button className="agent-signout" onClick={() => void signOut()}>{t.signout}</button>
       </header>
 
       {status === "creating" && (
         <div className="agent-provisioning">
           <i />
-          <div><strong>Provisioning automatically</strong><span>Identity - wallet ownership - testnet activation</span></div>
+          <div><strong>{t.provisioning}</strong><span>{t.pipeline}</span></div>
         </div>
       )}
 
       {status === "error" && (
         <div className="agent-bootstrap-error">
-          <strong>We could not finish wallet provisioning.</strong>
+          <strong>{t.error}</strong>
           <span>{error}</span>
-          <button onClick={() => bootstrap(true)}>Retry safely</button>
+          <button onClick={() => bootstrap(true)}>{t.retry}</button>
         </div>
       )}
 
