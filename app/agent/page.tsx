@@ -10,8 +10,8 @@ export const metadata = {
 
 export default function AgentPage() {
   const configured = Boolean(
-    process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim() &&
-      process.env.PRIVY_APP_ID?.trim() &&
+    (process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ||
+      process.env.PRIVY_APP_ID?.trim()) &&
       process.env.PRIVY_APP_SECRET?.trim(),
   );
 
