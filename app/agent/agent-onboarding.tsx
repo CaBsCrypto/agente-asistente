@@ -6,7 +6,10 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useEffect, useRef, useState } from "react";
 
 type BootstrapResult = {
-  user: { id: string };
+  user: { id: string; email: string | null };
+  profile: { id: string; email: string | null; status: string };
+  persistence: { configured: boolean; provider: string };
+  history: { id: string; type: string; summary: string; createdAt: string }[];
   wallet: {
     id: string;
     address: string;
@@ -209,7 +212,7 @@ function PrivyAgent() {
         <div>
           <p className="eyebrow">YOUR AGENT</p>
           <h1>{status === "ready" ? "Wallet ready. Agent ready." : "Creating your Stellar wallet..."}</h1>
-          <p>{user?.email?.address ?? "Authenticated with Privy"}</p>
+          <p>{result?.profile.email ?? user?.email?.address ?? "Authenticated with Privy"}</p>
         </div>
         <button className="agent-signout" onClick={() => void signOut()}>Sign out</button>
       </header>
@@ -261,6 +264,39 @@ function PrivyAgent() {
             <a href="/demo">Continue to the action console</a>
           </div>
         </div>
+
+        <section className="agent-account-overview">
+          <article>
+            <p className="eyebrow">ACCOUNT</p>
+            <h2>Your identity follows every authorized action.</h2>
+            <dl>
+              <div><dt>Email</dt><dd>{result.profile.email ?? "Privy account"}</dd></div>
+              <div><dt>Account status</dt><dd>{result.profile.status}</dd></div>
+              <div><dt>Data store</dt><dd>{result.persistence.configured ? "Neon connected" : "Local mode"}</dd></div>
+              <div><dt>User ID</dt><dd>{result.profile.id.slice(0, 22) + "..."}</dd></div>
+            </dl>
+          </article>
+          <article>
+            <p className="eyebrow">RECENT HISTORY</p>
+            <h2>Activity saved to your account.</h2>
+            {result.history.length ? (
+              <ol>
+                {result.history.map((event) => (
+                  <li key={event.id}>
+                    <span>{event.summary}</span>
+                    <time>{new Date(event.createdAt).toLocaleString()}</time>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="agent-empty-history">
+                {result.persistence.configured
+                  ? "Your first account activity will appear here."
+                  : "Connect Neon to persist account history across sessions."}
+              </p>
+            )}
+          </article>
+        </section>
 
         <section className="agent-travel">
           <header>

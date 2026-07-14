@@ -50,6 +50,24 @@ export async function verifyPrivyAccessToken(accessToken: string) {
   if (!accessToken.trim()) throw new Error("privy_access_token_missing");
   return getPrivyClient().utils().auth().verifyAccessToken(accessToken);
 }
+
+export async function getPrivyUserIdentity(userId: string) {
+  const user = await getPrivyClient().users()._get(userId);
+  const emailAccount = user.linked_accounts.find(
+    (account) => account.type === "email",
+  );
+  const oauthAccount = user.linked_accounts.find(
+    (account) => "email" in account && typeof account.email === "string",
+  );
+  const email =
+    emailAccount?.type === "email"
+      ? emailAccount.address
+      : oauthAccount && "email" in oauthAccount
+        ? oauthAccount.email
+        : null;
+
+  return { id: user.id, email: email?.trim().toLowerCase() || null };
+}
 export function isValidStellarAddress(address: string) {
   return StrKey.isValidEd25519PublicKey(address);
 }

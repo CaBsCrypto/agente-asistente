@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { persistAgentAccount } from "@/app/agent-account";
 import {
   PRIVY_WALLET_ARCHITECTURE,
   fundStellarTestnetWallet,
   getOrCreateUserStellarWallet,
   getPrivyStellarReadiness,
+  getPrivyUserIdentity,
   getStellarTestnetAccount,
   verifyPrivyAccessToken,
 } from "@/app/privy-stellar";
@@ -47,12 +49,24 @@ export async function POST(request: Request) {
       }
     }
 
+    const identity = await getPrivyUserIdentity(claims.user_id).catch(() => ({
+      id: claims.user_id,
+      email: null,
+    }));
+    const agentAccount = await persistAgentAccount({
+      userId: claims.user_id,
+      email: identity.email,
+      wallet,
+      activation,
+    });
+
     return NextResponse.json(
       {
-        user: { id: claims.user_id },
+        user: { id: claims.user_id, email: identity.email },
         wallet,
         account,
         activation,
+        ...agentAccount,
         readiness: getPrivyStellarReadiness(),
         walletArchitecture: PRIVY_WALLET_ARCHITECTURE,
       },
