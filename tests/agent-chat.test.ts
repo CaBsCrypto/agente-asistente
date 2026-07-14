@@ -9,6 +9,11 @@ test("recognizes active pilot aliases in natural language", () => {
   assert.equal(findRequestedConnection("quiero conectarme a ArkusX")?.name, "ArcusX");
   assert.equal(findRequestedConnection("connect me to DeFindex")?.name, "DeFindex");
   assert.equal(findRequestedConnection("busquemos un hotel con Travala")?.name, "Travala Travel MCP");
+  assert.equal(findRequestedConnection("conecta mi espacio de Notion")?.name, "Notion MCP");
+  assert.equal(findRequestedConnection("muéstrame mi tablero de Trello")?.name, "Trello");
+  assert.equal(findRequestedConnection("revisa mi agenda de Google Calendar")?.name, "Google Calendar");
+  assert.equal(findRequestedConnection("busca un archivo en Drive")?.name, "Google Drive");
+  assert.equal(findRequestedConnection("prepara un correo en Gmail")?.name, "Gmail");
 });
 
 test("reports real connection status without claiming unavailable execution", () => {

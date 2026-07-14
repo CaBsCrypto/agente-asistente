@@ -38,7 +38,12 @@ const aliases: Record<string, string[]> = {
   "Travala Travel MCP": ["travala", "travel", "hotel", "viaje"],
   "Apify MCP": ["apify"],
   "Shopify Storefront MCP": ["shopify"],
-  "Cal.com MCP": ["cal.com", "calendar", "calendario", "reserva"],
+  "Cal.com MCP": ["cal.com", "cal booking", "reserva cal"],
+  "Notion MCP": ["notion", "wiki", "notas", "notes"],
+  Trello: ["trello", "tablero", "board", "cards", "tarjetas"],
+  "Google Calendar": ["google calendar", "google calendario", "agenda"],
+  "Google Drive": ["google drive", "drive", "archivos", "files", "documentos"],
+  Gmail: ["gmail", "correo", "email", "mail"],
   "Privy wallet orchestration": ["privy", "wallet", "billetera"],
   "x402 Bazaar": ["x402", "bazaar"],
 };
@@ -133,10 +138,10 @@ export function buildAgentReply(
       content:
         "I can help you connect a service through a safe sequence: discover its real interface, identify credentials, prepare a reversible test, request authorization and preserve evidence. Choose one of our active pilot tracks.",
       actions: [
+        { label: "Notion", message: "Connect me to Notion" },
+        { label: "Trello", message: "Connect me to Trello" },
+        { label: "Google Calendar", message: "Connect me to Google Calendar" },
         { label: "DeFindex", message: "Connect me to DeFindex" },
-        { label: "UNBLCK", message: "Connect me to UNBLCK" },
-        { label: "ArcusX", message: "Connect me to ArcusX" },
-        { label: "Travala", message: "Connect me to Travala" },
       ],
     };
   }
@@ -153,6 +158,7 @@ export function buildAgentReply(
       actions: [
         { label: "Show my wallet", message: "Show my wallet balance" },
         { label: "Explore connections", message: "What can I connect to?" },
+        { label: "Connect Notion", message: "Connect me to Notion" },
         { label: "Search travel", message: "Connect me to Travala" },
       ],
     };

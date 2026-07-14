@@ -258,11 +258,13 @@ export default function AgentChat({
           Verify wallet on-chain
         </a>
         <section>
-          <strong>START HERE</strong>
+          <strong>PERSONAL HELP</strong>
+          <button onClick={() => void sendMessage("Connect me to Notion")}>Notion</button>
+          <button onClick={() => void sendMessage("Connect me to Trello")}>Trello</button>
+          <button onClick={() => void sendMessage("Connect me to Google Calendar")}>Calendar</button>
+          <button onClick={() => void sendMessage("Connect me to Google Drive")}>Drive</button>
+          <button onClick={() => void sendMessage("Connect me to Gmail")}>Gmail</button>
           <button onClick={() => void sendMessage("Connect me to DeFindex")}>DeFindex</button>
-          <button onClick={() => void sendMessage("Connect me to UNBLCK")}>UNBLCK</button>
-          <button onClick={() => void sendMessage("Connect me to ArcusX")}>ArcusX</button>
-          <button onClick={() => void sendMessage("Connect me to Travala")}>Travala</button>
         </section>
       </aside>
     </section>
