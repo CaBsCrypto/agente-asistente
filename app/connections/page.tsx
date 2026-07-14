@@ -2,279 +2,59 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import LanguageToggle, { useLocale } from "../language-toggle";
 import { connections, type ConnectionStage } from "./data";
 
-const stages: ConnectionStage[] = [
-  "Connected",
-  "Read-only connected",
-  "Ready to test",
-  "Credentials needed",
-  "Partner outreach",
-  "Research",
-];
+const stages: ConnectionStage[] = ["Connected", "Read-only connected", "Ready to test", "Credentials needed", "Partner outreach", "Research"];
 const priorities = ["P0", "P1", "P2"] as const;
-const categories = Array.from(
-  new Set(connections.map((connection) => connection.category)),
-).sort();
-
+const categories = Array.from(new Set(connections.map((connection) => connection.category))).sort();
 type StageFilter = "All" | ConnectionStage;
 type PriorityFilter = "All" | (typeof priorities)[number];
-
 const slug = (value: string) => value.toLowerCase().replaceAll(" ", "-");
+const stageEs: Record<string, string> = { Connected: "Conectado", "Read-only connected": "Conectado en lectura", "Ready to test": "Listo para probar", "Credentials needed": "Requiere credenciales", "Partner outreach": "Contacto con partner", Research: "Investigación", All: "Todos" };
+
+const ui = {
+  en: {
+    docs: "Developer portal", eyebrow: "INTEGRATION LAB", title: "Every connection. One honest status.",
+    intro: "Track protocols, partners, tests, blockers and the next concrete action. A target is connected only when evidence exists.",
+    add: "+ Add a target", search: "Search", placeholder: "Search Shopify, payments, travel...", category: "Category", allCategories: "All categories", priority: "Priority", stage: "Stage", allStages: "All stages", clear: "Clear filters", targets: "targets", filtered: "Filtered view", defaultView: "Default view: all connections", columns: ["Target", "Status", "Priority", "Route", "Next action", "Evidence"], evidence: "Open evidence", empty: "No matching targets.", emptyText: "Try another search, category, stage or priority.", showAll: "Show all connections", next: "NEXT TARGET", nextTitle: "Bring us a product, API or MCP.", nextText: "We verify the official interface, select the smallest useful route and define a reversible first test.", cta: "Use the developer onboarding", ctaText: "Follow the self-service checklist, then share the integration brief with your developer or implementation agent.", open: "Open developer portal",
+  },
+  es: {
+    docs: "Portal de developers", eyebrow: "LABORATORIO DE INTEGRACIONES", title: "Cada conexión. Un estado honesto.",
+    intro: "Sigue protocolos, partners, pruebas, bloqueos y la próxima acción concreta. Una integración solo aparece conectada cuando existe evidencia.",
+    add: "+ Agregar objetivo", search: "Buscar", placeholder: "Buscar Shopify, pagos, viajes...", category: "Categoría", allCategories: "Todas las categorías", priority: "Prioridad", stage: "Estado", allStages: "Todos los estados", clear: "Limpiar filtros", targets: "objetivos", filtered: "Vista filtrada", defaultView: "Vista predeterminada: todas las conexiones", columns: ["Objetivo", "Estado", "Prioridad", "Ruta", "Próxima acción", "Evidencia"], evidence: "Abrir evidencia", empty: "No hay coincidencias.", emptyText: "Prueba otra búsqueda, categoría, estado o prioridad.", showAll: "Mostrar todo", next: "PRÓXIMO OBJETIVO", nextTitle: "Trae un producto, API o MCP.", nextText: "Verificamos la interfaz oficial, elegimos la ruta útil más pequeña y definimos una primera prueba reversible.", cta: "Usa el onboarding para developers", ctaText: "Sigue el checklist autoservicio y comparte el brief con tu developer o agente de implementación.", open: "Abrir portal de developers",
+  },
+};
 
 export default function Connections() {
+  const { locale, setLocale } = useLocale();
+  const t = ui[locale];
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [stage, setStage] = useState<StageFilter>("All");
   const [priority, setPriority] = useState<PriorityFilter>("All");
+  const labelStage = (value: string) => locale === "es" ? stageEs[value] ?? value : value;
 
-  const counts = Object.fromEntries(
-    stages.map((item) => [
-      item,
-      connections.filter((connection) => connection.stage === item).length,
-    ]),
-  );
-
+  const counts = Object.fromEntries(stages.map((item) => [item, connections.filter((connection) => connection.stage === item).length]));
   const visibleConnections = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
+    const needle = query.trim().toLowerCase();
     return connections.filter((connection) => {
-      const searchable = [
-        connection.name,
-        connection.category,
-        connection.stage,
-        connection.route,
-        connection.proof,
-        connection.nextAction,
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return (
-        (!normalizedQuery || searchable.includes(normalizedQuery)) &&
-        (category === "All" || connection.category === category) &&
-        (stage === "All" || connection.stage === stage) &&
-        (priority === "All" || connection.priority === priority)
-      );
+      const searchable = [connection.name, connection.category, connection.stage, connection.route, connection.proof, connection.nextAction].join(" ").toLowerCase();
+      return (!needle || searchable.includes(needle)) && (category === "All" || connection.category === category) && (stage === "All" || connection.stage === stage) && (priority === "All" || connection.priority === priority);
     });
   }, [query, category, stage, priority]);
-
-  const hasFilters =
-    query.trim() !== "" ||
-    category !== "All" ||
-    stage !== "All" ||
-    priority !== "All";
-
-  const clearFilters = () => {
-    setQuery("");
-    setCategory("All");
-    setStage("All");
-    setPriority("All");
-  };
+  const hasFilters = Boolean(query.trim() || category !== "All" || stage !== "All" || priority !== "All");
+  function clearFilters() { setQuery(""); setCategory("All"); setStage("All"); setPriority("All"); }
 
   return (
     <main className="lab shell">
-      <nav className="lab-nav">
-        <Link className="brand" href="/">
-          <b>AA</b>agent-assistant
-        </Link>
-        <a href="/developers">Developer docs</a>
-      </nav>
-
-      <header className="lab-hero">
-        <div>
-          <p className="eyebrow">INTEGRATION LAB</p>
-          <h1>Every connection. One honest status.</h1>
-          <p>
-            Track protocols, partners, tests, blockers and the next concrete
-            action across {connections.length} integration targets. A target is
-            only marked connected when evidence exists.
-          </p>
-        </div>
-        <a className="lab-add" href="#submit-target">
-          + Add a target
-        </a>
-      </header>
-
-      <section className="lab-stats" aria-label="Integration stage totals">
-        {stages.map((item) => (
-          <button
-            type="button"
-            key={item}
-            className={stage === item ? "active" : ""}
-            aria-pressed={stage === item}
-            onClick={() => setStage(stage === item ? "All" : item)}
-          >
-            <strong>{counts[item]}</strong>
-            <span>{item}</span>
-          </button>
-        ))}
-      </section>
-
-      <section className="lab-controls" aria-label="Connection filters">
-        <div className="filter-topline">
-          <label className="filter-group filter-search">
-            <span>Search</span>
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search Shopify, payments, travel..."
-            />
-          </label>
-
-          <label className="filter-group filter-select">
-            <span>Category</span>
-            <select
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-            >
-              <option value="All">All categories</option>
-              {categories.map((item) => (
-                <option value={item} key={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="filter-group priority-filter">
-            <span>Priority</span>
-            <div className="filter-buttons">
-              {(["All", ...priorities] as PriorityFilter[]).map((item) => (
-                <button
-                  type="button"
-                  key={item}
-                  className={priority === item ? "active" : ""}
-                  aria-pressed={priority === item}
-                  onClick={() => setPriority(item)}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="filter-bottomline">
-          <div className="filter-group">
-            <span>Stage</span>
-            <div className="filter-buttons">
-              {(["All", ...stages] as StageFilter[]).map((item) => (
-                <button
-                  type="button"
-                  key={item}
-                  className={stage === item ? "active" : ""}
-                  aria-pressed={stage === item}
-                  onClick={() => setStage(item)}
-                >
-                  {item === "All" ? "All stages" : item}
-                </button>
-              ))}
-            </div>
-          </div>
-          <button
-            type="button"
-            className="clear-filters"
-            onClick={clearFilters}
-            disabled={!hasFilters}
-          >
-            Clear filters
-          </button>
-        </div>
-      </section>
-
-      <div className="tracker-summary" aria-live="polite">
-        <strong>{visibleConnections.length}</strong> of {connections.length} targets
-        <small>{hasFilters ? "Filtered view" : "Default view: all connections"}</small>
-      </div>
-
-      <section className="connection-list" aria-label="Integration targets">
-        <div className="connection-list-head" aria-hidden="true">
-          <span>Target</span>
-          <span>Status</span>
-          <span>Priority</span>
-          <span>Route</span>
-          <span>Next action</span>
-          <span>Evidence</span>
-        </div>
-        {visibleConnections.map((connection) => (
-          <article className="connection-row" key={connection.name}>
-            <div className="connection-name">
-              {connection.focus && (
-                <span className="target-focus">{connection.focus}</span>
-              )}
-              <small>{connection.category}</small>
-              <h2>{connection.name}</h2>
-              <time>{connection.updated}</time>
-            </div>
-            <div className="mobile-label" aria-hidden="true">
-              Status
-            </div>
-            <div>
-              <span className={`stage ${slug(connection.stage)}`}>
-                {connection.stage}
-              </span>
-            </div>
-            <div className="mobile-label" aria-hidden="true">
-              Priority
-            </div>
-            <div>
-              <b className={`priority ${connection.priority.toLowerCase()}`}>
-                {connection.priority}
-              </b>
-            </div>
-            <div className="mobile-label" aria-hidden="true">
-              Route
-            </div>
-            <p>{connection.route}</p>
-            <div className="mobile-label" aria-hidden="true">
-              Next action
-            </div>
-            <p>{connection.nextAction}</p>
-            <div className="mobile-label" aria-hidden="true">
-              Evidence
-            </div>
-            <div className="connection-proof">
-              <span>{connection.proof}</span>
-              <a
-                href={connection.href}
-                target={connection.href.startsWith("http") ? "_blank" : undefined}
-                rel={connection.href.startsWith("http") ? "noreferrer" : undefined}
-              >
-                Open evidence
-              </a>
-            </div>
-          </article>
-        ))}
-        {visibleConnections.length === 0 && (
-          <div className="connection-empty">
-            <strong>No matching targets.</strong>
-            <span>Try another search, category, stage or priority.</span>
-            <button type="button" onClick={clearFilters}>
-              Show all connections
-            </button>
-          </div>
-        )}
-      </section>
-
-      <section className="lab-submit" id="submit-target">
-        <div>
-          <p className="eyebrow">NEXT TARGET</p>
-          <h2>Send a project, API or MCP link.</h2>
-          <p>
-            We will verify the interface, choose the correct route, record
-            evidence and define the smallest useful test.
-          </p>
-        </div>
-        <div>
-          <strong>After Neon + Privy</strong>
-          <p>
-            This tracker becomes editable, founder-only and backed by an
-            integration event history.
-          </p>
-        </div>
-      </section>
+      <nav className="lab-nav"><Link className="brand" href="/"><b>AA</b>agent-assistant</Link><div className="lab-nav-actions"><Link href="/developers">{t.docs}</Link><LanguageToggle locale={locale} onChange={setLocale} compact /></div></nav>
+      <header className="lab-hero"><div><p className="eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p>{t.intro} <strong>{connections.length}</strong></p></div><a className="lab-add" href="#submit-target">{t.add}</a></header>
+      <section className="lab-stats" aria-label="Integration stage totals">{stages.map((item) => <button type="button" key={item} className={stage === item ? "active" : ""} aria-pressed={stage === item} onClick={() => setStage(stage === item ? "All" : item)}><strong>{counts[item]}</strong><span>{labelStage(item)}</span></button>)}</section>
+      <section className="lab-controls" aria-label="Connection filters"><div className="filter-topline"><label className="filter-group filter-search"><span>{t.search}</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t.placeholder} /></label><label className="filter-group filter-select"><span>{t.category}</span><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="All">{t.allCategories}</option>{categories.map((item) => <option value={item} key={item}>{item}</option>)}</select></label><div className="filter-group priority-filter"><span>{t.priority}</span><div className="filter-buttons">{(["All", ...priorities] as PriorityFilter[]).map((item) => <button type="button" key={item} className={priority === item ? "active" : ""} aria-pressed={priority === item} onClick={() => setPriority(item)}>{item}</button>)}</div></div></div><div className="filter-bottomline"><div className="filter-group"><span>{t.stage}</span><div className="filter-buttons">{(["All", ...stages] as StageFilter[]).map((item) => <button type="button" key={item} className={stage === item ? "active" : ""} aria-pressed={stage === item} onClick={() => setStage(item)}>{item === "All" ? t.allStages : labelStage(item)}</button>)}</div></div><button type="button" className="clear-filters" onClick={clearFilters} disabled={!hasFilters}>{t.clear}</button></div></section>
+      <div className="tracker-summary" aria-live="polite"><strong>{visibleConnections.length}</strong> {locale === "es" ? "de" : "of"} {connections.length} {t.targets}<small>{hasFilters ? t.filtered : t.defaultView}</small></div>
+      <section className="connection-list" aria-label="Integration targets"><div className="connection-list-head" aria-hidden="true">{t.columns.map((column) => <span key={column}>{column}</span>)}</div>{visibleConnections.map((connection) => <article className="connection-row" key={connection.name}><div className="connection-name">{connection.focus && <span className="target-focus">{connection.focus}</span>}<small>{connection.category}</small><h2>{connection.name}</h2><time>{connection.updated}</time></div><div className="mobile-label">{t.columns[1]}</div><div><span className={`stage ${slug(connection.stage)}`}>{labelStage(connection.stage)}</span></div><div className="mobile-label">{t.columns[2]}</div><div><b className={`priority ${connection.priority.toLowerCase()}`}>{connection.priority}</b></div><div className="mobile-label">{t.columns[3]}</div><p>{connection.route}</p><div className="mobile-label">{t.columns[4]}</div><p>{connection.nextAction}</p><div className="mobile-label">{t.columns[5]}</div><div className="connection-proof"><span>{connection.proof}</span><a href={connection.href} target={connection.href.startsWith("http") ? "_blank" : undefined} rel={connection.href.startsWith("http") ? "noreferrer" : undefined}>{t.evidence}</a></div></article>)}{visibleConnections.length === 0 && <div className="connection-empty"><strong>{t.empty}</strong><span>{t.emptyText}</span><button type="button" onClick={clearFilters}>{t.showAll}</button></div>}</section>
+      <section className="lab-submit" id="submit-target"><div><p className="eyebrow">{t.next}</p><h2>{t.nextTitle}</h2><p>{t.nextText}</p></div><div><strong>{t.cta}</strong><p>{t.ctaText}</p><Link className="lab-submit-link" href="/developers#connect-product">{t.open} →</Link></div></section>
     </main>
   );
 }

@@ -8,9 +8,9 @@
 
 The product combines a simple chat for end users with MCP, WebMCP and API surfaces for developers. Sensitive actions are constrained by identity, policy, explicit approval, idempotency and durable evidence.
 
-> **Honest MVP boundary:** authentication, Stellar wallet creation, CoinMarketCap data, persistent user state and the commerce safety demo are real. Notion is implemented and awaiting complete user validation. Wallet-signed payments, DeFindex execution, merchant fulfillment and mainnet settlement are not live.
+> **Honest MVP boundary:** authentication, Stellar wallet creation, CoinMarketCap data, persistent user state and the commerce safety demo are real. Notion and direct DeFindex Testnet signing are implemented and awaiting complete user acceptance. Merchant fulfillment and mainnet settlement are not live.
 
-[Live product](https://agente-asistente.vercel.app) · [Open the agent](https://agente-asistente.vercel.app/agent) · [Safety demo](https://agente-asistente.vercel.app/demo) · [Integration Lab](https://agente-asistente.vercel.app/connections) · [Waitlist](https://agente-asistente.vercel.app/waitlist)
+[Live product](https://agente-asistente.vercel.app) · [Developer portal](https://agente-asistente.vercel.app/developers) · [Open the agent](https://agente-asistente.vercel.app/agent) · [Safety demo](https://agente-asistente.vercel.app/demo) · [Integration Lab](https://agente-asistente.vercel.app/connections) · [Waitlist](https://agente-asistente.vercel.app/waitlist)
 
 ## What works now
 
@@ -36,8 +36,9 @@ Status meanings are shared across all project documentation:
 | Personal agent MCP | Development foundation | Privy bearer identity at /api/mcp/agent |
 | Service provider MCP | Development foundation | Scoped catalog administration at /api/mcp/provider |
 | Chrome WebMCP | Experimental sandbox | Offer discovery and intent preparation |
-| Wallet-signed Stellar payment | Planned, next proof | No transaction submitted by the product yet |
-| DeFindex, UNBLCK and ArcusX | Planned partner pilots | Contact or integration path only |
+| Wallet-signed Stellar transaction | Ready to validate | Privy JWT authorization, verified Ed25519 signature and durable receipt |
+| DeFindex XLM and USDC | Ready to validate | Direct public Soroban vault integration, no DeFindex API key |
+| UNBLCK and ArcusX | Planned partner pilots | Contact or integration path only |
 | Gmail, Drive, Calendar and Trello | Planned | Catalog entries only |
 
 The dated source of truth is [docs/product-status.md](docs/product-status.md).
@@ -81,6 +82,16 @@ OAuth tokens are encrypted before storage in Neon. Until production consent and 
 Open the [Safety demo](https://agente-asistente.vercel.app/demo), create an intent, evaluate policy, approve it and execute twice. The second request returns the original receipt.
 
 Settlement is simulated. Persistence, authorization hashes, audit records and receipt uniqueness are real.
+
+### 5. Review a DeFindex Testnet action
+
+Open the agent and choose **DeFindex**. The agent can prepare:
+
+- A deposit into the public XLM Testnet vault.
+- The exact trustline required by the public USDC Testnet vault.
+- A USDC deposit after the wallet has the compatible Testnet asset.
+
+Every action is simulated and shown before Privy receives a signing request. See [the DeFindex Testnet guide](docs/defindex-testnet.md).
 
 ## Product model
 
@@ -237,7 +248,7 @@ npm run db:migrate
 5. Collect three design-partner commitments.
 6. Move CoinMarketCap toward an official API, MCP or x402 pilot.
 
-For YC, the strongest claim is: **a user can create a permissioned agent, receive a real Testnet wallet, connect real data sources and see the safety mechanism that will prevent duplicate payments; the next proof is one reproducible wallet-signed payment.**
+For YC, the strongest claim is: **a user can create a permissioned agent, receive a real Testnet wallet, connect real data sources and see the safety mechanism that will prevent duplicate payments; the next proof is one reproducible DeFindex deposit with an explorer-verifiable receipt.**
 
 ## Security principles
 

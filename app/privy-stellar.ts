@@ -14,6 +14,7 @@ export const STELLAR_TESTNET_FRIENDBOT = "https://friendbot.stellar.org";
 type HorizonBalance = {
   asset_type: string;
   asset_code?: string;
+  asset_issuer?: string;
   balance: string;
 };
 
@@ -235,6 +236,7 @@ export async function getStellarTestnetAccount(address: string) {
           ? "XLM"
           : balance.asset_code ?? balance.asset_type,
       balance: balance.balance,
+      issuer: balance.asset_issuer ?? null,
     })),
   };
 }
@@ -268,4 +270,44 @@ export async function signAndVerifyStellarChallenge(
     signature: "0x" + signature.toString("hex"),
     encoding: result.encoding,
   };
+}
+
+
+export async function signStellarTransactionHash(input: {
+  userId: string;
+  accessToken: string;
+  walletId: string;
+  address: string;
+  hash: Uint8Array;
+  idempotencyKey: string;
+}) {
+  if (!input.userId.startsWith("did:privy:")) {
+    throw new Error("invalid_privy_user_id");
+  }
+  if (!input.accessToken.trim() || !input.walletId.trim()) {
+    throw new Error("invalid_wallet_authorization");
+  }
+  if (!isValidStellarAddress(input.address) || input.hash.length !== 32) {
+    throw new Error("invalid_stellar_signing_payload");
+  }
+
+  const wallets = await listUserStellarWallets(input.userId);
+  const wallet = wallets.find(
+    (candidate) =>
+      candidate.id === input.walletId && candidate.address === input.address,
+  );
+  if (!wallet) throw new Error("wallet_not_owned_by_authenticated_user");
+
+  const result = await getPrivyClient().wallets().rawSign(input.walletId, {
+    params: { hash: "0x" + Buffer.from(input.hash).toString("hex") },
+    authorization_context: { user_jwts: [input.accessToken] },
+    idempotency_key: input.idempotencyKey,
+  });
+  if (!result.signature) throw new Error("privy_signature_missing");
+
+  const signature = Buffer.from(result.signature.replace(/^0x/, ""), "hex");
+  if (!verifyStellarSignature(input.address, input.hash, signature)) {
+    throw new Error("privy_signature_verification_failed");
+  }
+  return signature;
 }

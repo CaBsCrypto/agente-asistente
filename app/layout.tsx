@@ -4,8 +4,26 @@ import WebMcpRegistry from "./webmcp-registry";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "agent-assistant | Control for agents that take action",
-  description: "Non-custodial commerce infrastructure for AI agents.",
+  metadataBase: new URL("https://agente-asistente.vercel.app"),
+  title: "agent-assistant | Agents act. You stay in control.",
+  description:
+    "A bilingual, non-custodial action and commerce layer for people, AI agents, developers and businesses.",
+  openGraph: {
+    title: "agent-assistant | Agents act. You stay in control.",
+    description:
+      "Build, publish and execute agent-ready actions through policy, explicit authority and durable receipts.",
+    url: "https://agente-asistente.vercel.app",
+    siteName: "agent-assistant",
+    images: [{ url: "/og.png", width: 1536, height: 1024, alt: "agent-assistant action flow" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "agent-assistant | Agents act. You stay in control.",
+    description:
+      "A non-custodial action layer for the agent economy.",
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

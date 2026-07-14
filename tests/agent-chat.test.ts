@@ -42,12 +42,25 @@ test("recognizes portfolio and market data targets", () => {
 
 test("reports real connection status without claiming unavailable execution", () => {
   const reply = buildAgentReply("connect me to DeFindex");
-  assert.match(reply.content, /Credentials needed/);
+  assert.match(reply.content, /Ready to test/);
   assert.match(reply.content, /will not claim/i);
   assert.equal(reply.connection?.name, "DeFindex");
   assert.ok(reply.actions.length >= 2);
 });
 
+test("guides an authenticated user through the Testnet proof", () => {
+  const reply = buildAgentReply("start testnet", {
+    wallet: {
+      address: "GBCTAHK3J56T4F2CSU3MQYQUMFO5ZS4IE3ZJGHOKFOYAAEN4ZAKAY5RZ",
+      balance: "10000.0000000",
+      network: "Stellar Testnet",
+    },
+  });
+
+  assert.match(reply.content, /already in \*\*Stellar Testnet\*\*/);
+  assert.match(reply.content, /USDC trustline/);
+  assert.ok(reply.actions.some((action) => action.label === "Start Testnet proof"));
+});
 test("uses live wallet context while preserving authorization boundary", () => {
   const reply = buildAgentReply("show my wallet balance", {
     wallet: {

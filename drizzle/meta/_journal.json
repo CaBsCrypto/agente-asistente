@@ -57,6 +57,13 @@
       "when": 1784016883725,
       "tag": "0007_familiar_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784057830527,
+      "tag": "0008_defindex-actions",
+      "breakpoints": true
     }
   ]
 }

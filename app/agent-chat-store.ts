@@ -82,12 +82,11 @@ async function ensureConversation(userId: string) {
       userId,
       role: "assistant",
       content:
-        "Your Stellar wallet is active and your agent is ready. Tell me what you want to do. You can start with DeFindex, UNBLCK, ArcusX or Travala.",
+        "Your personal Stellar Testnet wallet is active. Start the guided Testnet proof to review the wallet, activate USDC and prepare a DeFindex deposit with explicit authorization.",
       metadata: {
         actions: [
+          { label: "Start Testnet proof", message: "Start my DeFindex Testnet proof" },
           { label: "Connect DeFindex", message: "Connect me to DeFindex" },
-          { label: "Connect UNBLCK", message: "Connect me to UNBLCK" },
-          { label: "Connect ArcusX", message: "Connect me to ArcusX" },
           { label: "Explore Travala", message: "Connect me to Travala" },
         ],
       },

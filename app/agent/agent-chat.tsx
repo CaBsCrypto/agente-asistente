@@ -15,6 +15,38 @@ type ExternalConnection = {
   updatedAt: string;
 };
 
+
+type DefindexApproval = {
+  id: string;
+  action: string;
+  asset: "XLM" | "USDC";
+  amount: string;
+  status: string;
+  transactionHash: string | null;
+  explorerUrl: string | null;
+  expiresAt: string;
+  preview: {
+    title: string;
+    description: string;
+    network: string;
+    wallet: string;
+    asset: string;
+    amount: string;
+    destination: string;
+    invest: boolean;
+    slippageBps: number | null;
+  };
+};
+
+type DefindexStatus = {
+  usdcTrustline: { active: boolean; balance: string; issuer: string };
+  positions: {
+    XLM: { shares: string } | null;
+    USDC: { shares: string } | null;
+  };
+  recent: DefindexApproval[];
+};
+
 type ChatMessage = {
   id: string;
   role: "user" | "assistant";
@@ -61,6 +93,14 @@ export default function AgentChat({
   const [draft, setDraft] = useState("");
   const [connections, setConnections] = useState<ExternalConnection[]>([]);
   const [connectionNotice, setConnectionNotice] = useState<string | null>(null);
+
+  const [defindexOpen, setDefindexOpen] = useState(false);
+  const [defindexStatus, setDefindexStatus] = useState<DefindexStatus | null>(null);
+  const [defindexApproval, setDefindexApproval] = useState<DefindexApproval | null>(null);
+  const [defindexBusy, setDefindexBusy] = useState<string | null>(null);
+  const [defindexNotice, setDefindexNotice] = useState<string | null>(null);
+  const [xlmDepositAmount, setXlmDepositAmount] = useState("1");
+  const [usdcDepositAmount, setUsdcDepositAmount] = useState("1");
   const endRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -158,6 +198,9 @@ export default function AgentChat({
         body.assistantMessage,
       ]);
       setStatus("ready");
+      if (message.toLowerCase().includes("defindex")) {
+        void loadDefindex();
+      }
     } catch (caught) {
       setMessages((current) => current.filter((item) => item.id !== optimisticId));
       setError(caught instanceof Error ? caught.message : "Message failed");
@@ -187,6 +230,96 @@ export default function AgentChat({
       setError(caught instanceof Error ? caught.message : "Connection failed");
       setConnectionNotice(null);
       setStatus("error");
+    }
+  }
+
+
+  async function defindexFetch(body?: Record<string, unknown>) {
+    const token = await getAccessToken();
+    if (!token) throw new Error("Authentication token unavailable");
+    const response = await fetch("/api/agent/defindex", {
+      method: body ? "POST" : "GET",
+      headers: {
+        Authorization: "Bearer " + token,
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: "no-store",
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error ?? "DeFindex request failed");
+    return result;
+  }
+
+  async function loadDefindex() {
+    setDefindexOpen(true);
+    setDefindexBusy("status");
+    setDefindexNotice(null);
+    try {
+      setDefindexStatus(await defindexFetch());
+    } catch (caught) {
+      setDefindexNotice(caught instanceof Error ? caught.message : "DeFindex status failed");
+    } finally {
+      setDefindexBusy(null);
+    }
+  }
+
+  async function prepareDefindex(
+    operation: "usdc_trustline" | "deposit",
+    asset?: "XLM" | "USDC",
+    amount?: string,
+  ) {
+    setDefindexBusy(operation + (asset ?? ""));
+    setDefindexNotice(null);
+    setDefindexApproval(null);
+    try {
+      const result = await defindexFetch({
+        action: "prepare",
+        operation,
+        ...(asset ? { asset, amount } : {}),
+        requestId: crypto.randomUUID(),
+      });
+      if (result.alreadyComplete) {
+        setDefindexNotice(result.message);
+        await loadDefindex();
+      } else {
+        setDefindexApproval(result.approval);
+      }
+    } catch (caught) {
+      const code = caught instanceof Error ? caught.message : "DeFindex preparation failed";
+      setDefindexNotice(
+        code === "usdc_trustline_required"
+          ? "Enable the exact DeFindex USDC trustline first."
+          : code,
+      );
+    } finally {
+      setDefindexBusy(null);
+    }
+  }
+
+  async function confirmDefindex() {
+    if (!defindexApproval) return;
+    setDefindexBusy("execute");
+    setDefindexNotice(null);
+    try {
+      const result = await defindexFetch({
+        action: "execute",
+        approvalId: defindexApproval.id,
+        explicitConfirmation: true,
+      });
+      setDefindexApproval(result.approval);
+      setDefindexNotice(
+        result.replayed
+          ? "This action was already confirmed. The same receipt was returned."
+          : "Confirmed on Stellar Testnet. The receipt is now available.",
+      );
+      setDefindexStatus(await defindexFetch());
+    } catch (caught) {
+      setDefindexNotice(
+        caught instanceof Error ? caught.message : "DeFindex execution failed",
+      );
+    } finally {
+      setDefindexBusy(null);
     }
   }
 
@@ -303,6 +436,94 @@ export default function AgentChat({
           <div ref={endRef} />
         </div>
 
+
+        {defindexOpen && (
+          <section className="defindex-agent-panel" aria-label="DeFindex Testnet actions">
+            <header>
+              <div>
+                <span>DEFINDEX · STELLAR TESTNET</span>
+                <h3>Deposit through the agent, with explicit approval.</h3>
+              </div>
+              <button type="button" onClick={() => setDefindexOpen(false)}>Close</button>
+            </header>
+            {defindexBusy === "status" && <p className="defindex-agent-loading">Reading public vaults and your wallet...</p>}
+            {defindexStatus && (
+              <div className="defindex-agent-grid">
+                <article>
+                  <strong>XLM vault</strong>
+                  <span>Wallet balance: {walletBalance} XLM</span>
+                  <span>Vault shares: {defindexStatus.positions.XLM?.shares ?? "0"}</span>
+                  <label>
+                    Amount
+                    <input value={xlmDepositAmount} onChange={(event) => setXlmDepositAmount(event.target.value)} inputMode="decimal" />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={Boolean(defindexBusy)}
+                    onClick={() => void prepareDefindex("deposit", "XLM", xlmDepositAmount)}
+                  >
+                    {defindexBusy === "depositXLM" ? "Simulating..." : "Review XLM deposit"}
+                  </button>
+                </article>
+                <article>
+                  <strong>USDC vault</strong>
+                  <span>Trustline: {defindexStatus.usdcTrustline.active ? "active" : "required"}</span>
+                  <span>Wallet balance: {defindexStatus.usdcTrustline.balance} USDC</span>
+                  <span>Vault shares: {defindexStatus.positions.USDC?.shares ?? "0"}</span>
+                  {!defindexStatus.usdcTrustline.active ? (
+                    <button
+                      type="button"
+                      disabled={Boolean(defindexBusy)}
+                      onClick={() => void prepareDefindex("usdc_trustline")}
+                    >
+                      {defindexBusy === "usdc_trustline" ? "Preparing..." : "Review USDC trustline"}
+                    </button>
+                  ) : (
+                    <>
+                      <label>
+                        Amount
+                        <input value={usdcDepositAmount} onChange={(event) => setUsdcDepositAmount(event.target.value)} inputMode="decimal" />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={Boolean(defindexBusy) || Number(defindexStatus.usdcTrustline.balance) <= 0}
+                        onClick={() => void prepareDefindex("deposit", "USDC", usdcDepositAmount)}
+                      >
+                        {defindexBusy === "depositUSDC" ? "Simulating..." : "Review USDC deposit"}
+                      </button>
+                    </>
+                  )}
+                  {defindexStatus.usdcTrustline.active && Number(defindexStatus.usdcTrustline.balance) <= 0 && (
+                    <small>Trustline ready. The wallet still needs the exact Blend Testnet USDC before a deposit can be simulated.</small>
+                  )}
+                </article>
+              </div>
+            )}
+            {defindexApproval && (
+              <div className={"defindex-approval " + defindexApproval.status}>
+                <span>EXACT ACTION FOR SIGNATURE</span>
+                <h4>{defindexApproval.preview.title}</h4>
+                <p>{defindexApproval.preview.description}</p>
+                <dl>
+                  <div><dt>Network</dt><dd>{defindexApproval.preview.network}</dd></div>
+                  <div><dt>Asset</dt><dd>{defindexApproval.preview.asset}</dd></div>
+                  <div><dt>Amount</dt><dd>{defindexApproval.preview.amount}</dd></div>
+                  <div><dt>Destination</dt><dd>{defindexApproval.preview.destination}</dd></div>
+                  <div><dt>Auto-invest request</dt><dd>{defindexApproval.preview.invest ? "Yes" : "No"}</dd></div>
+                </dl>
+                {defindexApproval.status === "prepared" ? (
+                  <button type="button" disabled={Boolean(defindexBusy)} onClick={() => void confirmDefindex()}>
+                    {defindexBusy === "execute" ? "Signing and submitting..." : "Confirm and sign with Privy"}
+                  </button>
+                ) : defindexApproval.explorerUrl ? (
+                  <a href={defindexApproval.explorerUrl} target="_blank" rel="noreferrer">Open transaction receipt</a>
+                ) : null}
+              </div>
+            )}
+            {defindexNotice && <p className="defindex-agent-notice">{defindexNotice}</p>}
+          </section>
+        )}
+
         {error && <p className="agent-chat-error">{error}. Your draft was preserved.</p>}
 
         <form className="agent-chat-composer" onSubmit={submit}>
@@ -394,7 +615,7 @@ export default function AgentChat({
           >
             Watchlist
           </button>
-          <button onClick={() => void sendMessage("Connect me to DeFindex")}>DeFindex</button>
+          <button onClick={() => void sendMessage("Start my DeFindex Testnet proof")}>Testnet proof</button>
           <button onClick={() => void sendMessage("Connect me to Travala")}>Travala</button>
           <button onClick={() => void sendMessage("What can I connect to?")}>Connections</button>
         </section>

@@ -1,110 +1,180 @@
-import Link from "next/link";
+"use client";
 
-const sandboxTools = [
-  "search_offers",
-  "get_offer",
-  "create_intent",
-  "evaluate_policy",
-  "demo_authorize_intent",
-  "execute_authorized_intent",
-  "get_receipt",
+import { useState } from "react";
+import Link from "next/link";
+import LanguageToggle, { useLocale } from "../language-toggle";
+
+const endpoint = "https://agente-asistente.vercel.app/api/mcp";
+const clientConfig = `{
+  "mcpServers": {
+    "agent-assistant": {
+      "url": "${endpoint}"
+    }
+  }
+}`;
+
+const tools = [
+  ["search_offers", "READ", "Find public agent-ready services."],
+  ["get_offer", "READ", "Inspect one structured offer."],
+  ["create_intent", "WRITE", "Freeze one action with an idempotency key."],
+  ["evaluate_policy", "SAFE", "Apply limits before approval."],
+  ["demo_authorize_intent", "DEMO", "Record explicit sandbox confirmation."],
+  ["execute_authorized_intent", "REPLAY SAFE", "Create or replay one sandbox receipt."],
+  ["get_receipt", "READ", "Retrieve durable execution evidence."],
 ];
 
-const clientConfig = [
-  "{",
-  '  "mcpServers": {',
-  '    "agent-assistant": {',
-  '      "url": "https://agente-asistente.vercel.app/api/mcp"',
-  "    }",
-  "  }",
-  "}",
-].join("\n");
+const copy = {
+  en: {
+    nav: ["Product", "Integration Lab", "GitHub"],
+    eyebrow: "DEVELOPER PLATFORM",
+    title: "Build the action layer for the agent economy.",
+    lede: "Use our agent, publish a service agents can discover, or connect your product through a narrow and auditable tool contract.",
+    badges: ["STELLAR TESTNET", "NON-CUSTODIAL", "3 MCP SURFACES"],
+    metrics: [["3", "integration paths"], ["7", "sandbox tools"], ["0", "private keys stored"]],
+    choose: "Choose how you want to build",
+    chooseText: "Each path starts small, proves one useful action and keeps sensitive execution behind explicit authority.",
+    paths: [
+      ["01", "Use agent-assistant", "Connect an external agent to our public commerce sandbox or, during development, to a user's personal agent.", "Start with public MCP", "#quickstart", "SANDBOX LIVE"],
+      ["02", "Publish your service", "Create a scoped provider identity, publish structured offers and make them discoverable by agents.", "See provider flow", "#provider", "PILOT READY"],
+      ["03", "Connect your product", "Expose one official MCP or API action and let agent-assistant call it after user consent.", "Use integration checklist", "#connect-product", "GUIDED"],
+    ],
+    architecture: "One gateway, two directions",
+    architectureText: "External agents can use us. Our agent can use external products. Providers can publish the services both sides discover.",
+    diagram: ["External agent", "agent-assistant", "Policy + receipts", "Provider catalog", "External product"],
+    quick: "Public MCP quickstart",
+    quickText: "No API key is required for the commerce sandbox. Add the endpoint, list the tools and keep one stable idempotency key for every logical action.",
+    copy: "Copy config",
+    copied: "Copied",
+    test: "Open MCP discovery",
+    toolsTitle: "Seven narrow tools, one safe lifecycle",
+    toolsText: "Discovery is separated from intent creation, policy, approval, execution and evidence.",
+    providerTitle: "Publish a service without rebuilding your product",
+    providerText: "The current pilot flow uses one scoped key per provider. Self-service verification and rotation are the next public milestone.",
+    providerSteps: [
+      ["1", "Register provider", "Founder creates the pilot identity and returns the raw token once."],
+      ["2", "Create a draft", "Map one service to a strict offer contract with a stable external ID."],
+      ["3", "Publish", "Only published offers appear in public search."],
+      ["4", "Receive intent", "Orders and fulfillment events remain the next vertical slice."],
+    ],
+    connectTitle: "Bring your own MVP",
+    connectText: "You do not need to rebuild your product around MCP. We select the smallest official surface that can prove one useful action.",
+    checklist: ["Official API, MCP, SDK or WebMCP surface", "Minimum user consent and scopes", "Stable identifiers and normalized errors", "Sandbox or reversible first action", "Idempotency, timeout and retry behavior", "Settlement and fulfillment verified separately"],
+    handoff: "Send this brief to your developer or implementation agent",
+    handoffCta: "Open integration agent brief",
+    docsTitle: "Documentation that matches the product state",
+    docs: [
+      ["Developer guide", "Quickstart, APIs, connectors, errors and definition of done.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/developer-guide.md"],
+      ["Architecture", "Identity, consent, tools, payment boundaries and deployment diagrams.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/architecture.md"],
+      ["MCP gateway", "Public sandbox, personal agent and provider-admin surfaces.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/mcp-gateway.md"],
+      ["DeFindex Testnet", "Trustline, transaction review, Privy signature and receipt flow.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/defindex-testnet.md"],
+    ],
+    statusTitle: "Know exactly what is real",
+    statusRows: [["Public commerce MCP", "Sandbox live"], ["Provider MCP", "Pilot ready"], ["Personal agent MCP", "Development bridge"], ["DeFindex signing", "Ready to validate"], ["Mainnet settlement", "Disabled"]],
+    securityTitle: "Security contract",
+    security: ["No private key or seed phrase reaches agent-assistant.", "Personal users and providers are isolated principals.", "Provider keys are hashed, scoped and returned raw only once.", "Creating an intent never moves funds.", "Retries reuse the original intent or receipt.", "Mainnet and public MCP payment signing remain disabled."],
+    finalTitle: "Start with one action worth proving.",
+    finalText: "Connect the public sandbox today or bring us one product action for a guided Testnet pilot.",
+    finalPrimary: "Copy MCP endpoint",
+    finalSecondary: "Review integrations",
+    back: "Back to product",
+  },
+  es: {
+    nav: ["Producto", "Laboratorio", "GitHub"],
+    eyebrow: "PLATAFORMA PARA DEVELOPERS",
+    title: "Construye la capa de acciones para la economía de agentes.",
+    lede: "Usa nuestro agente, publica un servicio que otros agentes puedan descubrir o conecta tu producto mediante herramientas específicas y auditables.",
+    badges: ["STELLAR TESTNET", "NO CUSTODIAL", "3 SUPERFICIES MCP"],
+    metrics: [["3", "rutas de integración"], ["7", "herramientas sandbox"], ["0", "claves privadas almacenadas"]],
+    choose: "Elige cómo quieres construir",
+    chooseText: "Cada ruta comienza pequeña, demuestra una acción útil y protege la ejecución sensible con autoridad explícita.",
+    paths: [
+      ["01", "Usar agent-assistant", "Conecta un agente externo a nuestro sandbox público o, durante desarrollo, al agente personal de un usuario.", "Comenzar con MCP público", "#quickstart", "SANDBOX ACTIVO"],
+      ["02", "Publicar tu servicio", "Crea una identidad de provider con permisos limitados y publica ofertas estructuradas para agentes.", "Ver flujo de providers", "#provider", "PILOTO LISTO"],
+      ["03", "Conectar tu producto", "Expón una acción oficial mediante MCP o API y permite que agent-assistant la use después del consentimiento.", "Usar checklist", "#connect-product", "GUIADO"],
+    ],
+    architecture: "Un gateway, dos direcciones",
+    architectureText: "Agentes externos pueden utilizarnos. Nuestro agente puede utilizar productos externos. Los providers publican los servicios que ambos descubren.",
+    diagram: ["Agente externo", "agent-assistant", "Política + recibos", "Catálogo provider", "Producto externo"],
+    quick: "Quickstart del MCP público",
+    quickText: "El sandbox de comercio no requiere API key. Agrega el endpoint, descubre las herramientas y conserva una idempotency key estable para cada acción lógica.",
+    copy: "Copiar config",
+    copied: "Copiado",
+    test: "Abrir discovery MCP",
+    toolsTitle: "Siete herramientas específicas, un ciclo seguro",
+    toolsText: "El descubrimiento está separado de la creación del intent, política, aprobación, ejecución y evidencia.",
+    providerTitle: "Publica un servicio sin reconstruir tu producto",
+    providerText: "El piloto actual utiliza una clave limitada por provider. La verificación y rotación autoservicio son el próximo hito público.",
+    providerSteps: [
+      ["1", "Registrar provider", "El founder crea la identidad piloto y entrega el token raw una sola vez."],
+      ["2", "Crear borrador", "Mapea un servicio a un contrato estricto con external ID estable."],
+      ["3", "Publicar", "Solo las ofertas publicadas aparecen en la búsqueda pública."],
+      ["4", "Recibir intent", "Órdenes y eventos de fulfillment son el siguiente corte vertical."],
+    ],
+    connectTitle: "Trae tu propia MVP",
+    connectText: "No necesitas reconstruir tu producto alrededor de MCP. Elegimos la superficie oficial más pequeña que permita demostrar una acción útil.",
+    checklist: ["API, MCP, SDK o WebMCP oficial", "Consentimiento y scopes mínimos", "IDs estables y errores normalizados", "Primera acción reversible o sandbox", "Idempotencia, timeout y reintentos", "Liquidación y entrega verificadas por separado"],
+    handoff: "Envía este brief a tu developer o agente de implementación",
+    handoffCta: "Abrir brief para integrar productos",
+    docsTitle: "Documentación alineada con el estado real",
+    docs: [
+      ["Guía para developers", "Quickstart, APIs, conectores, errores y definición de terminado.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/developer-guide.md"],
+      ["Arquitectura", "Diagramas de identidad, consentimiento, herramientas, pagos y despliegue.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/architecture.md"],
+      ["Gateway MCP", "Sandbox público, agente personal y administración de providers.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/mcp-gateway.md"],
+      ["DeFindex Testnet", "Trustline, revisión, firma Privy y flujo de recibos.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/defindex-testnet.md"],
+    ],
+    statusTitle: "Sabe exactamente qué es real",
+    statusRows: [["MCP de comercio público", "Sandbox activo"], ["Provider MCP", "Piloto listo"], ["MCP del agente personal", "Puente de desarrollo"], ["Firma DeFindex", "Lista para validar"], ["Liquidación Mainnet", "Desactivada"]],
+    securityTitle: "Contrato de seguridad",
+    security: ["Ninguna clave privada o seed phrase llega a agent-assistant.", "Usuarios personales y providers son identidades aisladas.", "Las claves provider se guardan hasheadas y con scopes.", "Crear un intent nunca mueve fondos.", "Los reintentos reutilizan el intent o recibo original.", "Mainnet y la firma de pagos vía MCP público siguen desactivados."],
+    finalTitle: "Comienza con una acción que valga la pena demostrar.",
+    finalText: "Conecta hoy el sandbox público o trae una acción de tu producto para un piloto guiado en Testnet.",
+    finalPrimary: "Copiar endpoint MCP",
+    finalSecondary: "Revisar integraciones",
+    back: "Volver al producto",
+  },
+};
 
 export default function Developers() {
+  const { locale, setLocale } = useLocale();
+  const t = copy[locale];
+  const [copied, setCopied] = useState<string | null>(null);
+
+  async function copyValue(value: string, key: string) {
+    await navigator.clipboard.writeText(value);
+    setCopied(key);
+    window.setTimeout(() => setCopied(null), 1600);
+  }
+
   return (
-    <main className="dev shell">
-      <Link className="brand" href="/">
-        <b>AA</b>agent-assistant
-      </Link>
-      <p className="eyebrow">DEVELOPER PLATFORM</p>
-      <h1>Use our agent, publish a service, or connect an external tool.</h1>
-      <p className="lede">
-        The gateway now separates a public commerce sandbox, an authenticated
-        personal-agent MCP and a scoped provider-admin MCP. Payment settlement
-        remains simulated until the first Privy-signed Stellar Testnet proof.
-      </p>
+    <main className="developer-portal">
+      <nav className="developer-nav shell">
+        <Link className="brand" href="/"><b>AA</b>agent-assistant</Link>
+        <div><Link href="/">{t.nav[0]}</Link><Link href="/connections">{t.nav[1]}</Link><a href="https://github.com/CaBsCrypto/agente-asistente">{t.nav[2]}</a><LanguageToggle locale={locale} onChange={setLocale} compact /></div>
+      </nav>
 
-      <section>
-        <h2>Choose your path</h2>
-        <ul>
-          <li>
-            <strong>Use agent-assistant:</strong> connect to the personal MCP
-            with the user&apos;s authority.
-          </li>
-          <li>
-            <strong>Publish services:</strong> use a scoped provider key to
-            manage offers that agents can discover.
-          </li>
-          <li>
-            <strong>Connect your product:</strong> expose an API or MCP tool
-            that our outbound connector can call after consent.
-          </li>
-        </ul>
-        <p>
-          <a href="https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/developer-guide.md">
-            Developer guide
-          </a>
-          {" | "}
-          <a href="https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/architecture.md">
-            Architecture
-          </a>
-          {" | "}
-          <a href="https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/mcp-gateway.md">
-            MCP gateway guide
-          </a>
-          {" | "}
-          <a href="https://github.com/CaBsCrypto/agente-asistente">
-            GitHub
-          </a>
-        </p>
-      </section>
+      <header className="developer-hero shell">
+        <div><p className="eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p className="lede">{t.lede}</p><div className="developer-badges">{t.badges.map((badge) => <span key={badge}>{badge}</span>)}</div></div>
+        <div className="developer-metrics">{t.metrics.map((metric) => <article key={metric[1]}><strong>{metric[0]}</strong><span>{metric[1]}</span></article>)}</div>
+      </header>
 
-      <section>
-        <h2>MCP gateway endpoints</h2>
-        <p><strong>Commerce sandbox</strong></p>
-        <pre>https://agente-asistente.vercel.app/api/mcp</pre>
-        <p><strong>Personal agent (Privy bearer)</strong></p>
-        <pre>https://agente-asistente.vercel.app/api/mcp/agent</pre>
-        <p><strong>Service provider admin (scoped provider key)</strong></p>
-        <pre>https://agente-asistente.vercel.app/api/mcp/provider</pre>
-      </section>
+      <section className="developer-section shell"><header className="section-heading"><p className="eyebrow">01 · START</p><h2>{t.choose}</h2><p>{t.chooseText}</p></header><div className="developer-paths">{t.paths.map((path) => <article key={path[0]}><header><b>{path[0]}</b><span>{path[5]}</span></header><h3>{path[1]}</h3><p>{path[2]}</p><a href={path[4]}>{path[3]} →</a></article>)}</div></section>
 
-      <section>
-        <h2>Sandbox client configuration</h2>
-        <pre>{clientConfig}</pre>
-        <h2>Commerce tools</h2>
-        <div className="tool-list">
-          {sandboxTools.map((tool) => <code key={tool}>{tool}</code>)}
-        </div>
-      </section>
+      <section className="developer-architecture"><div className="shell"><header className="section-heading"><p className="eyebrow">02 · ARCHITECTURE</p><h2>{t.architecture}</h2><p>{t.architectureText}</p></header><div className="architecture-map"><div>{t.diagram[0]}</div><i>→</i><div className="core">{t.diagram[1]}<small>{t.diagram[2]}</small></div><i>↔</i><div>{t.diagram[3]}</div><i>↔</i><div>{t.diagram[4]}</div></div></div></section>
 
-      <section>
-        <h2>Security contract</h2>
-        <ul>
-          <li>Personal and provider principals are isolated.</li>
-          <li>Provider keys are hashed and scoped.</li>
-          <li>Publishing is separate from drafting an offer.</li>
-          <li>Creating an intent never moves funds.</li>
-          <li>The same idempotency key returns the original intent.</li>
-          <li>Repeated execution returns the original receipt.</li>
-          <li>
-            Public personal-agent access still requires OAuth 2.1, consent,
-            rotation and revocation before launch.
-          </li>
-        </ul>
-      </section>
+      <section className="developer-section shell" id="quickstart"><div className="quickstart-grid"><div><p className="eyebrow">03 · QUICKSTART</p><h2>{t.quick}</h2><p>{t.quickText}</p><div className="quick-actions"><button type="button" onClick={() => void copyValue(clientConfig, "config")}>{copied === "config" ? t.copied : t.copy}</button><a href="/.well-known/mcp" target="_blank">{t.test} ↗</a></div></div><div className="code-window"><header><span /><span /><span /><b>mcp.config.json</b></header><pre>{clientConfig}</pre></div></div></section>
 
-      <Link className="doc-back" href="/">Back to the product</Link>
+      <section className="developer-section shell"><header className="section-heading"><p className="eyebrow">04 · TOOL CONTRACT</p><h2>{t.toolsTitle}</h2><p>{t.toolsText}</p></header><div className="developer-tools">{tools.map((tool) => <article key={tool[0]}><header><code>{tool[0]}</code><span>{tool[1]}</span></header><p>{tool[2]}</p></article>)}</div></section>
+
+      <section className="provider-band" id="provider"><div className="shell"><header className="section-heading"><p className="eyebrow">05 · PROVIDER MCP</p><h2>{t.providerTitle}</h2><p>{t.providerText}</p></header><div className="provider-steps">{t.providerSteps.map((step) => <article key={step[0]}><b>{step[0]}</b><h3>{step[1]}</h3><p>{step[2]}</p></article>)}</div></div></section>
+
+      <section className="developer-section shell" id="connect-product"><div className="connect-grid"><div><p className="eyebrow">06 · OUTBOUND CONNECTOR</p><h2>{t.connectTitle}</h2><p>{t.connectText}</p><div className="handoff-card"><strong>{t.handoff}</strong><a href="https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/NEW_PRODUCT_INTEGRATION_AGENT_PROMPT.md">{t.handoffCta} ↗</a></div></div><ol>{t.checklist.map((item, index) => <li key={item}><b>{String(index + 1).padStart(2, "0")}</b><span>{item}</span></li>)}</ol></div></section>
+
+      <section className="developer-section shell"><header className="section-heading"><p className="eyebrow">07 · DOCS</p><h2>{t.docsTitle}</h2></header><div className="docs-grid">{t.docs.map((doc) => <a key={doc[0]} href={doc[2]}><span>DOC</span><h3>{doc[0]}</h3><p>{doc[1]}</p><b>Open ↗</b></a>)}</div></section>
+
+      <section className="developer-section shell"><div className="status-security"><div><p className="eyebrow">08 · HONEST STATUS</p><h2>{t.statusTitle}</h2><dl>{t.statusRows.map((row) => <div key={row[0]}><dt>{row[0]}</dt><dd>{row[1]}</dd></div>)}</dl></div><div className="security-card"><p className="eyebrow">SECURITY</p><h2>{t.securityTitle}</h2><ul>{t.security.map((item) => <li key={item}>{item}</li>)}</ul></div></div></section>
+
+      <section className="developer-final shell"><div><p className="eyebrow">READY WHEN YOU ARE</p><h2>{t.finalTitle}</h2><p>{t.finalText}</p></div><div><button type="button" onClick={() => void copyValue(endpoint, "endpoint")}>{copied === "endpoint" ? t.copied : t.finalPrimary}</button><Link href="/connections">{t.finalSecondary}</Link></div></section>
+      <footer className="developer-footer shell"><Link className="brand" href="/"><b>AA</b>agent-assistant</Link><Link href="/">← {t.back}</Link></footer>
     </main>
   );
 }

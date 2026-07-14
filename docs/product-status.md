@@ -9,6 +9,7 @@ This document separates deployed proof from product vision. Status definitions l
 | Capability | Status | Evidence | Next proof |
 | --- | --- | --- | --- |
 | Privy Google/email login | Live | Production /agent authentication | Measure completed onboarding |
+| Bilingual developer portal | Live | EN/ES paths, MCP quickstart, embedded architecture and provider/onbound onboarding | Add interactive MCP playground |
 | Automatic Stellar wallet | Live | Privy-owned Stellar address per user | Add recovery/support runbook |
 | Stellar Testnet activation | Live | Horizon account and explorer record | Record activation latency |
 | Wallet balance | Live | Horizon balance response | Add refresh/error telemetry |
@@ -30,8 +31,9 @@ This document separates deployed proof from product vision. Status definitions l
 | Policy evaluation | Sandbox | Persisted decision and demo limit | Per-user and merchant limits |
 | Explicit demo approval | Sandbox | Short-lived hashed capability | Transaction-scoped Privy approval |
 | Duplicate-resistant receipt | Sandbox | Unique receipt per intent | Reuse on-chain hash on retry |
-| Privy Stellar raw signing | Founder test lab | Signature verification harness | Sign complete payment transaction |
-| Stellar Testnet payment | Planned, P0 | Not submitted by product | Send one reproducible payment |
+| Privy Stellar transaction signing | Ready to validate | User JWT authorization plus verified Ed25519 transaction signature | Complete authenticated acceptance test |
+| DeFindex XLM deposit | Ready to validate, P0 | Public vault simulation and prepared XDR | Confirm with Privy and explorer receipt |
+| DeFindex USDC trustline/deposit | Ready to validate, P0 | Exact issuer, trustline and vault flow implemented | Fund compatible Testnet USDC and confirm deposit |
 | Mainnet payment | Planned | None | Only after testnet safety review |
 | Escrow or refunds | Planned | Research only | Choose non-custodial partner path |
 | Fulfillment verification | Planned | Separate sandbox state | Validate one reservation or task |
@@ -43,7 +45,7 @@ This document separates deployed proof from product vision. Status definitions l
 | CoinMarketCap | Live, read-only | Official Trial Pro API | No alerts, trade or x402 yet |
 | Notion | Ready to validate | Official remote MCP + OAuth | Acceptance test pending |
 | Travala | Live, read-only | Public Travel MCP | No booking or payment |
-| DeFindex | Planned P0 pilot | Public docs/API plus contact | Credentials/vault not configured |
+| DeFindex | Ready to validate | Direct public Soroban contracts, no API key | User confirms XLM, then USDC Testnet flows |
 | UNBLCK | Planned partner pilot | Direct contact | Reservation contract needed |
 | ArcusX | Planned partner pilot | Direct contact | Task lifecycle contract needed |
 | Gmail, Drive, Calendar | Planned | Future OAuth connectors | Catalog only |
@@ -61,8 +63,8 @@ Already demonstrable:
 
 Required for the strongest application update:
 
-1. One wallet-signed Stellar Testnet payment with an explorer link.
-2. The same transaction hash returned on retry without a second submission.
+1. One Privy-signed DeFindex XLM Testnet deposit with an explorer link.
+2. The same DeFindex transaction hash returned on retry without a second submission.
 3. One external OAuth connection completed end to end, ideally Notion.
 4. Three design-partner commitments or letters of intent.
 5. A concise 90-second recording with no simulated behavior described as real.

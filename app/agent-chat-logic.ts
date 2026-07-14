@@ -146,6 +146,32 @@ export function buildAgentReply(
   const query = normalized(message);
   const connection = findRequestedConnection(message);
 
+  if (
+    query.includes("testnet") ||
+    query.includes("prueba onchain") ||
+    query.includes("probar onchain")
+  ) {
+    if (!context.wallet) {
+      return {
+        content:
+          "Your Privy session is active, but the Stellar Testnet wallet setup has not finished yet. Reopen the workspace or retry the wallet setup before preparing an on-chain action.",
+        actions: [
+          { label: "Retry wallet setup", message: "Retry my Stellar wallet setup" },
+        ],
+      };
+    }
+
+    return {
+      content:
+        "You are already in **Stellar Testnet**. Your personal Privy wallet is active with " +
+        (context.wallet.balance ?? "an unavailable") +
+        " XLM balance.\n\nThe safest proof is: inspect this wallet, activate its exact USDC trustline, review a 1 XLM DeFindex deposit, explicitly authorize the signature and verify the receipt on Stellar Expert. No Mainnet funds are enabled.",
+      actions: [
+        { label: "Start Testnet proof", message: "Start my DeFindex Testnet proof" },
+        { label: "Show my wallet", message: "Show my wallet balance" },
+      ],
+    };
+  }
 
   if (
     query.includes("balance") ||

@@ -14,6 +14,8 @@ This guide is for engineers integrating an agent, application or merchant with a
 
 Read the [architecture diagrams](architecture.md) and [current product status](product-status.md) first.
 
+The live [developer portal](https://agente-asistente.vercel.app/developers) provides an English/Spanish self-service entry point with three paths: use agent-assistant, publish a service, or connect an external product. The language preference is stored locally and does not affect API contracts.
+
 ## Quickstart
 
 ~~~bash
@@ -51,6 +53,7 @@ npm run build
 | GET /.well-known/mcp | Public | MCP discovery |
 | POST /api/agent/bootstrap | Privy bearer + same-origin | User and wallet bootstrap |
 | GET/POST /api/agent/chat | Privy bearer + same-origin | User chat and history |
+| GET/POST /api/agent/defindex | Privy bearer + same-origin | Review, sign and submit DeFindex Testnet actions |
 | GET /api/connections | Privy bearer | User connector state |
 | Notion start/callback | Privy session and OAuth state | Provider consent |
 | /api/admin routes | Founder session | Private operations |
@@ -220,6 +223,9 @@ APIs return JSON with a stable error field.
 | policy_approval_required | Policy rejected or not evaluated | Do not execute |
 | invalid_authorization | Capability does not match | Restart authorization |
 | authorization_expired | Capability expired | Reconfirm action |
+| usdc_trustline_required | Exact DeFindex USDC trustline is absent | Prepare and approve the trustline first |
+| defindex_approval_expired | Prepared XDR is no longer valid | Prepare and review a new action |
+| wallet_not_owned_by_authenticated_user | Privy wallet does not belong to bearer user | Stop and re-bootstrap the correct user wallet |
 | notion_not_connected | User has not granted Notion access | Start OAuth |
 | notion_reauth_required | Provider token must be renewed | Reconnect provider |
 
