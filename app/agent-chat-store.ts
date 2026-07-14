@@ -1,9 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb, hasDatabase } from "@/db";
 import {
   agentConnectionInterests,
   agentConversations,
+  agentExternalConnections,
   agentMessages,
   agentWallets,
 } from "@/db/schema";
@@ -15,7 +16,7 @@ export type StoredAgentMessage = {
   role: "user" | "assistant";
   content: string;
   createdAt: string;
-  actions?: { label: string; message?: string; href?: string }[];
+  actions?: { label: string; message?: string; href?: string; connect?: string }[];
   connection?: { name: string; stage: string; priority: string };
 };
 
@@ -145,8 +146,22 @@ export async function sendAgentMessage(userId: string, content: string) {
   };
 
   await db.insert(agentMessages).values(userMessage);
-  const wallet = await walletContext(userId);
-  const reply = buildAgentReply(content, { wallet });
+  const [wallet, activeConnections] = await Promise.all([
+    walletContext(userId),
+    db
+      .select({ provider: agentExternalConnections.provider })
+      .from(agentExternalConnections)
+      .where(
+        and(
+          eq(agentExternalConnections.userId, userId),
+          eq(agentExternalConnections.status, "active"),
+        ),
+      ),
+  ]);
+  const reply = buildAgentReply(content, {
+    wallet,
+    connectedProviders: activeConnections.map((item) => item.provider),
+  });
   const assistantMessage = {
     id: randomUUID(),
     conversationId: id,

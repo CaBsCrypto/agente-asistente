@@ -36,6 +36,13 @@
       "when": 1784004954466,
       "tag": "0004_wealthy_pandemic",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784010177915,
+      "tag": "0005_exotic_vector",
+      "breakpoints": true
     }
   ]
 }

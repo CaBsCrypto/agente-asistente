@@ -4,6 +4,7 @@ export type AgentChatAction = {
   label: string;
   message?: string;
   href?: string;
+  connect?: string;
 };
 
 export type AgentChatReply = {
@@ -22,6 +23,7 @@ export type AgentChatContext = {
     balance: string | null;
     network: string;
   } | null;
+  connectedProviders?: string[];
 };
 
 function normalized(value: string) {
@@ -46,6 +48,9 @@ const aliases: Record<string, string[]> = {
   Gmail: ["gmail", "correo", "email", "mail"],
   "Privy wallet orchestration": ["privy", "wallet", "billetera"],
   "x402 Bazaar": ["x402", "bazaar"],
+  "CoinGecko Market Data": ["coingecko", "coin gecko"],
+  "CoinMarketCap Agent Hub": ["coinmarketcap", "coin market cap", "cmc"],
+  TradingView: ["tradingview", "trading view"],
 };
 
 export function findRequestedConnection(message: string) {
@@ -59,32 +64,55 @@ export function findRequestedConnection(message: string) {
   return null;
 }
 
-function connectionReply(connection: Connection): AgentChatReply {
+function connectionReply(
+  connection: Connection,
+  context: AgentChatContext,
+): AgentChatReply {
+  const isConnected =
+    connection.name === "Notion MCP" &&
+    context.connectedProviders?.includes("notion");
+  const effectiveStage: Connection["stage"] = isConnected
+    ? "Connected"
+    : connection.stage;
   const safeBoundary =
-    connection.stage === "Connected" || connection.stage === "Read-only connected"
+    effectiveStage === "Connected" || effectiveStage === "Read-only connected"
       ? "I can use the capability that is already available, but any financial or irreversible action will still require an explicit review."
       : "I can prepare the integration and its test plan now, but I will not claim the external connection is active until the required access and proof are complete.";
 
   return {
     content: [
-      connection.name + " is currently **" + connection.stage + "** (" + connection.priority + ").",
-      connection.proof,
-      "Next step: " + connection.nextAction,
+      connection.name +
+        " is currently **" +
+        effectiveStage +
+        "** (" +
+        connection.priority +
+        ").",
+      ...(isConnected
+        ? [
+            "Your authorization is stored encrypted on the server and can be used only through this agent.",
+          ]
+        : [connection.proof, "Next step: " + connection.nextAction]),
       safeBoundary,
     ].join("\n\n"),
     connection: {
       name: connection.name,
-      stage: connection.stage,
+      stage: effectiveStage,
       priority: connection.priority,
     },
     actions: [
+      ...(connection.name === "Notion MCP" && !isConnected
+        ? [{ label: "Connect Notion", connect: "notion" }]
+        : []),
       {
         label: "Prepare " + connection.name + " plan",
         message: "Prepare the safest first test for " + connection.name,
       },
       {
         label: "What is missing?",
-        message: "What credentials, permissions and proof are missing for " + connection.name + "?",
+        message:
+          "What credentials, permissions and proof are missing for " +
+          connection.name +
+          "?",
       },
       { label: "Open official source", href: connection.href },
     ],
@@ -127,7 +155,7 @@ export function buildAgentReply(
     };
   }
 
-  if (connection) return connectionReply(connection);
+  if (connection) return connectionReply(connection, context);
 
   if (
     query.includes("connect") ||

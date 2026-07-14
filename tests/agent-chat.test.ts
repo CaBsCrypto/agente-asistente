@@ -16,6 +16,30 @@ test("recognizes active pilot aliases in natural language", () => {
   assert.equal(findRequestedConnection("prepara un correo en Gmail")?.name, "Gmail");
 });
 
+test("offers a real OAuth action for Notion", () => {
+  const reply = buildAgentReply("connect me to Notion");
+  assert.ok(
+    reply.actions.some(
+      (action) => action.label === "Connect Notion" && action.connect === "notion",
+    ),
+  );
+});
+
+test("reports Notion as connected after OAuth state is present", () => {
+  const reply = buildAgentReply("connect me to Notion", {
+    connectedProviders: ["notion"],
+  });
+  assert.equal(reply.connection?.stage, "Connected");
+  assert.ok(!reply.actions.some((action) => action.connect === "notion"));
+  assert.match(reply.content, /stored encrypted/i);
+});
+
+test("recognizes portfolio and market data targets", () => {
+  assert.equal(findRequestedConnection("revisa precios en CoinGecko")?.name, "CoinGecko Market Data");
+  assert.equal(findRequestedConnection("conecta CoinMarketCap")?.name, "CoinMarketCap Agent Hub");
+  assert.equal(findRequestedConnection("quiero alertas de TradingView")?.name, "TradingView");
+});
+
 test("reports real connection status without claiming unavailable execution", () => {
   const reply = buildAgentReply("connect me to DeFindex");
   assert.match(reply.content, /Credentials needed/);

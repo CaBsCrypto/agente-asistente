@@ -6,6 +6,13 @@ type ChatAction = {
   label: string;
   message?: string;
   href?: string;
+  connect?: string;
+};
+
+type ExternalConnection = {
+  provider: string;
+  status: string;
+  updatedAt: string;
 };
 
 type ChatMessage = {
@@ -52,6 +59,8 @@ export default function AgentChat({
   );
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [connections, setConnections] = useState<ExternalConnection[]>([]);
+  const [connectionNotice, setConnectionNotice] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -67,8 +76,31 @@ export default function AgentChat({
         });
         const body = await response.json();
         if (!response.ok) throw new Error(body.error ?? "Conversation unavailable");
+        const connectionsResponse = await fetch("/api/connections", {
+          headers: { Authorization: "Bearer " + token },
+          cache: "no-store",
+        });
+        const connectionsBody = await connectionsResponse.json();
         if (active) {
           setMessages(body.messages);
+          setConnections(
+            connectionsResponse.ok ? connectionsBody.connections ?? [] : [],
+          );
+          const params = new URLSearchParams(window.location.search);
+          if (
+            params.get("connection") === "notion" &&
+            params.get("status") === "connected"
+          ) {
+            setConnectionNotice(
+              "Notion is connected. You can now ask the agent to use that workspace.",
+            );
+            window.history.replaceState({}, "", "/agent");
+          } else if (params.get("connection") === "notion") {
+            setConnectionNotice(
+              "Notion was not connected. You can retry when you are ready.",
+            );
+            window.history.replaceState({}, "", "/agent");
+          }
           setStatus("ready");
         }
       } catch (caught) {
@@ -134,6 +166,30 @@ export default function AgentChat({
     }
   }
 
+  async function connectProvider(provider: string) {
+    if (status === "sending") return;
+    setStatus("sending");
+    setError(null);
+    setConnectionNotice("Opening secure authorization...");
+    try {
+      const token = await getAccessToken();
+      if (!token) throw new Error("Authentication token unavailable");
+      const response = await fetch("/api/connections/" + provider + "/start", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token },
+      });
+      const body = await response.json();
+      if (!response.ok || !body.authorizationUrl) {
+        throw new Error(body.error ?? "Connection could not start");
+      }
+      window.location.assign(body.authorizationUrl);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Connection failed");
+      setConnectionNotice(null);
+      setStatus("error");
+    }
+  }
+
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void sendMessage(draft);
@@ -152,6 +208,10 @@ export default function AgentChat({
           </div>
           <span className="agent-chat-memory">NEON MEMORY ON</span>
         </header>
+
+        {connectionNotice && (
+          <p className="agent-connection-notice">{connectionNotice}</p>
+        )}
 
         <div className="agent-chat-thread" aria-live="polite">
           {status === "loading" && (
@@ -181,7 +241,17 @@ export default function AgentChat({
                 {message.actions?.length ? (
                   <div className="agent-message-actions">
                     {message.actions.map((action) =>
-                      action.href ? (
+                      action.connect ? (
+                        <button
+                          key={action.label}
+                          type="button"
+                          className="primary"
+                          disabled={status === "sending"}
+                          onClick={() => void connectProvider(action.connect!)}
+                        >
+                          {action.label}
+                        </button>
+                      ) : action.href ? (
                         <a
                           key={action.label}
                           href={action.href}
@@ -257,6 +327,17 @@ export default function AgentChat({
         >
           Verify wallet on-chain
         </a>
+        {connections.length > 0 && (
+          <div className="agent-connected-apps">
+            <strong>CONNECTED APPS</strong>
+            {connections.map((connection) => (
+              <span key={connection.provider}>
+                {connection.provider === "notion" ? "Notion" : connection.provider}
+                <i>{connection.status}</i>
+              </span>
+            ))}
+          </div>
+        )}
         <section>
           <strong>PERSONAL HELP</strong>
           <button onClick={() => void sendMessage("Connect me to Notion")}>Notion</button>
