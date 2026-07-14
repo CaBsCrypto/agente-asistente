@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  PRIVY_WALLET_ARCHITECTURE,
   fundStellarTestnetWallet,
   getOrCreateUserStellarWallet,
   getPrivyStellarReadiness,
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
         account,
         activation,
         readiness: getPrivyStellarReadiness(),
+        walletArchitecture: PRIVY_WALLET_ARCHITECTURE,
       },
       { headers: { "Cache-Control": "no-store" } },
     );

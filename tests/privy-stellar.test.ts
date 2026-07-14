@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { Keypair } from "@stellar/stellar-sdk";
 import {
+
+  PRIVY_WALLET_ARCHITECTURE,
   getOrCreateUserStellarWallet,
   getPrivyStellarReadiness,
   getPrivyUserWalletExternalId,
@@ -86,4 +88,13 @@ test("provisions exactly one deterministic Stellar wallet per Privy user", async
     if (originalSecret === undefined) delete process.env.PRIVY_APP_SECRET;
     else process.env.PRIVY_APP_SECRET = originalSecret;
   }
+});
+test("keeps Stellar active while reserving separate EVM and Solana wallet families", () => {
+  assert.deepEqual(PRIVY_WALLET_ARCHITECTURE.active, ["stellar"]);
+  assert.deepEqual(PRIVY_WALLET_ARCHITECTURE.future, ["ethereum", "solana"]);
+  assert.deepEqual(PRIVY_WALLET_ARCHITECTURE.evmNetworks, [
+    "base",
+    "bnb",
+    "avalanche",
+  ]);
 });

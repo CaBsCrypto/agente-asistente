@@ -1,52 +1,62 @@
-﻿# Privy + Stellar Testnet lab
+# Privy + Stellar Testnet
 
-The founder lab at `/admin/stellar` validates the wallet primitive before it
-is connected to the public commerce flow.
+The public /agent onboarding and the founder lab at /admin/stellar use Privy's
+native Stellar wallet support together with @stellar/stellar-sdk.
+
+## Current architecture
+
+- Privy authenticates the user and verifies the access token.
+- @privy-io/node lists and creates wallets with chain type stellar.
+- The public wallet owner is the authenticated Privy user.
+- A deterministic external ID and SDK idempotency key prevent duplicate wallets.
+- Friendbot activates the address on Stellar Testnet.
+- Horizon returns the real testnet account and balances.
+- Privy performs raw Ed25519 signing.
+- @stellar/stellar-sdk verifies signatures and will build transaction XDR.
+
+Stellar is a Privy Tier 2 chain. Privy provides wallet creation, address
+derivation, embedded ownership, exports and cryptographic signing. Stellar code
+is still required to build and submit chain-specific transactions.
+
+## Multichain direction
+
+A single Privy identity can own several wallets:
+
+- Stellar wallet: active now.
+- Ethereum/EVM wallet: future; can operate across Base, BNB Chain, Avalanche
+  and other EVM networks.
+- Solana wallet: future.
+
+These are separate wallet families under one user identity, not one universal
+private key. Only Stellar is enabled in the current onboarding.
 
 ## What is real
 
-- A Stellar wallet is created through the Privy Wallet API with `chain_type: stellar`.
-- Friendbot creates and funds that address on Stellar Testnet.
-- Horizon returns the real testnet account and balances.
-- Privy signs a unique SHA-256 challenge.
-- `@stellar/stellar-sdk` verifies the Ed25519 signature against the wallet address.
+- Public Privy authentication and server token verification.
+- Automatic user-owned Stellar wallet provisioning.
+- Duplicate-resistant wallet creation.
+- Stellar Testnet activation and balance lookup.
+- Founder-only signature verification proof.
 
-## What is not real yet
+## What remains
 
-- No mainnet funds are used.
-- No merchant receives a payment.
-- No transaction XDR is built or submitted.
-- The founder test wallet is application-controlled. End-user delegated
-  authorization and the final non-custodial ownership model come next.
+- A complete payment transaction XDR.
+- Transaction-scoped user authorization.
+- Horizon submission with durable replay protection.
+- Mainnet, merchant settlement and fulfillment evidence.
+- Optional EVM or Solana wallet provisioning.
 
-## Configure Privy
+## Environment
 
-1. Create or open an app in the Privy Dashboard.
-2. Copy the App ID and create an App Secret.
-3. Add both values as server environment variables:
+    NEXT_PUBLIC_PRIVY_APP_ID=your-app-id
+    PRIVY_APP_ID=your-app-id
+    PRIVY_APP_SECRET=your-app-secret
 
-```dotenv
-PRIVY_APP_ID=your-app-id
-PRIVY_APP_SECRET=your-app-secret
-```
+Never expose PRIVY_APP_SECRET to a Client Component, logs or source control.
 
-4. Never prefix the secret with `NEXT_PUBLIC_`, expose it to a Client
-   Component, log it, or commit it.
-5. Restart the local server or redeploy after setting the variables.
+## Next proof
 
-## Run the proof
-
-1. Sign in to `/admin`.
-2. Open `/admin/stellar`.
-3. Create a wallet.
-4. Fund it with Friendbot.
-5. Confirm that Horizon shows a native XLM test balance.
-6. Sign the challenge and confirm the `VERIFIED` result.
-
-## Next test
-
-Build a Stellar Testnet payment transaction XDR, freeze its amount and
-destination in a commerce intent, request explicit approval, sign the
-transaction hash through Privy, submit it to Horizon once, and persist the
-transaction hash as the receipt. A retry with the same idempotency key must
-return the stored receipt rather than submit a second transaction.
+Build one Stellar Testnet payment XDR, freeze amount and destination in a
+commerce intent, request explicit approval, sign through Privy, submit once to
+Horizon and persist the transaction hash as the receipt. Repeating the same
+idempotency key must return the original receipt.

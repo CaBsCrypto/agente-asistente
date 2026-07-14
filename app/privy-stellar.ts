@@ -1,31 +1,15 @@
 import { createHash, randomUUID } from "node:crypto";
-import { PrivyClient } from "@privy-io/node";
+import { PrivyClient, type Wallet } from "@privy-io/node";
 import { Keypair, StrKey } from "@stellar/stellar-sdk";
 
-const PRIVY_API_URL = "https://api.privy.io/v1";
+export const PRIVY_WALLET_ARCHITECTURE = {
+  active: ["stellar"],
+  future: ["ethereum", "solana"],
+  evmNetworks: ["base", "bnb", "avalanche"],
+} as const;
 export const STELLAR_TESTNET_HORIZON =
   "https://horizon-testnet.stellar.org";
 export const STELLAR_TESTNET_FRIENDBOT = "https://friendbot.stellar.org";
-
-type PrivyWalletResponse = {
-  id?: string;
-  address?: string;
-  chain_type?: string;
-  external_id?: string;
-};
-
-type PrivyWalletListResponse = {
-  data?: PrivyWalletResponse[];
-  next_cursor?: string;
-};
-
-type PrivyRawSignResponse = {
-  data?: {
-    signature?: string;
-    encoding?: string;
-  };
-  signature?: string;
-};
 
 type HorizonBalance = {
   asset_type: string;
@@ -44,33 +28,6 @@ function requiredPrivyCredentials() {
   return { appId, appSecret };
 }
 
-async function privyRequest<T>(path: string, init: RequestInit) {
-  const { appId, appSecret } = requiredPrivyCredentials();
-  const response = await fetch(PRIVY_API_URL + path, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      Authorization:
-        "Basic " + Buffer.from(appId + ":" + appSecret).toString("base64"),
-      "Content-Type": "application/json",
-      "privy-app-id": appId,
-      ...init.headers,
-    },
-    cache: "no-store",
-  });
-  const body = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    const detail =
-      body && typeof body === "object" && "message" in body
-        ? String(body.message)
-        : "Privy request failed with status " + response.status;
-    throw new Error("privy_request_failed:" + detail);
-  }
-
-  return body as T;
-}
-
 export function getPrivyStellarReadiness() {
   return {
     configured: Boolean(
@@ -80,7 +37,7 @@ export function getPrivyStellarReadiness() {
     chainType: "stellar",
     horizonUrl: STELLAR_TESTNET_HORIZON,
     friendbotUrl: STELLAR_TESTNET_FRIENDBOT,
-    mode: "application-controlled founder test wallet",
+    mode: "Privy native Stellar wallet plus Stellar SDK",
   };
 }
 
@@ -110,55 +67,39 @@ export function verifyStellarSignature(
 }
 
 export async function createPrivyStellarWallet(label?: string) {
-  const wallet = await privyRequest<PrivyWalletResponse>("/wallets", {
-    method: "POST",
-    body: JSON.stringify({
-      chain_type: "stellar",
-      display_name: label?.trim().slice(0, 80) || "Agent Assistant Testnet",
-      external_id: "aa-stellar-testnet-" + randomUUID(),
-    }),
+  const wallet = await getPrivyClient().wallets().create({
+    chain_type: "stellar",
+    display_name: label?.trim().slice(0, 80) || "Agent Assistant Testnet",
+    external_id: "aa-stellar-testnet-" + randomUUID(),
   });
 
-  if (
-    !wallet.id ||
-    !wallet.address ||
-    !isValidStellarAddress(wallet.address)
-  ) {
+  if (!isValidStellarAddress(wallet.address)) {
     throw new Error("privy_invalid_stellar_wallet_response");
   }
 
   return {
     id: wallet.id,
     address: wallet.address,
-    chainType: wallet.chain_type ?? "stellar",
+    chainType: wallet.chain_type,
   };
 }
-
 export function getPrivyUserWalletExternalId(userId: string) {
   const digest = createHash("sha256").update(userId).digest("hex");
   return "aa_stellar_" + digest.slice(0, 40);
 }
 
 async function listUserStellarWallets(userId: string) {
-  const query = new URLSearchParams({
+  const result = await getPrivyClient().wallets().list({
     user_id: userId,
     chain_type: "stellar",
-    limit: "100",
+    limit: 100,
   });
-  const result = await privyRequest<PrivyWalletListResponse>(
-    "/wallets?" + query.toString(),
-    { method: "GET" },
-  );
 
-  return (result.data ?? []).filter(
-    (wallet) =>
-      wallet.id &&
-      wallet.address &&
-      isValidStellarAddress(wallet.address) &&
-      wallet.chain_type === "stellar",
+  return result.data.filter(
+    (wallet: Wallet) =>
+      isValidStellarAddress(wallet.address) && wallet.chain_type === "stellar",
   );
 }
-
 export async function getOrCreateUserStellarWallet(userId: string) {
   if (!userId.startsWith("did:privy:")) {
     throw new Error("invalid_privy_user_id");
@@ -180,15 +121,12 @@ export async function getOrCreateUserStellarWallet(userId: string) {
   }
 
   try {
-    const wallet = await privyRequest<PrivyWalletResponse>("/wallets", {
-      method: "POST",
-      headers: { "privy-idempotency-key": externalId },
-      body: JSON.stringify({
-        chain_type: "stellar",
-        display_name: "Agent Assistant Wallet",
-        external_id: externalId,
-        owner: { user_id: userId },
-      }),
+    const wallet = await getPrivyClient().wallets().create({
+      chain_type: "stellar",
+      display_name: "Agent Assistant Wallet",
+      external_id: externalId,
+      owner: { user_id: userId },
+      idempotency_key: externalId,
     });
 
     if (!wallet.id || !wallet.address || !isValidStellarAddress(wallet.address)) {
@@ -293,14 +231,10 @@ export async function signAndVerifyStellarChallenge(
 
   const challenge = "agent-assistant:stellar-testnet:" + randomUUID();
   const digest = createHash("sha256").update(challenge).digest();
-  const result = await privyRequest<PrivyRawSignResponse>(
-    "/wallets/" + encodeURIComponent(walletId) + "/raw_sign",
-    {
-      method: "POST",
-      body: JSON.stringify({ params: { hash: "0x" + digest.toString("hex") } }),
-    },
-  );
-  const encodedSignature = result.data?.signature ?? result.signature;
+  const result = await getPrivyClient().wallets().rawSign(walletId, {
+    params: { hash: "0x" + digest.toString("hex") },
+  });
+  const encodedSignature = result.signature;
 
   if (!encodedSignature) {
     throw new Error("privy_signature_missing");
@@ -314,6 +248,6 @@ export async function signAndVerifyStellarChallenge(
     challenge,
     digest: "0x" + digest.toString("hex"),
     signature: "0x" + signature.toString("hex"),
-    encoding: result.data?.encoding ?? "hex",
+    encoding: result.encoding,
   };
 }

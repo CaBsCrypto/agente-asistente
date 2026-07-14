@@ -12,6 +12,11 @@ type BootstrapResult = {
     created: boolean;
     owner: "user";
   };
+  walletArchitecture: {
+    active: readonly ["stellar"];
+    future: readonly ["ethereum", "solana"];
+    evmNetworks: readonly ["base", "bnb", "avalanche"];
+  };
   account: {
     exists: boolean;
     sequence: string | null;
@@ -115,7 +120,7 @@ function PrivyAgent() {
           <h1>Sign in once. Your Stellar wallet arrives with you.</h1>
           <p>
             Continue with email, Google or a passkey. Privy creates the identity;
-            agent-assistant provisions one user-owned Stellar wallet immediately.
+            agent-assistant provisions one user-owned Stellar wallet through Privy immediately.
           </p>
           <button className="agent-primary" onClick={() => login()}>
             Create my agent
@@ -149,7 +154,7 @@ function PrivyAgent() {
       {status === "creating" && (
         <div className="agent-provisioning">
           <i />
-          <div><strong>Provisioning automatically</strong><span>Identity → wallet ownership → testnet activation</span></div>
+          <div><strong>Provisioning automatically</strong><span>Identity - wallet ownership - testnet activation</span></div>
         </div>
       )}
 
@@ -170,7 +175,7 @@ function PrivyAgent() {
             <code>{result.wallet.address}</code>
             <dl>
               <div><dt>Ownership</dt><dd>User-owned</dd></div>
-              <div><dt>Network</dt><dd>Stellar Testnet</dd></div>
+              <div><dt>Network</dt><dd>Stellar Testnet</dd></div><div><dt>Provider</dt><dd>Privy native SDK</dd></div>
               <div><dt>Created</dt><dd>{result.wallet.created ? "Just now" : "Existing wallet"}</dd></div>
             </dl>
           </article>
