@@ -16,7 +16,7 @@ This integration lets an authenticated user pay the official Stellar x402 demo f
 
 1. Sign in with Privy and open the agent.
 2. Ask: `Prueba el demo x402 en testnet`.
-3. If required, review and confirm the official x402 USDC trustline.
+3. The agent activates a new wallet with Friendbot when needed, then asks the user to review and confirm the official x402 USDC trustline.
 4. When the internal faucet is configured, the agent sends `0.50 USDC` from its Testnet-only distributor automatically. Circle remains the manual fallback.
 5. The agent reads the live `PAYMENT-REQUIRED` challenge without leaving the chat.
 6. Review the exact `0.01 USDC` payment and confirm it with Privy.

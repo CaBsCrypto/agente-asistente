@@ -11,6 +11,7 @@ import {
 } from "@/app/connectors/defindex";
 import {
   getStellarTestnetAccount,
+  fundStellarTestnetWallet,
   signStellarTransactionHash,
   verifyPrivyAccessToken,
 } from "@/app/privy-stellar";
@@ -305,7 +306,16 @@ export async function POST(request: Request) {
 
     const prepareTrustline = prepareTrustlineSchema.safeParse(body);
     if (prepareTrustline.success) {
-      const account = await getStellarTestnetAccount(wallet.address);
+      let account = await getStellarTestnetAccount(wallet.address);
+      if (!account.exists) {
+        const funding = await fundStellarTestnetWallet(wallet.address);
+        await getDb().insert(agentActivities).values({
+          id: randomUUID(), userId, eventType: "testnet.friendbot.funded",
+          summary: "Activated the Privy wallet on Stellar Testnet",
+          metadata: { walletAddress: wallet.address, transactionHash: funding.transactionHash },
+        });
+        account = await getStellarTestnetAccount(wallet.address);
+      }
       const existing = account.balances.find((balance) => balance.asset === "USDC" && balance.issuer === X402_TESTNET_USDC.issuer);
       if (existing) return NextResponse.json({ alreadyComplete: true, balance: existing.balance });
       const decision = await evaluateUserAction(userId, { actionType: "stellar.trustline.x402_usdc", network: "stellar:testnet", asset: "USDC", amount: 0, financial: true, irreversible: true });
