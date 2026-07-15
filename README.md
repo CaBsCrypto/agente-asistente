@@ -10,7 +10,7 @@ The product combines a simple chat for end users with MCP, WebMCP and API surfac
 
 > **Honest MVP boundary:** authentication, Stellar wallet creation, CoinMarketCap data, persistent user state and the commerce safety demo are real. Notion and direct DeFindex Testnet signing are implemented and awaiting complete user acceptance. Merchant fulfillment and mainnet settlement are not live.
 
-[Live product](https://agente-asistente.vercel.app) · [Developer portal](https://agente-asistente.vercel.app/developers) · [Open the agent](https://agente-asistente.vercel.app/agent) · [Safety demo](https://agente-asistente.vercel.app/demo) · [Integration Lab](https://agente-asistente.vercel.app/connections) · [Waitlist](https://agente-asistente.vercel.app/waitlist)
+[Live product](https://agente-asistente.vercel.app) · [New user guide](https://agente-asistente.vercel.app/guide) · [Developer portal](https://agente-asistente.vercel.app/developers) · [Open the agent](https://agente-asistente.vercel.app/agent) · [Safety demo](https://agente-asistente.vercel.app/demo) · [Integration Lab](https://agente-asistente.vercel.app/connections) · [Waitlist](https://agente-asistente.vercel.app/waitlist)
 
 ## What works now
 
@@ -282,6 +282,7 @@ For YC, the strongest claim is: **a user can create a permissioned agent, receiv
 
 Start at the [documentation index](docs/README.md).
 
+- [New user guide](docs/user-guide.md)
 - [Architecture and flows](docs/architecture.md)
 - [Developer guide](docs/developer-guide.md)
 - [Product status](docs/product-status.md)

@@ -26,6 +26,7 @@ export default function AgentPage() {
         <div>
           <span>PRIVY + STELLAR</span>
           <LanguageControl compact />
+          <Link href="/guide">Guide</Link>
           <Link href="/demo">Demo</Link>
         </div>
       </nav>

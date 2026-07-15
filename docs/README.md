@@ -2,6 +2,12 @@
 
 This directory is the source of truth for operating, demonstrating and extending agent-assistant.
 
+## New users
+
+1. Open the [public new user guide](https://agente-asistente.vercel.app/guide).
+2. Keep the guide beside the authenticated agent.
+3. Follow the wallet, Testnet XLM, USDC trustline and DeFindex sequence.
+4. Use [the repository manual](user-guide.md) when a markdown version is needed.
 ## Choose a path
 
 ### Product and fundraising

@@ -109,6 +109,7 @@ async function ensureConversation(userId: string) {
         actions: [
           { label: "Show my wallet", message: "Show my wallet" },
           { label: "Check Testnet setup", message: "What is the next Testnet setup step?" },
+          { label: "New user guide", href: "/guide" },
           { label: "Explore Travala", message: "Connect me to Travala" },
         ],
       },

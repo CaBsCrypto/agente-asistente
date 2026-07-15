@@ -22,7 +22,7 @@ export default function LoginPage() {
           <b>AA</b>
           agent-assistant
         </Link>
-        <div className="lab-nav-actions"><LanguageControl compact /><Link className="login-back" href="/">Home</Link></div>
+        <div className="lab-nav-actions"><LanguageControl compact /><Link className="login-back" href="/guide">Guide</Link><Link className="login-back" href="/">Home</Link></div>
       </nav>
       <LoginPanel configured={configured} />
     </main>

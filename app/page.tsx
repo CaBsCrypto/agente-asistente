@@ -5,6 +5,7 @@ import LanguageToggle, { useLocale } from "./language-toggle";
 const copy = {
   en: {
     nav: ["Product", "How it works", "Pilots", "Developers", "Integration Lab", "Waitlist"],
+    guide: "Guide",
     signIn: "Sign in",
     eyebrow: "COMMERCE INFRASTRUCTURE FOR AI AGENTS",
     headline: <>Agents can take action. <em>You stay in control.</em></>,
@@ -58,6 +59,7 @@ const copy = {
   },
   es: {
     nav: ["Producto", "Cómo funciona", "Pilotos", "Developers", "Laboratorio", "Waitlist"],
+    guide: "Guía",
     signIn: "Ingresar",
     eyebrow: "INFRAESTRUCTURA DE COMERCIO PARA AGENTES DE IA",
     headline: <>Los agentes pueden actuar. <em>Tú mantienes el control.</em></>,
@@ -111,6 +113,7 @@ const copy = {
   },
   pt: {
     nav: ["Produto", "Como funciona", "Pilotos", "Developers", "Laboratório", "Waitlist"],
+    guide: "Guia",
     signIn: "Entrar",
     eyebrow: "INFRAESTRUTURA DE COMÉRCIO PARA AGENTES DE IA",
     headline: <>Agentes podem agir. <em>Você mantém o controle.</em></>,
@@ -173,7 +176,7 @@ export default function Home() {
       <nav className="nav shell">
         <a className="brand" href="#top"><b>AA</b>agent-assistant</a>
         <div className="nav-links">
-          <a href="#product">{t.nav[0]}</a><a href="#lifecycle">{t.nav[1]}</a><a href="#pilots">{t.nav[2]}</a><a href="/developers">{t.nav[3]}</a><a href="/connections">{t.nav[4]}</a><a href="/waitlist">{t.nav[5]}</a>
+          <a href="#product">{t.nav[0]}</a><a href="#lifecycle">{t.nav[1]}</a><a href="#pilots">{t.nav[2]}</a><a href="/guide">{t.guide}</a><a href="/developers">{t.nav[3]}</a><a href="/connections">{t.nav[4]}</a><a href="/waitlist">{t.nav[5]}</a>
           <LanguageToggle locale={locale} onChange={setLocale} compact />
           <a className="nav-login" href="/login">{t.signIn}</a>
         </div>
