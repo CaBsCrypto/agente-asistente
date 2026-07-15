@@ -23,6 +23,8 @@ import {
 } from "@/app/privy-stellar";
 import { DEFINDEX_TESTNET } from "@/app/connectors/defindex";
 import { searchNotion } from "@/app/connectors/notion-mcp";
+import { parseVaultCommand } from "@/app/agent-memory";
+import { evaluateUserAction, listAgentVault, saveAgentVaultCommand } from "@/app/agent-memory-store";
 import {
   addToMarketWatchlist,
   extractMarketSymbol,
@@ -39,6 +41,16 @@ export type StoredAgentMessage = {
   actions?: { label: string; message?: string; href?: string; connect?: string }[];
   connection?: { name: string; stage: string; priority: string };
   defindexIntent?: AgentDefindexIntent & { requestId: string };
+  memoryUpdated?: boolean;
+  decision?: {
+    outcome: "allowed" | "blocked";
+    summary: string;
+    reasonCodes: string[];
+    appliedRules: string[];
+    requiresApproval: boolean;
+    actionType: string;
+  };
+
 };
 
 function conversationId(userId: string) {
@@ -143,6 +155,12 @@ function publicMessage(row: {
       metadata.defindexIntent && typeof metadata.defindexIntent === "object"
         ? (metadata.defindexIntent as StoredAgentMessage["defindexIntent"])
         : undefined,
+    memoryUpdated: metadata.memoryUpdated === true,
+    decision:
+      metadata.decision && typeof metadata.decision === "object"
+        ? (metadata.decision as StoredAgentMessage["decision"])
+        : undefined,
+
   };
 }
 
@@ -331,6 +349,7 @@ export async function sendAgentMessage(userId: string, content: string) {
   const local = (english: string, portuguese: string) =>
     language === "pt" ? portuguese : english;
   const setupIntent = parseTestnetSetupIntent(content);
+  const vaultCommand = parseVaultCommand(content);
 
   const marketSymbol = extractMarketSymbol(content);
   const requestsWatchlistAdd =
@@ -385,6 +404,56 @@ export async function sendAgentMessage(userId: string, content: string) {
     ].some((term) => normalizedContent.includes(term));
 
   let reply: AgentChatReply;
+  if (vaultCommand?.action === "list") {
+    const vault = await listAgentVault(userId);
+    const active = [
+      ...vault.knowledge.filter((item) => item.status === "active"),
+      ...vault.policies.filter((item) => item.status === "active"),
+    ].slice(0, 8);
+    const heading = {
+      en: "**What your agent currently knows and enforces**",
+      es: "**Lo que tu agente recuerda y aplica actualmente**",
+      pt: "**O que seu agente lembra e aplica atualmente**",
+    }[language];
+    const empty = {
+      en: "Your Personal Knowledge Vault is empty. Start with: Remember that I only operate on Testnet.",
+      es: "Tu Personal Knowledge Vault est\u00e1 vac\u00edo. Comienza con: Recuerda que solo opero en Testnet.",
+      pt: "Seu Personal Knowledge Vault est\u00e1 vazio. Comece com: Lembre que opero somente na Testnet.",
+    }[language];
+    reply = {
+      content: active.length
+        ? [heading, ...active.map((item, index) => (index + 1) + ". **" + item.kind + "** \u00b7 " + item.label)].join("\n")
+        : empty,
+      actions: [
+        { label: "My Agent", href: "#my-agent" },
+      ],
+    };
+  } else if (vaultCommand?.action === "save") {
+    const saved = await saveAgentVaultCommand(userId, vaultCommand);
+    const isDraft = saved.status === "draft";
+    const copy = {
+      en: isDraft
+        ? "I saved **" + saved.label + "** as a draft authority rule. It cannot authorize an action until you activate it in My Agent, and financial execution will still require transaction-specific confirmation."
+        : "I saved **" + saved.label + "** in your Personal Knowledge Vault. It is available across sessions and every use remains visible.",
+      es: isDraft
+        ? "Guard\u00e9 **" + saved.label + "** como borrador de autoridad. No puede autorizar acciones hasta que lo actives en My Agent, y una ejecuci\u00f3n financiera seguir\u00e1 exigiendo confirmaci\u00f3n espec\u00edfica."
+        : "Guard\u00e9 **" + saved.label + "** en tu Personal Knowledge Vault. Estar\u00e1 disponible entre sesiones y cada uso seguir\u00e1 siendo visible.",
+      pt: isDraft
+        ? "Salvei **" + saved.label + "** como rascunho de autoridade. Ele n\u00e3o pode autorizar a\u00e7\u00f5es at\u00e9 ser ativado em My Agent, e uma execu\u00e7\u00e3o financeira continuar\u00e1 exigindo confirma\u00e7\u00e3o espec\u00edfica."
+        : "Salvei **" + saved.label + "** no seu Personal Knowledge Vault. Ele ficar\u00e1 dispon\u00edvel entre sess\u00f5es e cada uso continuar\u00e1 vis\u00edvel.",
+    }[language];
+    reply = {
+      content: copy,
+      actions: [
+        {
+          label: language === "es" ? "Ver mi memoria" : language === "pt" ? "Ver minha mem\u00f3ria" : "Show my memory",
+          message: language === "es" ? "\u00bfQu\u00e9 sabes de m\u00ed?" : language === "pt" ? "O que voc\u00ea sabe sobre mim?" : "What do you know about me?",
+        },
+        { label: "My Agent", href: "#my-agent" },
+      ],
+      memoryUpdated: true,
+    };
+  } else
   if (setupIntent) {
     reply = await buildTestnetSetupReply(userId, setupIntent, wallet, language);
   } else if (requestsNotionSearch) {
@@ -597,6 +666,31 @@ export async function sendAgentMessage(userId: string, content: string) {
   } else {
     reply = buildAgentReply(content, { wallet, connectedProviders });
   }
+  if (reply.defindexIntent) {
+    const intent = reply.defindexIntent;
+    const actionType = intent.operation === "deposit"
+      ? "defindex.deposit." + intent.asset.toLowerCase() + ".request"
+      : "stellar.trustline.usdc.request";
+    const decision = await evaluateUserAction(userId, {
+      actionType,
+      network: "stellar:testnet",
+      asset: intent.asset,
+      amount: intent.operation === "deposit" ? Number(intent.amount) : 0,
+      financial: true,
+      irreversible: true,
+    });
+    reply.decision = { ...decision, actionType };
+    if (!decision.allowed) {
+      reply.defindexIntent = undefined;
+      reply.content = {
+        en: "I did not prepare this action. Your active rules blocked it: **" + decision.reasonCodes.join(", ") + "**. No signature was requested and no funds moved.",
+        es: "No prepar\u00e9 esta acci\u00f3n. Tus reglas activas la bloquearon: **" + decision.reasonCodes.join(", ") + "**. No se solicit\u00f3 firma ni se movieron fondos.",
+        pt: "N\u00e3o preparei esta a\u00e7\u00e3o. Suas regras ativas a bloquearam: **" + decision.reasonCodes.join(", ") + "**. Nenhuma assinatura foi solicitada e nenhum saldo foi movimentado.",
+      }[language];
+      reply.actions = [{ label: "Review My Agent", href: "#my-agent" }];
+    }
+  }
+
   const assistantMessage = {
     id: randomUUID(),
     conversationId: id,
@@ -609,6 +703,8 @@ export async function sendAgentMessage(userId: string, content: string) {
       defindexIntent: reply.defindexIntent
         ? { ...reply.defindexIntent, requestId: userMessage.id }
         : undefined,
+      memoryUpdated: reply.memoryUpdated,
+      decision: reply.decision,
     },
     createdAt: new Date(),
   };

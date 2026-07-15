@@ -1,6 +1,6 @@
 # Product status
 
-Last reviewed: **July 14, 2026**
+Last reviewed: **July 15, 2026**
 
 This document separates deployed proof from product vision. Status definitions live in the [documentation index](README.md).
 
@@ -16,6 +16,9 @@ This document separates deployed proof from product vision. Status definitions l
 | Chat-requested Stellar Testnet funding | Implemented, ready to validate | Friendbot runs only after a chat request and only for an absent account | Record new-user acceptance proof |
 | Chat-native wallet setup | Implemented, ready to validate | EN/ES/PT wallet, XLM, USDC and readiness intents query live Horizon state | Record the complete text-only flow |
 | Persistent chat history | Live | Neon user and message records | Add export/deletion controls |
+| Personal Knowledge Vault | Implemented, ready to validate | Per-user Neon knowledge and policy records, chat capture and My Agent controls | Complete five-user retention and correction pilot |
+| Per-user execution policies | Implemented, ready to validate | Network, spend, approval and risk preflight enforced before DeFindex preparation | Record allowed and blocked acceptance proofs |
+| Decision explanations | Implemented, ready to validate | Why this action UI plus durable reason codes and applied rules | Measure user comprehension and trust |
 | Connection list | Live | Per-user Neon records | Add scopes and last-used metadata |
 | CoinMarketCap quote | Live, read-only | Official Trial Pro API response | Partner key, MCP or production plan |
 | CoinMarketCap watchlist | Live, read-only | Persistent symbols per user | Add scheduled alerts |
@@ -30,7 +33,7 @@ This document separates deployed proof from product vision. Status definitions l
 | Personal agent MCP | Development foundation | Privy bearer bridge and three scoped tools | Add OAuth 2.1 consent for external clients |
 | Service provider MCP | Development foundation | Hashed scoped keys and offer administration | Add UI, rotation, orders and fulfillment |
 | Durable commerce intent | Sandbox | Neon record and idempotency key | Bind to real payment XDR |
-| Policy evaluation | Sandbox | Persisted decision and demo limit | Per-user and merchant limits |
+| Policy evaluation | Implemented, ready to validate | Per-user rules enforced in chat and DeFindex prepare endpoint | Add merchant limits and complete acceptance test |
 | Explicit demo approval | Sandbox | Short-lived hashed capability | Transaction-scoped Privy approval |
 | Duplicate-resistant receipt | Sandbox | Unique receipt per intent | Reuse on-chain hash on retry |
 | Privy Stellar transaction signing | Ready to validate | User JWT authorization plus verified Ed25519 transaction signature | Complete authenticated acceptance test |

@@ -20,6 +20,7 @@ This directory is the source of truth for operating, demonstrating and extending
 6. Use the [CoinMarketCap pilot brief](coinmarketcap-partner-pilot.md) for outreach.
 
 ### Developers and integrations
+3. Read the [Personal Execution Vault guide](personal-execution-vault.md) for user memory, policies and decision evidence.
 
 1. Read the [developer guide](developer-guide.md).
 2. Review the [architecture diagrams](architecture.md).

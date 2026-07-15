@@ -24,6 +24,7 @@ import {
   agentStellarActions,
   agentWallets,
 } from "@/db/schema";
+import { evaluateUserAction } from "@/app/agent-memory-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -172,6 +173,21 @@ async function prepareAction(
   const wallet = await userWallet(userId);
   const account = await getStellarTestnetAccount(wallet.address);
   if (!account.exists) throw new Error("stellar_wallet_not_active");
+  const decision = await evaluateUserAction(userId, {
+    actionType:
+      input.operation === "deposit"
+        ? "defindex.deposit." + input.asset.toLowerCase() + ".prepare"
+        : "stellar.trustline.usdc.prepare",
+    network: "stellar:testnet",
+    asset: input.operation === "deposit" ? input.asset : "USDC",
+    amount: input.operation === "deposit" ? Number(input.amount) : 0,
+    financial: true,
+    irreversible: true,
+  });
+  if (!decision.allowed) {
+    throw new Error("policy_blocked:" + decision.reasonCodes.join(","));
+  }
+
 
   const usdcBalance = account.balances.find(
     (balance) =>
@@ -420,7 +436,8 @@ export async function POST(request: Request) {
     const status =
       code === "invalid_defindex_request" ||
       code === "usdc_trustline_required" ||
-      code === "defindex_approval_expired"
+      code === "defindex_approval_expired" ||
+      code === "policy_blocked"
         ? 400
         : code === "invalid_origin"
           ? 403

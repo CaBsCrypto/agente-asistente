@@ -83,6 +83,16 @@ type ChatMessage = {
     priority: string;
   };
   defindexIntent?: DefindexChatIntent;
+  memoryUpdated?: boolean;
+  decision?: {
+    outcome: "allowed" | "blocked";
+    summary: string;
+    reasonCodes: string[];
+    appliedRules: string[];
+    requiresApproval: boolean;
+    actionType: string;
+  };
+
 };
 
 function MessageText({ content }: { content: string }) {
@@ -227,6 +237,9 @@ export default function AgentChat({
         body.userMessage,
         assistantMessage,
       ]);
+      if (assistantMessage.memoryUpdated) {
+        window.dispatchEvent(new Event("agent-memory-updated"));
+      }
       if (body.wallet) {
         setLiveWalletBalance(body.wallet.balance ?? "0");
       }
@@ -457,6 +470,22 @@ export default function AgentChat({
                 <div className="agent-message-copy">
                   <MessageText content={message.content} />
                 </div>
+                {message.decision && (
+                  <details className={"agent-decision-explanation " + message.decision.outcome}>
+                    <summary>
+                      {locale === "es" ? "\u00bfPor qu\u00e9 esta acci\u00f3n?" : locale === "pt" ? "Por que esta a\u00e7\u00e3o?" : "Why this action?"}
+                    </summary>
+                    <strong>{message.decision.outcome}</strong>
+                    <p>{message.decision.summary}</p>
+                    <ul>
+                      {message.decision.appliedRules.map((rule) => <li key={rule}>{rule}</li>)}
+                      {message.decision.reasonCodes.map((reason) => <li key={reason}>{reason}</li>)}
+                      {message.decision.requiresApproval && (
+                        <li>{locale === "es" ? "Requiere aprobaci\u00f3n expl\u00edcita" : locale === "pt" ? "Requer aprova\u00e7\u00e3o expl\u00edcita" : "Explicit approval required"}</li>
+                      )}
+                    </ul>
+                  </details>
+                )}
                 {message.actions?.length ? (
                   <div className="agent-message-actions">
                     {message.actions.map((action) =>

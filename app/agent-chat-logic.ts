@@ -96,6 +96,15 @@ export type AgentChatReply = {
     priority: Connection["priority"];
   };
   defindexIntent?: AgentDefindexIntent;
+  memoryUpdated?: boolean;
+  decision?: {
+    outcome: "allowed" | "blocked";
+    summary: string;
+    reasonCodes: string[];
+    appliedRules: string[];
+    requiresApproval: boolean;
+    actionType: string;
+  };
 };
 
 export type AgentChatContext = {

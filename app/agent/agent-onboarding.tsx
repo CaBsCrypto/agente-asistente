@@ -4,6 +4,7 @@
 
 import { usePrivy } from "@privy-io/react-auth";
 import AgentChat from "./agent-chat";
+import AgentMemoryVault from "./agent-memory-vault";
 import { useEffect, useRef, useState } from "react";
 import { type Locale, useLocale } from "../language-toggle";
 
@@ -305,6 +306,8 @@ function PrivyAgent({ locale }: { locale: Locale }) {
           }
           getAccessToken={getAccessToken}
         />
+        <AgentMemoryVault getAccessToken={getAccessToken} />
+
 
         <div className="agent-wallet-grid">
           <article className="agent-wallet-card">
