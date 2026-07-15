@@ -21,6 +21,11 @@ import {
 import { createPrivyX402Signer } from "@/app/x402/privy-signer";
 import { prepareX402UsdcTrustline } from "@/app/x402/trustline";
 import {
+  getInternalTestnetFaucetReadiness,
+  INTERNAL_TESTNET_USDC_DRIP,
+  sendInternalTestnetUsdc,
+} from "@/app/x402/testnet-faucet";
+import {
   freezeRequirement,
   inspectX402Resource,
   payX402Resource,
@@ -30,6 +35,7 @@ import { getDatabaseUrl, getDb, hasDatabase } from "@/db";
 import {
   agentActivities,
   agentStellarActions,
+  agentTestnetFaucetClaims,
   agentWallets,
   agentX402Payments,
 } from "@/db/schema";
@@ -54,6 +60,9 @@ const executeSchema = z.object({
   action: z.literal("execute"),
   paymentId: z.string().uuid(),
   explicitConfirmation: z.literal(true),
+});
+const claimTestnetUsdcSchema = z.object({
+  action: z.literal("claim_testnet_usdc"),
 });
 
 let schemaPromise: Promise<void> | null = null;
@@ -90,6 +99,22 @@ async function ensureSchema() {
     await sql.query("CREATE UNIQUE INDEX IF NOT EXISTS agent_x402_payments_tx_hash_uidx ON agent_x402_payments(transaction_hash)", []);
     await sql.query("CREATE INDEX IF NOT EXISTS agent_x402_payments_user_created_idx ON agent_x402_payments(user_id, created_at)", []);
     await sql.query("CREATE INDEX IF NOT EXISTS agent_x402_payments_status_idx ON agent_x402_payments(status)", []);
+    await sql.query(`CREATE TABLE IF NOT EXISTS agent_testnet_faucet_claims (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES agent_users(id) ON DELETE CASCADE,
+      wallet_address text NOT NULL,
+      asset text NOT NULL,
+      amount numeric(20,7) NOT NULL,
+      claim_window text NOT NULL,
+      status text NOT NULL DEFAULT 'pending',
+      transaction_hash text,
+      error text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )`, []);
+    await sql.query("CREATE UNIQUE INDEX IF NOT EXISTS agent_testnet_faucet_claims_user_asset_window_uidx ON agent_testnet_faucet_claims(user_id, asset, claim_window)", []);
+    await sql.query("CREATE UNIQUE INDEX IF NOT EXISTS agent_testnet_faucet_claims_tx_hash_uidx ON agent_testnet_faucet_claims(transaction_hash)", []);
+    await sql.query("CREATE INDEX IF NOT EXISTS agent_testnet_faucet_claims_status_idx ON agent_testnet_faucet_claims(status)", []);
   })().catch((error) => {
     schemaPromise = null;
     throw error;
@@ -194,6 +219,7 @@ export async function GET(request: Request) {
         issuer: X402_TESTNET_USDC.issuer,
         contract: X402_TESTNET_USDC.contract,
         faucetUrl: X402_TESTNET_USDC.faucetUrl,
+        internalFaucet: getInternalTestnetFaucetReadiness(),
       },
       resource: X402_TESTNET_RESOURCE,
       recent: recent.map(publicPayment),
@@ -208,6 +234,54 @@ export async function POST(request: Request) {
     const { userId, accessToken } = await auth(request);
     const wallet = await userWallet(userId);
     const body = await request.json();
+    const claimTestnetUsdc = claimTestnetUsdcSchema.safeParse(body);
+    if (claimTestnetUsdc.success) {
+      const readiness = getInternalTestnetFaucetReadiness();
+      if (!readiness.configured) throw new Error("testnet_usdc_faucet_not_configured");
+      const account = await getStellarTestnetAccount(wallet.address);
+      const trustline = account.balances.find(
+        (balance) => balance.asset === "USDC" && balance.issuer === X402_TESTNET_USDC.issuer,
+      );
+      if (!trustline) throw new Error("x402_usdc_trustline_required");
+
+      const claimWindow = new Date().toISOString().slice(0, 13);
+      const claimId = randomUUID();
+      await getDb().insert(agentTestnetFaucetClaims).values({
+        id: claimId,
+        userId,
+        walletAddress: wallet.address,
+        asset: "USDC",
+        amount: INTERNAL_TESTNET_USDC_DRIP,
+        claimWindow,
+        status: "pending",
+      }).onConflictDoNothing({
+        target: [agentTestnetFaucetClaims.userId, agentTestnetFaucetClaims.asset, agentTestnetFaucetClaims.claimWindow],
+      });
+      const rows = await getDb().select().from(agentTestnetFaucetClaims).where(and(
+        eq(agentTestnetFaucetClaims.userId, userId),
+        eq(agentTestnetFaucetClaims.asset, "USDC"),
+        eq(agentTestnetFaucetClaims.claimWindow, claimWindow),
+      )).limit(1);
+      const claim = rows[0];
+      if (!claim) throw new Error("testnet_faucet_claim_not_created");
+      if (claim.status === "confirmed") return NextResponse.json({ replayed: true, claim });
+      if (claim.id !== claimId) throw new Error(`testnet_faucet_claim_${claim.status}`);
+      try {
+        const sent = await sendInternalTestnetUsdc({ destination: wallet.address, claimKey: claim.id });
+        const now = new Date();
+        await getDb().update(agentTestnetFaucetClaims).set({ status: "confirmed", transactionHash: sent.transactionHash, updatedAt: now }).where(eq(agentTestnetFaucetClaims.id, claim.id));
+        await getDb().insert(agentActivities).values({
+          id: randomUUID(), userId, eventType: "testnet.faucet.usdc",
+          summary: "Received internal Stellar Testnet USDC",
+          metadata: { amount: sent.amount, transactionHash: sent.transactionHash, walletAddress: wallet.address },
+        });
+        return NextResponse.json({ replayed: false, claim: { ...claim, status: "confirmed", transactionHash: sent.transactionHash }, explorerUrl: `https://stellar.expert/explorer/testnet/tx/${sent.transactionHash}` });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "testnet_usdc_faucet_failed";
+        await getDb().update(agentTestnetFaucetClaims).set({ status: "failed", error: message, updatedAt: new Date() }).where(eq(agentTestnetFaucetClaims.id, claim.id));
+        throw error;
+      }
+    }
     const executeTrustline = executeTrustlineSchema.safeParse(body);
     if (executeTrustline.success) {
       let action = await findTrustline(userId, executeTrustline.data.approvalId);

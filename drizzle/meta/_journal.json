@@ -78,6 +78,13 @@
       "when": 1784096276242,
       "tag": "0010_wandering_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784097839032,
+      "tag": "0011_confused_toad",
+      "breakpoints": true
     }
   ]
 }

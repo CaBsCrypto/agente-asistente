@@ -374,8 +374,16 @@ export default function AgentChat({
         return;
       }
       if (Number(statusResult.x402Usdc.balance) < 0.01) {
-        setX402Notice(xui.trustline);
-        return;
+        if (statusResult.x402Usdc.internalFaucet?.configured) {
+          await x402Fetch({ action: "claim_testnet_usdc" });
+          const fundedStatus = await x402Fetch();
+          setX402Status(fundedStatus);
+          if (Number(fundedStatus.x402Usdc.balance) < 0.01) throw new Error("testnet_usdc_funding_not_visible");
+          setX402Notice("1 USDC Testnet was added automatically by the internal faucet.");
+        } else {
+          setX402Notice(xui.trustline);
+          return;
+        }
       }
       const result = await x402Fetch({ action: "prepare", requestId });
       setX402Payment(result.payment);
@@ -393,8 +401,7 @@ export default function AgentChat({
     try {
       const result = await x402Fetch({ action: "execute_trustline", approvalId: x402Trustline.id, explicitConfirmation: true });
       setX402Trustline(result.approval);
-      setX402Status(await x402Fetch());
-      setX402Notice(xui.trustline);
+      await prepareX402(crypto.randomUUID());
     } catch (caught) {
       setX402Notice(caught instanceof Error ? caught.message : "x402 trustline failed");
     } finally {
