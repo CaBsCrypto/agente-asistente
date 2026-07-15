@@ -16,6 +16,7 @@ import {
   parseTestnetSetupIntent,
   type AgentChatReply,
   type AgentDefindexIntent,
+  type AgentX402Intent,
 } from "@/app/agent-chat-logic";
 import {
   fundStellarTestnetWallet,
@@ -41,6 +42,7 @@ export type StoredAgentMessage = {
   actions?: { label: string; message?: string; href?: string; connect?: string }[];
   connection?: { name: string; stage: string; priority: string };
   defindexIntent?: AgentDefindexIntent & { requestId: string };
+  x402Intent?: AgentX402Intent & { requestId: string };
   memoryUpdated?: boolean;
   decision?: {
     outcome: "allowed" | "blocked";
@@ -154,6 +156,10 @@ function publicMessage(row: {
     defindexIntent:
       metadata.defindexIntent && typeof metadata.defindexIntent === "object"
         ? (metadata.defindexIntent as StoredAgentMessage["defindexIntent"])
+        : undefined,
+    x402Intent:
+      metadata.x402Intent && typeof metadata.x402Intent === "object"
+        ? (metadata.x402Intent as StoredAgentMessage["x402Intent"])
         : undefined,
     memoryUpdated: metadata.memoryUpdated === true,
     decision:
@@ -702,6 +708,9 @@ export async function sendAgentMessage(userId: string, content: string) {
       connection: reply.connection,
       defindexIntent: reply.defindexIntent
         ? { ...reply.defindexIntent, requestId: userMessage.id }
+        : undefined,
+      x402Intent: reply.x402Intent
+        ? { ...reply.x402Intent, requestId: userMessage.id }
         : undefined,
       memoryUpdated: reply.memoryUpdated,
       decision: reply.decision,

@@ -21,6 +21,40 @@ const defindexUi = {
   },
 };
 
+const x402Ui = {
+  en: { label: "X402 · STELLAR TESTNET", heading: "Official demo payment, signed by your Privy wallet.", close: "Close", preparing: "Reading the live HTTP 402 challenge...", exact: "EXACT PAYMENT FOR APPROVAL", asset: "Asset", amount: "Amount", destination: "Recipient", network: "Network", confirm: "Confirm 0.01 USDC with Privy", paying: "Signing auth entry and paying...", receipt: "Open settlement receipt", faucet: "Get Testnet USDC", trustline: "The official x402 USDC trustline or balance is missing. Prepare the wallet, then use the Circle faucet.", confirmed: "The x402 resource was paid and delivered.", replayed: "This payment was already completed; the original receipt was returned." },
+  es: { label: "X402 · STELLAR TESTNET", heading: "Pago del demo oficial firmado por tu wallet Privy.", close: "Cerrar", preparing: "Leyendo el desafío HTTP 402 en vivo...", exact: "PAGO EXACTO PARA APROBACIÓN", asset: "Activo", amount: "Monto", destination: "Destinatario", network: "Red", confirm: "Confirmar 0.01 USDC con Privy", paying: "Firmando autorización y pagando...", receipt: "Abrir recibo de liquidación", faucet: "Obtener USDC Testnet", trustline: "Falta la trustline o el saldo del USDC oficial de x402. Prepara la wallet y luego utiliza el faucet de Circle.", confirmed: "El recurso x402 fue pagado y entregado.", replayed: "Este pago ya estaba completado; se devolvió el recibo original." },
+  pt: { label: "X402 · STELLAR TESTNET", heading: "Pagamento do demo oficial assinado pela sua wallet Privy.", close: "Fechar", preparing: "Lendo o desafio HTTP 402 ao vivo...", exact: "PAGAMENTO EXATO PARA APROVAÇÃO", asset: "Ativo", amount: "Valor", destination: "Destinatário", network: "Rede", confirm: "Confirmar 0.01 USDC com Privy", paying: "Assinando autorização e pagando...", receipt: "Abrir recibo da liquidação", faucet: "Obter USDC Testnet", trustline: "Falta a trustline ou o saldo do USDC oficial da x402. Prepare a wallet e depois use o faucet da Circle.", confirmed: "O recurso x402 foi pago e entregue.", replayed: "Este pagamento já foi concluído; o recibo original foi retornado." },
+};
+
+type X402ChatIntent = { operation: "demo_payment"; requestId: string };
+type X402Payment = {
+  id: string;
+  resourceUrl: string;
+  network: string;
+  asset: "USDC";
+  assetContract: string;
+  payTo: string;
+  amount: string;
+  status: string;
+  transactionHash: string | null;
+  explorerUrl: string | null;
+  resourcePreview: string | null;
+  expiresAt: string;
+};
+type X402TrustlineApproval = {
+  id: string;
+  status: string;
+  transactionHash: string | null;
+  explorerUrl: string | null;
+  expiresAt: string;
+  preview: { title: string; description: string; network: string; asset: string; amount: string; destination: string };
+};
+type X402Status = {
+  x402Usdc: { trustlineActive: boolean; balance: string; faucetUrl: string };
+  resource: string;
+  recent: X402Payment[];
+};
 type ChatAction = {
   label: string;
   message?: string;
@@ -83,6 +117,7 @@ type ChatMessage = {
     priority: string;
   };
   defindexIntent?: DefindexChatIntent;
+  x402Intent?: X402ChatIntent;
   memoryUpdated?: boolean;
   decision?: {
     outcome: "allowed" | "blocked";
@@ -123,6 +158,7 @@ export default function AgentChat({
   const { locale } = useLocale();
   const ui = chatUi[locale];
   const dui = defindexUi[locale];
+  const xui = x402Ui[locale];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [liveWalletBalance, setLiveWalletBalance] = useState(walletBalance);
   const [status, setStatus] = useState<"loading" | "ready" | "sending" | "error">(
@@ -140,6 +176,12 @@ export default function AgentChat({
   const [defindexNotice, setDefindexNotice] = useState<string | null>(null);
   const [xlmDepositAmount, setXlmDepositAmount] = useState("1");
   const [usdcDepositAmount, setUsdcDepositAmount] = useState("1");
+  const [x402Open, setX402Open] = useState(false);
+  const [x402Status, setX402Status] = useState<X402Status | null>(null);
+  const [x402Payment, setX402Payment] = useState<X402Payment | null>(null);
+  const [x402Trustline, setX402Trustline] = useState<X402TrustlineApproval | null>(null);
+  const [x402Busy, setX402Busy] = useState(false);
+  const [x402Notice, setX402Notice] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -244,7 +286,9 @@ export default function AgentChat({
         setLiveWalletBalance(body.wallet.balance ?? "0");
       }
       setStatus("ready");
-      if (assistantMessage.defindexIntent) {
+      if (assistantMessage.x402Intent) {
+        await prepareX402(assistantMessage.x402Intent.requestId);
+      } else if (assistantMessage.defindexIntent) {
         const intent = assistantMessage.defindexIntent;
         if (intent.operation === "deposit") {
           if (intent.asset === "XLM") setXlmDepositAmount(intent.amount);
@@ -299,6 +343,79 @@ export default function AgentChat({
   }
 
 
+  async function x402Fetch(body?: Record<string, unknown>) {
+    const token = await getAccessToken();
+    if (!token) throw new Error("Authentication token unavailable");
+    const response = await fetch("/api/agent/x402", {
+      method: body ? "POST" : "GET",
+      headers: {
+        Authorization: "Bearer " + token,
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: "no-store",
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error ?? "x402 request failed");
+    return result;
+  }
+
+  async function prepareX402(requestId = crypto.randomUUID()) {
+    setX402Open(true);
+    setX402Busy(true);
+    setX402Notice(null);
+    setX402Payment(null);
+    try {
+      const statusResult = await x402Fetch();
+      setX402Status(statusResult);
+      if (!statusResult.x402Usdc.trustlineActive) {
+        const trustlineResult = await x402Fetch({ action: "prepare_trustline", requestId: `${requestId}-trustline` });
+        if (!trustlineResult.alreadyComplete) setX402Trustline(trustlineResult.approval);
+        return;
+      }
+      if (Number(statusResult.x402Usdc.balance) < 0.01) {
+        setX402Notice(xui.trustline);
+        return;
+      }
+      const result = await x402Fetch({ action: "prepare", requestId });
+      setX402Payment(result.payment);
+    } catch (caught) {
+      setX402Notice(caught instanceof Error ? caught.message : "x402 preparation failed");
+    } finally {
+      setX402Busy(false);
+    }
+  }
+
+  async function confirmX402Trustline() {
+    if (!x402Trustline) return;
+    setX402Busy(true);
+    setX402Notice(null);
+    try {
+      const result = await x402Fetch({ action: "execute_trustline", approvalId: x402Trustline.id, explicitConfirmation: true });
+      setX402Trustline(result.approval);
+      setX402Status(await x402Fetch());
+      setX402Notice(xui.trustline);
+    } catch (caught) {
+      setX402Notice(caught instanceof Error ? caught.message : "x402 trustline failed");
+    } finally {
+      setX402Busy(false);
+    }
+  }
+  async function confirmX402() {
+    if (!x402Payment) return;
+    setX402Busy(true);
+    setX402Notice(null);
+    try {
+      const result = await x402Fetch({ action: "execute", paymentId: x402Payment.id, explicitConfirmation: true });
+      setX402Payment(result.payment);
+      setX402Notice(result.replayed ? xui.replayed : xui.confirmed);
+      setX402Status(await x402Fetch());
+    } catch (caught) {
+      setX402Notice(caught instanceof Error ? caught.message : "x402 payment failed");
+    } finally {
+      setX402Busy(false);
+    }
+  }
   async function defindexFetch(body?: Record<string, unknown>) {
     const token = await getAccessToken();
     if (!token) throw new Error("Authentication token unavailable");
@@ -621,6 +738,59 @@ export default function AgentChat({
           </section>
         )}
 
+        {x402Open && (
+          <section className="defindex-agent-panel" aria-label="x402 Stellar Testnet payment">
+            <header>
+              <div><span>{xui.label}</span><h3>{xui.heading}</h3></div>
+              <button type="button" onClick={() => setX402Open(false)}>{xui.close}</button>
+            </header>
+            {x402Busy && !x402Payment && <p className="defindex-agent-loading">{xui.preparing}</p>}
+            {x402Status && (!x402Status.x402Usdc.trustlineActive || Number(x402Status.x402Usdc.balance) < 0.01) && (
+              <div className="defindex-agent-notice">
+                {xui.trustline} <a href={x402Status.x402Usdc.faucetUrl} target="_blank" rel="noreferrer">{xui.faucet}</a>
+              </div>
+            )}
+            {x402Trustline && (
+              <div className={"defindex-approval " + x402Trustline.status}>
+                <span>{xui.exact}</span>
+                <h4>{x402Trustline.preview.title}</h4>
+                <p>{x402Trustline.preview.description}</p>
+                <dl>
+                  <div><dt>{xui.network}</dt><dd>{x402Trustline.preview.network}</dd></div>
+                  <div><dt>{xui.asset}</dt><dd>{x402Trustline.preview.asset}</dd></div>
+                  <div><dt>{xui.destination}</dt><dd>{x402Trustline.preview.destination}</dd></div>
+                </dl>
+                {x402Trustline.status === "prepared" ? (
+                  <button type="button" disabled={x402Busy} onClick={() => void confirmX402Trustline()}>{x402Busy ? xui.paying : "Confirm USDC trustline with Privy"}</button>
+                ) : x402Trustline.explorerUrl ? (
+                  <a href={x402Trustline.explorerUrl} target="_blank" rel="noreferrer">{xui.receipt}</a>
+                ) : null}
+              </div>
+            )}
+            {x402Payment && (
+              <div className={"defindex-approval " + x402Payment.status}>
+                <span>{xui.exact}</span>
+                <h4>Stellar x402 protected resource</h4>
+                <p>{x402Payment.resourceUrl}</p>
+                <dl>
+                  <div><dt>{xui.network}</dt><dd>{x402Payment.network}</dd></div>
+                  <div><dt>{xui.asset}</dt><dd>{x402Payment.asset} · {x402Payment.assetContract}</dd></div>
+                  <div><dt>{xui.amount}</dt><dd>{x402Payment.amount} USDC</dd></div>
+                  <div><dt>{xui.destination}</dt><dd>{x402Payment.payTo}</dd></div>
+                </dl>
+                {x402Payment.status === "prepared" ? (
+                  <button type="button" disabled={x402Busy || !x402Status?.x402Usdc.trustlineActive || Number(x402Status?.x402Usdc.balance ?? 0) < Number(x402Payment.amount)} onClick={() => void confirmX402()}>
+                    {x402Busy ? xui.paying : xui.confirm}
+                  </button>
+                ) : x402Payment.explorerUrl ? (
+                  <a href={x402Payment.explorerUrl} target="_blank" rel="noreferrer">{xui.receipt}</a>
+                ) : null}
+                {x402Payment.resourcePreview && <pre>{x402Payment.resourcePreview}</pre>}
+              </div>
+            )}
+            {x402Notice && <p className="defindex-agent-notice">{x402Notice}</p>}
+          </section>
+        )}
         {error && <p className="agent-chat-error">{error}. Your draft was preserved.</p>}
 
         <form className="agent-chat-composer" onSubmit={submit}>

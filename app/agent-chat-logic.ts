@@ -83,6 +83,8 @@ export function parseTestnetSetupIntent(
   ].some((term) => query.includes(term));
   return asksForReadiness ? "readiness" : null;
 }
+export type AgentX402Intent = { operation: "demo_payment" };
+
 export type AgentDefindexIntent =
   | { operation: "deposit"; asset: "XLM" | "USDC"; amount: string }
   | { operation: "usdc_trustline"; asset: "USDC" };
@@ -96,6 +98,7 @@ export type AgentChatReply = {
     priority: Connection["priority"];
   };
   defindexIntent?: AgentDefindexIntent;
+  x402Intent?: AgentX402Intent;
   memoryUpdated?: boolean;
   decision?: {
     outcome: "allowed" | "blocked";
@@ -307,6 +310,21 @@ export function buildAgentReply(message: string, context: AgentChatContext = {})
     return { content, actions: [], defindexIntent };
   }
 
+  const requestsX402Demo = query.includes("x402") && [
+    "demo", "prueba", "probar", "test", "paga", "pagar", "pay", "compra", "comprar", "buy", "teste", "testar",
+  ].some((term) => query.includes(term));
+  if (requestsX402Demo) {
+    if (!context.wallet) return { content: t.walletPending, actions: [{ label: t.retryWallet, message: language === "pt" ? "Tente configurar minha wallet Stellar novamente" : language === "es" ? "Reintenta configurar mi wallet Stellar" : "Retry my Stellar wallet setup" }] };
+    return {
+      content: {
+        en: "I will inspect the official Stellar x402 Testnet challenge and freeze its exact **0.01 USDC** payment requirements. Nothing will be signed or paid until you review the payment and confirm with Privy.",
+        es: "Inspeccionaré el desafío oficial x402 de Stellar Testnet y congelaré los requisitos exactos del pago de **0.01 USDC**. No se firmará ni pagará nada hasta que revises el pago y confirmes con Privy.",
+        pt: "Vou inspecionar o desafio oficial x402 da Stellar Testnet e congelar os requisitos exatos do pagamento de **0.01 USDC**. Nada será assinado ou pago até você revisar e confirmar com a Privy.",
+      }[language],
+      actions: [],
+      x402Intent: { operation: "demo_payment" },
+    };
+  }
   if (["testnet", "prueba onchain", "probar onchain", "teste onchain", "testar onchain", "prova onchain"].some((term) => query.includes(term))) {
     if (!context.wallet) return { content: t.walletPending, actions: [{ label: t.retryWallet, message: language === "pt" ? "Tente configurar minha wallet Stellar novamente" : language === "es" ? "Reintenta configurar mi wallet Stellar" : "Retry my Stellar wallet setup" }] };
     return { content: t.testnet(context.wallet.balance ?? (language === "pt" ? "saldo indisponível" : language === "es" ? "saldo no disponible" : "an unavailable")), actions: [{ label: t.startProof, message: language === "pt" ? "Inicie minha prova DeFindex na Testnet" : language === "es" ? "Inicia mi prueba DeFindex en Testnet" : "Start my DeFindex Testnet proof" }, { label: t.showWallet, message: language === "pt" ? "Mostre o saldo da minha wallet" : language === "es" ? "Muestra el saldo de mi wallet" : "Show my wallet balance" }] };

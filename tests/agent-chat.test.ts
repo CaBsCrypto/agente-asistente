@@ -168,3 +168,12 @@ test("parses the chat-native Testnet onboarding sequence", () => {
     "fund_xlm",
   );
 });
+
+test("prepares the official x402 demo through the Privy review flow", () => {
+  const reply = buildAgentReply("Prueba el demo x402 en testnet", {
+    wallet: { address: "GBCTAHK3JJ56T4F2CSU3MQYQUMFO5ZS4IE3ZJGHOKFOYAAEN4ZAKAY5RZ", balance: "10", network: "Stellar Testnet" },
+  });
+  assert.equal(reply.x402Intent?.operation, "demo_payment");
+  assert.match(reply.content, /0\.01 USDC/);
+  assert.match(reply.content, /Privy/);
+});

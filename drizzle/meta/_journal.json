@@ -71,6 +71,13 @@
       "when": 1784093891416,
       "tag": "0009_boring_mulholland_black",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784096276242,
+      "tag": "0010_wandering_monster_badoon",
+      "breakpoints": true
     }
   ]
 }

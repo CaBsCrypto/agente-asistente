@@ -303,3 +303,7 @@ Start at the [documentation index](docs/README.md).
 agent-assistant is an early-stage, solo-founder project built in Latin America for a global agent economy. The first wedge is a trusted personal agent with real connections and a user-owned Stellar wallet. The long-term infrastructure helps businesses become discoverable, actionable and payable by agents.
 
 Join the [waitlist](https://agente-asistente.vercel.app/waitlist) or propose a pilot through the [Integration Lab](https://agente-asistente.vercel.app/connections).
+
+## Privy + x402 Testnet
+
+The agent now has a Testnet-only x402 payment path for the official Stellar demo. It uses a custom `ClientStellarSigner` backed by the user's embedded Privy Stellar wallet, freezes the live HTTP 402 requirements before approval, and stores settlement and delivery evidence without exporting a secret key or requiring Freighter. See [docs/x402-privy-testnet.md](docs/x402-privy-testnet.md).
