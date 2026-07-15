@@ -8,7 +8,12 @@ import {
   agentMessages,
   agentWallets,
 } from "@/db/schema";
-import { buildAgentReply, detectAgentLanguage, findRequestedConnection } from "@/app/agent-chat-logic";
+import {
+  buildAgentReply,
+  detectAgentLanguage,
+  findRequestedConnection,
+  type AgentDefindexIntent,
+} from "@/app/agent-chat-logic";
 import { getStellarTestnetAccount } from "@/app/privy-stellar";
 import { searchNotion } from "@/app/connectors/notion-mcp";
 import {
@@ -26,6 +31,7 @@ export type StoredAgentMessage = {
   createdAt: string;
   actions?: { label: string; message?: string; href?: string; connect?: string }[];
   connection?: { name: string; stage: string; priority: string };
+  defindexIntent?: AgentDefindexIntent & { requestId: string };
 };
 
 function conversationId(userId: string) {
@@ -115,6 +121,10 @@ function publicMessage(row: {
     connection:
       metadata.connection && typeof metadata.connection === "object"
         ? (metadata.connection as StoredAgentMessage["connection"])
+        : undefined,
+    defindexIntent:
+      metadata.defindexIntent && typeof metadata.defindexIntent === "object"
+        ? (metadata.defindexIntent as StoredAgentMessage["defindexIntent"])
         : undefined,
   };
 }
@@ -445,6 +455,9 @@ export async function sendAgentMessage(userId: string, content: string) {
     metadata: {
       actions: reply.actions,
       connection: reply.connection,
+      defindexIntent: reply.defindexIntent
+        ? { ...reply.defindexIntent, requestId: userMessage.id }
+        : undefined,
     },
     createdAt: new Date(),
   };

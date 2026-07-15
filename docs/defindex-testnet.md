@@ -15,6 +15,25 @@ The exact Testnet USDC issuer is:
 
 Do not substitute another Testnet USDC issuer. Stellar assets with the same code but different issuers are different assets.
 
+## Conversational entry
+
+The preferred entry point is the authenticated agent chat. These messages create a structured preparation request:
+
+```text
+Deposita 1 XLM en DeFindex Testnet
+Deposit 1 XLM into DeFindex on Testnet
+Deposite 1 XLM na DeFindex Testnet
+```
+
+The agent extracts the operation, asset and amount, then automatically builds and simulates the exact transaction review. Natural language never signs or submits the transaction. The user must review the transaction-specific card and press **Confirm and sign with Privy**.
+
+USDC trustline preparation is also conversational:
+
+```text
+Prepara la trustline USDC de DeFindex
+Prepare the DeFindex USDC trustline
+Prepare a trustline USDC da DeFindex
+```
 ## User flow
 
 1. The authenticated user opens DeFindex from the agent chat.

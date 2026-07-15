@@ -38,7 +38,7 @@ Status meanings are shared across all project documentation:
 | Service provider MCP | Development foundation | Scoped catalog administration at /api/mcp/provider |
 | Chrome WebMCP | Experimental sandbox | Offer discovery and intent preparation |
 | Wallet-signed Stellar transaction | Ready to validate | Privy JWT authorization, verified Ed25519 signature and durable receipt |
-| DeFindex XLM and USDC | Ready to validate | Direct public Soroban vault integration, no DeFindex API key |
+| DeFindex XLM and USDC | Ready to validate | Conversational EN/ES/PT intent, exact transaction review and direct public Soroban vault integration |
 | UNBLCK and ArcusX | Planned partner pilots | Contact or integration path only |
 | Gmail, Drive, Calendar and Trello | Planned | Catalog entries only |
 
@@ -86,13 +86,13 @@ Settlement is simulated. Persistence, authorization hashes, audit records and re
 
 ### 5. Review a DeFindex Testnet action
 
-Open the agent and choose **DeFindex**. The agent can prepare:
+Open the agent and say **"Deposita 1 XLM en DeFindex Testnet"**. The agent extracts the amount and asset, then automatically prepares the exact review. It can also prepare:
 
 - A deposit into the public XLM Testnet vault.
 - The exact trustline required by the public USDC Testnet vault.
 - A USDC deposit after the wallet has the compatible Testnet asset.
 
-Every action is simulated and shown before Privy receives a signing request. See [the DeFindex Testnet guide](docs/defindex-testnet.md).
+Every action is simulated and shown before Privy receives a signing request. Natural language never authorizes settlement; the transaction-specific Privy confirmation button is required. See [the DeFindex Testnet guide](docs/defindex-testnet.md).
 
 ## Product model
 

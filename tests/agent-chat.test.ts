@@ -4,6 +4,7 @@ import {
   buildAgentReply,
   detectAgentLanguage,
   findRequestedConnection,
+  parseDefindexIntent,
 } from "../app/agent-chat-logic";
 
 test("recognizes active pilot aliases in natural language", () => {
@@ -110,4 +111,41 @@ test("keeps financial fields canonical in Portuguese Testnet guidance", () => {
   assert.match(reply.content, /1 XLM/);
   assert.match(reply.content, /USDC/);
   assert.match(reply.content, /Mainnet está desativada/);
+});
+test("parses conversational DeFindex deposits without signing them", () => {
+  assert.deepEqual(
+    parseDefindexIntent("Quiero depositar 1 XLM en DeFindex Testnet"),
+    { operation: "deposit", asset: "XLM", amount: "1" },
+  );
+  assert.deepEqual(
+    parseDefindexIntent("Quero depositar 2,5 USDC na DeFindex"),
+    { operation: "deposit", asset: "USDC", amount: "2.5" },
+  );
+  assert.deepEqual(
+    parseDefindexIntent("Prepare the USDC trustline for DeFindex"),
+    { operation: "usdc_trustline", asset: "USDC" },
+  );
+  assert.equal(parseDefindexIntent("Explain what DeFindex is"), null);
+  assert.equal(parseDefindexIntent("Deposit 1 XLM"), null);
+});
+
+test("returns a structured DeFindex review intent from the chat", () => {
+  const reply = buildAgentReply(
+    "Deposita 1 XLM en DeFindex Testnet",
+    {
+      wallet: {
+        address: "GBCTAHK3J56T4F2CSU3MQYQUMFO5ZS4IE3ZJGHOKFOYAAEN4ZAKAY5RZ",
+        balance: "10000.0000000",
+        network: "Stellar Testnet",
+      },
+    },
+  );
+
+  assert.deepEqual(reply.defindexIntent, {
+    operation: "deposit",
+    asset: "XLM",
+    amount: "1",
+  });
+  assert.match(reply.content, /Todavía no se firmará ni enviará nada/);
+  assert.equal(reply.actions.length, 0);
 });

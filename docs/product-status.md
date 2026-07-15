@@ -33,7 +33,7 @@ This document separates deployed proof from product vision. Status definitions l
 | Explicit demo approval | Sandbox | Short-lived hashed capability | Transaction-scoped Privy approval |
 | Duplicate-resistant receipt | Sandbox | Unique receipt per intent | Reuse on-chain hash on retry |
 | Privy Stellar transaction signing | Ready to validate | User JWT authorization plus verified Ed25519 transaction signature | Complete authenticated acceptance test |
-| DeFindex XLM deposit | Ready to validate, P0 | Public vault simulation and prepared XDR | Confirm with Privy and explorer receipt |
+| DeFindex XLM deposit | Ready to validate, P0 | Conversational EN/ES/PT intent, public vault simulation, prepared XDR and explicit Privy review | Confirm with Privy and explorer receipt |
 | DeFindex USDC trustline/deposit | Ready to validate, P0 | Exact issuer, trustline and vault flow implemented | Fund compatible Testnet USDC and confirm deposit |
 | Mainnet payment | Planned | None | Only after testnet safety review |
 | Escrow or refunds | Planned | Research only | Choose non-custodial partner path |

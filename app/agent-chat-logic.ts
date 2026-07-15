@@ -9,6 +9,10 @@ export type AgentChatAction = {
   connect?: string;
 };
 
+export type AgentDefindexIntent =
+  | { operation: "deposit"; asset: "XLM" | "USDC"; amount: string }
+  | { operation: "usdc_trustline"; asset: "USDC" };
+
 export type AgentChatReply = {
   content: string;
   actions: AgentChatAction[];
@@ -17,6 +21,7 @@ export type AgentChatReply = {
     stage: Connection["stage"];
     priority: Connection["priority"];
   };
+  defindexIntent?: AgentDefindexIntent;
 };
 
 export type AgentChatContext = {
@@ -28,9 +33,60 @@ function normalized(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
+export function parseDefindexIntent(message: string): AgentDefindexIntent | null {
+  const query = normalized(message);
+  const mentionsDefindex = ["defindex", "de findex", "findex"].some((term) =>
+    query.includes(term),
+  );
+  if (!mentionsDefindex) return null;
+
+  const mentionsUsdc = /\busdc\b/.test(query);
+  const asksForTrustline = [
+    "trustline",
+    "trust line",
+    "linea de confianza",
+    "linha de confianca",
+  ].some((term) => query.includes(term));
+  if (mentionsUsdc && asksForTrustline) {
+    return { operation: "usdc_trustline", asset: "USDC" };
+  }
+
+  const asksForDeposit = [
+    "deposit",
+    "deposita",
+    "depositar",
+    "deposite",
+    "invest",
+    "invierte",
+    "invertir",
+    "invista",
+    "investir",
+  ].some((term) => query.includes(term));
+  if (!asksForDeposit) return null;
+
+  const asset = mentionsUsdc
+    ? "USDC"
+    : /\bxlm\b/.test(query) || query.includes("stellar lumen")
+      ? "XLM"
+      : null;
+  if (!asset) return null;
+
+  const escapedAsset = asset === "XLM" ? "xlm" : "usdc";
+  const amountMatch = query.match(
+    new RegExp("(?:^|\\s)(\\d+(?:[.,]\\d{1,7})?)(?=\\s*" + escapedAsset + "\\b)"),
+  );
+  if (!amountMatch) return null;
+
+  return {
+    operation: "deposit",
+    asset,
+    amount: amountMatch[1].replace(",", "."),
+  };
+}
+
 const languageSignals: Record<"es" | "pt", string[]> = {
-  es: ["quiero", "conectame", "muestrame", "billetera", "prueba", "puedes", "busquemos", "archivo", "correo", "viaje", "mi cuenta"],
-  pt: ["quero", "conecte", "conectar ao", "mostre", "minha", "meu", "carteira", "teste", "voce", "nao", "pesquise", "arquivo", "viagem", "cotacao", "preco"],
+  es: ["quiero", "deposita", "invierte", "conectame", "muestrame", "billetera", "prueba", "puedes", "busquemos", "archivo", "correo", "viaje", "mi cuenta"],
+  pt: ["quero", "deposite", "invista", "investir", "conecte", "conectar ao", "mostre", "minha", "meu", "carteira", "teste", "voce", "nao", "pesquise", "arquivo", "viagem", "cotacao", "preco"],
 };
 
 export function detectAgentLanguage(message: string): AgentLanguage {
@@ -145,6 +201,28 @@ export function buildAgentReply(message: string, context: AgentChatContext = {})
   const language = detectAgentLanguage(message);
   const t = text[language];
   const connection = findRequestedConnection(message);
+  const defindexIntent = parseDefindexIntent(message);
+
+  if (defindexIntent) {
+    if (!context.wallet) {
+      return {
+        content: t.walletPending,
+        actions: [{ label: t.retryWallet, message: language === "pt" ? "Tente configurar minha wallet Stellar novamente" : language === "es" ? "Reintenta configurar mi wallet Stellar" : "Retry my Stellar wallet setup" }],
+      };
+    }
+    const content = defindexIntent.operation === "usdc_trustline"
+      ? {
+          en: "I will prepare and simulate the exact **DeFindex USDC trustline** on Stellar Testnet. Nothing will be signed or submitted yet. Review the transaction card, then use the Privy confirmation button if every field is correct.",
+          es: "Prepararé y simularé la **trustline USDC exacta de DeFindex** en Stellar Testnet. Todavía no se firmará ni enviará nada. Revisa la tarjeta de transacción y utiliza el botón de confirmación de Privy solamente si todos los campos son correctos.",
+          pt: "Vou preparar e simular a **trustline USDC exata da DeFindex** na Stellar Testnet. Nada será assinado ou enviado ainda. Revise o cartão da transação e use o botão de confirmação da Privy somente se todos os campos estiverem corretos.",
+        }[language]
+      : {
+          en: `I will prepare and simulate a **${defindexIntent.amount} ${defindexIntent.asset} DeFindex deposit** on Stellar Testnet. Nothing will be signed or submitted yet. Review the exact destination and amount, then confirm with Privy.`,
+          es: `Prepararé y simularé un **depósito de ${defindexIntent.amount} ${defindexIntent.asset} en DeFindex** sobre Stellar Testnet. Todavía no se firmará ni enviará nada. Revisa el destino y el monto exactos y luego confirma con Privy.`,
+          pt: `Vou preparar e simular um **depósito de ${defindexIntent.amount} ${defindexIntent.asset} na DeFindex** pela Stellar Testnet. Nada será assinado ou enviado ainda. Revise o destino e o valor exatos e depois confirme com a Privy.`,
+        }[language];
+    return { content, actions: [], defindexIntent };
+  }
 
   if (["testnet", "prueba onchain", "probar onchain", "teste onchain", "testar onchain", "prova onchain"].some((term) => query.includes(term))) {
     if (!context.wallet) return { content: t.walletPending, actions: [{ label: t.retryWallet, message: language === "pt" ? "Tente configurar minha wallet Stellar novamente" : language === "es" ? "Reintenta configurar mi wallet Stellar" : "Retry my Stellar wallet setup" }] };

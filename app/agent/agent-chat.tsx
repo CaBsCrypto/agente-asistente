@@ -8,6 +8,19 @@ const chatUi = {
   es: { agent: "Tu agente", controlled: "Stellar Testnet · controlado por políticas", memory: "MEMORIA NEON ACTIVA", loading: "Cargando tu conversación...", thinking: "Revisando capacidades y límites de seguridad", placeholder: "Pide a tu agente buscar en Notion, revisar una conexión o preparar una acción...", send: "Enviar", boundary: "El agente puede preparar acciones. Pagos y operaciones irreversibles siempre requieren autorización específica.", context: "CONTEXTO EN VIVO", contextTitle: "Listo para actuar dentro de tus reglas.", identity: "Identidad", balance: "Saldo", network: "Red", verify: "Verificar wallet on-chain", capabilities: "CAPACIDADES ACTIVAS", readOnly: "solo lectura", help: "AYUDA PERSONAL", notionConnect: "Conectar Notion", notionSearch: "Buscar en Notion", firstSearch: "Primera búsqueda", price: "Precio XLM", watchlist: "Watchlist", proof: "Prueba Testnet", connections: "Conexiones", notionConnectPrompt: "Conéctame con Notion", notionSearchPrompt: "Busca en mi Notion las tareas pendientes", pricePrompt: "¿Cuál es el precio actual de XLM en CoinMarketCap?", watchlistPrompt: "Muéstrame mi watchlist de criptomonedas", proofPrompt: "Inicia mi prueba DeFindex en Testnet", travalaPrompt: "Conéctame con Travala", connectionsPrompt: "¿Qué puedo conectar?" },
   pt: { agent: "Seu agente", controlled: "Stellar Testnet · controlado por políticas", memory: "MEMÓRIA NEON ATIVA", loading: "Carregando sua conversa...", thinking: "Verificando capacidades e limites de segurança", placeholder: "Peça ao agente para pesquisar no Notion, verificar uma conexão ou preparar uma ação...", send: "Enviar", boundary: "O agente pode preparar ações. Pagamentos e operações irreversíveis sempre exigem autorização específica.", context: "CONTEXTO AO VIVO", contextTitle: "Pronto para agir dentro das suas regras.", identity: "Identidade", balance: "Saldo", network: "Rede", verify: "Verificar wallet on-chain", capabilities: "CAPACIDADES ATIVAS", readOnly: "somente leitura", help: "AJUDA PESSOAL", notionConnect: "Conectar Notion", notionSearch: "Pesquisar no Notion", firstSearch: "Primeira pesquisa", price: "Preço do XLM", watchlist: "Watchlist", proof: "Prova Testnet", connections: "Conexões", notionConnectPrompt: "Conecte-me ao Notion", notionSearchPrompt: "Pesquise no meu Notion as tarefas pendentes", pricePrompt: "Qual é o preço atual do XLM no CoinMarketCap?", watchlistPrompt: "Mostre minha watchlist de criptomoedas", proofPrompt: "Inicie minha prova DeFindex na Testnet", travalaPrompt: "Conecte-me à Travala", connectionsPrompt: "O que posso conectar?" },
 };
+
+const defindexUi = {
+  en: {
+    label: "DEFINDEX · STELLAR TESTNET", heading: "Transaction prepared from your conversation, with explicit approval.", close: "Close", reading: "Reading public vaults and your wallet...", xlmVault: "XLM vault", usdcVault: "USDC vault", walletBalance: "Wallet balance", shares: "Vault shares", amount: "Amount", trustline: "Trustline", active: "active", required: "required", simulating: "Simulating...", reviewXlm: "Review XLM deposit", preparing: "Preparing...", reviewTrustline: "Review USDC trustline", reviewUsdc: "Review USDC deposit", exactUsdc: "Trustline ready. The wallet still needs the exact Blend Testnet USDC before a deposit can be simulated.", exactAction: "EXACT ACTION FOR SIGNATURE", asset: "Asset", destination: "Destination", invest: "Auto-invest request", yes: "Yes", no: "No", signing: "Signing and submitting...", confirm: "Confirm and sign with Privy", receipt: "Open transaction receipt", replayed: "This action was already confirmed. The same receipt was returned.", confirmed: "Confirmed on Stellar Testnet. The receipt is now available.", trustlineFirst: "Enable the exact DeFindex USDC trustline first.", statusFailed: "DeFindex status failed", prepareFailed: "DeFindex preparation failed", executeFailed: "DeFindex execution failed",
+  },
+  es: {
+    label: "DEFINDEX · STELLAR TESTNET", heading: "Transacción preparada desde tu conversación, con aprobación explícita.", close: "Cerrar", reading: "Leyendo los vaults públicos y tu wallet...", xlmVault: "Vault XLM", usdcVault: "Vault USDC", walletBalance: "Saldo de la wallet", shares: "Shares del vault", amount: "Monto", trustline: "Trustline", active: "activa", required: "requerida", simulating: "Simulando...", reviewXlm: "Revisar depósito XLM", preparing: "Preparando...", reviewTrustline: "Revisar trustline USDC", reviewUsdc: "Revisar depósito USDC", exactUsdc: "La trustline está lista. La wallet todavía necesita el USDC Testnet exacto de Blend antes de simular un depósito.", exactAction: "ACCIÓN EXACTA PARA FIRMAR", asset: "Activo", destination: "Destino", invest: "Solicitud de autoinversión", yes: "Sí", no: "No", signing: "Firmando y enviando...", confirm: "Confirmar y firmar con Privy", receipt: "Abrir recibo de la transacción", replayed: "Esta acción ya estaba confirmada. Se devolvió el mismo recibo.", confirmed: "Confirmada en Stellar Testnet. El recibo está disponible.", trustlineFirst: "Primero activa la trustline USDC exacta de DeFindex.", statusFailed: "No se pudo leer DeFindex", prepareFailed: "No se pudo preparar la transacción", executeFailed: "No se pudo ejecutar la transacción",
+  },
+  pt: {
+    label: "DEFINDEX · STELLAR TESTNET", heading: "Transação preparada pela conversa, com aprovação explícita.", close: "Fechar", reading: "Lendo os vaults públicos e sua wallet...", xlmVault: "Vault XLM", usdcVault: "Vault USDC", walletBalance: "Saldo da wallet", shares: "Shares do vault", amount: "Valor", trustline: "Trustline", active: "ativa", required: "necessária", simulating: "Simulando...", reviewXlm: "Revisar depósito XLM", preparing: "Preparando...", reviewTrustline: "Revisar trustline USDC", reviewUsdc: "Revisar depósito USDC", exactUsdc: "A trustline está pronta. A wallet ainda precisa do USDC Testnet exato da Blend antes de simular um depósito.", exactAction: "AÇÃO EXATA PARA ASSINAR", asset: "Ativo", destination: "Destino", invest: "Solicitação de autoinvestimento", yes: "Sim", no: "Não", signing: "Assinando e enviando...", confirm: "Confirmar e assinar com Privy", receipt: "Abrir recibo da transação", replayed: "Esta ação já estava confirmada. O mesmo recibo foi retornado.", confirmed: "Confirmada na Stellar Testnet. O recibo está disponível.", trustlineFirst: "Primeiro ative a trustline USDC exata da DeFindex.", statusFailed: "Não foi possível ler a DeFindex", prepareFailed: "Não foi possível preparar a transação", executeFailed: "Não foi possível executar a transação",
+  },
+};
+
 type ChatAction = {
   label: string;
   message?: string;
@@ -21,6 +34,10 @@ type ExternalConnection = {
   updatedAt: string;
 };
 
+
+type DefindexChatIntent =
+  | { operation: "deposit"; asset: "XLM" | "USDC"; amount: string; requestId: string }
+  | { operation: "usdc_trustline"; asset: "USDC"; requestId: string };
 
 type DefindexApproval = {
   id: string;
@@ -64,6 +81,7 @@ type ChatMessage = {
     stage: string;
     priority: string;
   };
+  defindexIntent?: DefindexChatIntent;
 };
 
 function MessageText({ content }: { content: string }) {
@@ -93,6 +111,7 @@ export default function AgentChat({
 }) {
   const { locale } = useLocale();
   const ui = chatUi[locale];
+  const dui = defindexUi[locale];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "sending" | "error">(
     "loading",
@@ -200,13 +219,33 @@ export default function AgentChat({
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? "Message failed");
+      const assistantMessage = body.assistantMessage as ChatMessage;
       setMessages((current) => [
         ...current.filter((item) => item.id !== optimisticId),
         body.userMessage,
-        body.assistantMessage,
+        assistantMessage,
       ]);
       setStatus("ready");
-      if (message.toLowerCase().includes("defindex")) {
+      if (assistantMessage.defindexIntent) {
+        const intent = assistantMessage.defindexIntent;
+        if (intent.operation === "deposit") {
+          if (intent.asset === "XLM") setXlmDepositAmount(intent.amount);
+          else setUsdcDepositAmount(intent.amount);
+          await prepareDefindex(
+            "deposit",
+            intent.asset,
+            intent.amount,
+            intent.requestId,
+          );
+        } else {
+          await prepareDefindex(
+            "usdc_trustline",
+            "USDC",
+            undefined,
+            intent.requestId,
+          );
+        }
+      } else if (message.toLowerCase().includes("defindex")) {
         void loadDefindex();
       }
     } catch (caught) {
@@ -266,7 +305,7 @@ export default function AgentChat({
     try {
       setDefindexStatus(await defindexFetch());
     } catch (caught) {
-      setDefindexNotice(caught instanceof Error ? caught.message : "DeFindex status failed");
+      setDefindexNotice(caught instanceof Error ? caught.message : dui.statusFailed);
     } finally {
       setDefindexBusy(null);
     }
@@ -276,7 +315,9 @@ export default function AgentChat({
     operation: "usdc_trustline" | "deposit",
     asset?: "XLM" | "USDC",
     amount?: string,
+    requestId = crypto.randomUUID(),
   ) {
+    setDefindexOpen(true);
     setDefindexBusy(operation + (asset ?? ""));
     setDefindexNotice(null);
     setDefindexApproval(null);
@@ -285,7 +326,7 @@ export default function AgentChat({
         action: "prepare",
         operation,
         ...(asset ? { asset, amount } : {}),
-        requestId: crypto.randomUUID(),
+        requestId,
       });
       if (result.alreadyComplete) {
         setDefindexNotice(result.message);
@@ -294,12 +335,16 @@ export default function AgentChat({
         setDefindexApproval(result.approval);
       }
     } catch (caught) {
-      const code = caught instanceof Error ? caught.message : "DeFindex preparation failed";
+      const code = caught instanceof Error ? caught.message : dui.prepareFailed;
       setDefindexNotice(
         code === "usdc_trustline_required"
-          ? "Enable the exact DeFindex USDC trustline first."
+          ? dui.trustlineFirst
           : code,
       );
+      if (code === "usdc_trustline_required") {
+        const current = await defindexFetch().catch(() => null);
+        if (current) setDefindexStatus(current);
+      }
     } finally {
       setDefindexBusy(null);
     }
@@ -318,13 +363,13 @@ export default function AgentChat({
       setDefindexApproval(result.approval);
       setDefindexNotice(
         result.replayed
-          ? "This action was already confirmed. The same receipt was returned."
-          : "Confirmed on Stellar Testnet. The receipt is now available.",
+          ? dui.replayed
+          : dui.confirmed,
       );
       setDefindexStatus(await defindexFetch());
     } catch (caught) {
       setDefindexNotice(
-        caught instanceof Error ? caught.message : "DeFindex execution failed",
+        caught instanceof Error ? caught.message : dui.executeFailed,
       );
     } finally {
       setDefindexBusy(null);
@@ -449,20 +494,20 @@ export default function AgentChat({
           <section className="defindex-agent-panel" aria-label="DeFindex Testnet actions">
             <header>
               <div>
-                <span>DEFINDEX · STELLAR TESTNET</span>
-                <h3>Deposit through the agent, with explicit approval.</h3>
+                <span>{dui.label}</span>
+                <h3>{dui.heading}</h3>
               </div>
-              <button type="button" onClick={() => setDefindexOpen(false)}>Close</button>
+              <button type="button" onClick={() => setDefindexOpen(false)}>{dui.close}</button>
             </header>
-            {defindexBusy === "status" && <p className="defindex-agent-loading">Reading public vaults and your wallet...</p>}
+            {defindexBusy === "status" && <p className="defindex-agent-loading">{dui.reading}</p>}
             {defindexStatus && (
               <div className="defindex-agent-grid">
                 <article>
-                  <strong>XLM vault</strong>
-                  <span>Wallet balance: {walletBalance} XLM</span>
-                  <span>Vault shares: {defindexStatus.positions.XLM?.shares ?? "0"}</span>
+                  <strong>{dui.xlmVault}</strong>
+                  <span>{dui.walletBalance}: {walletBalance} XLM</span>
+                  <span>{dui.shares}: {defindexStatus.positions.XLM?.shares ?? "0"}</span>
                   <label>
-                    Amount
+                    {dui.amount}
                     <input value={xlmDepositAmount} onChange={(event) => setXlmDepositAmount(event.target.value)} inputMode="decimal" />
                   </label>
                   <button
@@ -470,26 +515,26 @@ export default function AgentChat({
                     disabled={Boolean(defindexBusy)}
                     onClick={() => void prepareDefindex("deposit", "XLM", xlmDepositAmount)}
                   >
-                    {defindexBusy === "depositXLM" ? "Simulating..." : "Review XLM deposit"}
+                    {defindexBusy === "depositXLM" ? dui.simulating : dui.reviewXlm}
                   </button>
                 </article>
                 <article>
-                  <strong>USDC vault</strong>
-                  <span>Trustline: {defindexStatus.usdcTrustline.active ? "active" : "required"}</span>
-                  <span>Wallet balance: {defindexStatus.usdcTrustline.balance} USDC</span>
-                  <span>Vault shares: {defindexStatus.positions.USDC?.shares ?? "0"}</span>
+                  <strong>{dui.usdcVault}</strong>
+                  <span>{dui.trustline}: {defindexStatus.usdcTrustline.active ? dui.active : dui.required}</span>
+                  <span>{dui.walletBalance}: {defindexStatus.usdcTrustline.balance} USDC</span>
+                  <span>{dui.shares}: {defindexStatus.positions.USDC?.shares ?? "0"}</span>
                   {!defindexStatus.usdcTrustline.active ? (
                     <button
                       type="button"
                       disabled={Boolean(defindexBusy)}
                       onClick={() => void prepareDefindex("usdc_trustline")}
                     >
-                      {defindexBusy === "usdc_trustline" ? "Preparing..." : "Review USDC trustline"}
+                      {defindexBusy === "usdc_trustline" ? dui.preparing : dui.reviewTrustline}
                     </button>
                   ) : (
                     <>
                       <label>
-                        Amount
+                        {dui.amount}
                         <input value={usdcDepositAmount} onChange={(event) => setUsdcDepositAmount(event.target.value)} inputMode="decimal" />
                       </label>
                       <button
@@ -497,34 +542,34 @@ export default function AgentChat({
                         disabled={Boolean(defindexBusy) || Number(defindexStatus.usdcTrustline.balance) <= 0}
                         onClick={() => void prepareDefindex("deposit", "USDC", usdcDepositAmount)}
                       >
-                        {defindexBusy === "depositUSDC" ? "Simulating..." : "Review USDC deposit"}
+                        {defindexBusy === "depositUSDC" ? dui.simulating : dui.reviewUsdc}
                       </button>
                     </>
                   )}
                   {defindexStatus.usdcTrustline.active && Number(defindexStatus.usdcTrustline.balance) <= 0 && (
-                    <small>Trustline ready. The wallet still needs the exact Blend Testnet USDC before a deposit can be simulated.</small>
+                    <small>{dui.exactUsdc}</small>
                   )}
                 </article>
               </div>
             )}
             {defindexApproval && (
               <div className={"defindex-approval " + defindexApproval.status}>
-                <span>EXACT ACTION FOR SIGNATURE</span>
+                <span>{dui.exactAction}</span>
                 <h4>{defindexApproval.preview.title}</h4>
                 <p>{defindexApproval.preview.description}</p>
                 <dl>
                   <div><dt>{ui.network}</dt><dd>{defindexApproval.preview.network}</dd></div>
-                  <div><dt>Asset</dt><dd>{defindexApproval.preview.asset}</dd></div>
-                  <div><dt>Amount</dt><dd>{defindexApproval.preview.amount}</dd></div>
-                  <div><dt>Destination</dt><dd>{defindexApproval.preview.destination}</dd></div>
-                  <div><dt>Auto-invest request</dt><dd>{defindexApproval.preview.invest ? "Yes" : "No"}</dd></div>
+                  <div><dt>{dui.asset}</dt><dd>{defindexApproval.preview.asset}</dd></div>
+                  <div><dt>{dui.amount}</dt><dd>{defindexApproval.preview.amount}</dd></div>
+                  <div><dt>{dui.destination}</dt><dd>{defindexApproval.preview.destination}</dd></div>
+                  <div><dt>{dui.invest}</dt><dd>{defindexApproval.preview.invest ? dui.yes : dui.no}</dd></div>
                 </dl>
                 {defindexApproval.status === "prepared" ? (
                   <button type="button" disabled={Boolean(defindexBusy)} onClick={() => void confirmDefindex()}>
-                    {defindexBusy === "execute" ? "Signing and submitting..." : "Confirm and sign with Privy"}
+                    {defindexBusy === "execute" ? dui.signing : dui.confirm}
                   </button>
                 ) : defindexApproval.explorerUrl ? (
-                  <a href={defindexApproval.explorerUrl} target="_blank" rel="noreferrer">Open transaction receipt</a>
+                  <a href={defindexApproval.explorerUrl} target="_blank" rel="noreferrer">{dui.receipt}</a>
                 ) : null}
               </div>
             )}
