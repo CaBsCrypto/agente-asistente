@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb, hasDatabase } from "@/db";
 import {
+  agentActivities,
   agentConnectionInterests,
   agentConversations,
   agentExternalConnections,
@@ -12,9 +13,15 @@ import {
   buildAgentReply,
   detectAgentLanguage,
   findRequestedConnection,
+  parseTestnetSetupIntent,
+  type AgentChatReply,
   type AgentDefindexIntent,
 } from "@/app/agent-chat-logic";
-import { getStellarTestnetAccount } from "@/app/privy-stellar";
+import {
+  fundStellarTestnetWallet,
+  getStellarTestnetAccount,
+} from "@/app/privy-stellar";
+import { DEFINDEX_TESTNET } from "@/app/connectors/defindex";
 import { searchNotion } from "@/app/connectors/notion-mcp";
 import {
   addToMarketWatchlist,
@@ -53,11 +60,20 @@ async function walletContext(userId: string) {
   if (!wallet) return null;
   const account = await getStellarTestnetAccount(wallet.address).catch(() => null);
   const xlm = account?.balances.find((balance) => balance.asset === "XLM");
+  const usdc = account?.balances.find(
+    (balance) =>
+      balance.asset === "USDC" &&
+      balance.issuer === DEFINDEX_TESTNET.usdc.issuer,
+  );
 
   return {
     address: wallet.address,
     network: "Stellar Testnet",
+    accountExists: account?.exists ?? null,
     balance: xlm?.balance ?? null,
+    usdcTrustlineActive: Boolean(usdc),
+    usdcBalance: usdc?.balance ?? "0",
+    usdcIssuer: DEFINDEX_TESTNET.usdc.issuer,
   };
 }
 
@@ -88,11 +104,11 @@ async function ensureConversation(userId: string) {
       userId,
       role: "assistant",
       content:
-        "Your personal Stellar Testnet wallet is active. Start the guided Testnet proof to review the wallet, activate USDC and prepare a DeFindex deposit with explicit authorization.",
+        "Your Privy identity and personal Stellar wallet are ready. You control Testnet onboarding from this chat: ask for your wallet, request Testnet XLM, activate the exact USDC trustline and then prepare a DeFindex action.",
       metadata: {
         actions: [
-          { label: "Start Testnet proof", message: "Start my DeFindex Testnet proof" },
-          { label: "Connect DeFindex", message: "Connect me to DeFindex" },
+          { label: "Show my wallet", message: "Show my wallet" },
+          { label: "Check Testnet setup", message: "What is the next Testnet setup step?" },
           { label: "Explore Travala", message: "Connect me to Travala" },
         ],
       },
@@ -148,6 +164,136 @@ export async function getAgentConversation(userId: string) {
   return { conversationId: id, messages: rows.map(publicMessage) };
 }
 
+type WalletSetupContext = Awaited<ReturnType<typeof walletContext>>;
+
+async function buildTestnetSetupReply(
+  userId: string,
+  intent: NonNullable<ReturnType<typeof parseTestnetSetupIntent>>,
+  wallet: WalletSetupContext,
+  language: "en" | "es" | "pt",
+): Promise<AgentChatReply> {
+  const copy = {
+    en: {
+      title: "**Your Stellar Testnet onboarding**", wallet: "Wallet", xlm: "XLM account activation", trustline: "Exact DeFindex USDC trustline", usdc: "Compatible Testnet USDC balance", ready: "ready", pending: "pending", unavailable: "temporarily unavailable", noWallet: "Your Privy identity is active, but the Stellar wallet record is not ready. Reopen the workspace so the automatic wallet bootstrap can finish.", lookupFailed: "I could not verify the wallet on Stellar Testnet, so I did not request funds. Retry when Horizon is available.", alreadyFunded: (balance: string) => `Your wallet is already active on Stellar Testnet with **${balance} XLM**. XLM is the native asset, so there is no separate XLM trustline to activate.`, funded: (balance: string) => `Friendbot activated your Stellar Testnet account and the wallet now has **${balance} XLM**. This is fake Testnet value only.`, fundFailed: "Friendbot could not activate the account right now. Nothing was changed and you can retry safely.", xlmReady: (balance: string) => `XLM is already active because the Stellar Testnet account exists with **${balance} XLM**. The next optional setup step is the exact DeFindex USDC trustline.`, xlmMissing: "XLM is native on Stellar. First activate the account with Friendbot; that creates the account and adds fake Testnet XLM in one step.", usdcReady: (balance: string) => `The exact DeFindex USDC trustline is already active. Compatible Testnet USDC balance: **${balance} USDC**.`, prepareUsdc: "I will prepare the exact DeFindex USDC trustline now. This is an on-chain Testnet transaction, so text can prepare it but the transaction-specific Privy button must authorize the signature.", prepareBeforeFunding: "Before the wallet can receive the DeFindex-compatible USDC, I must prepare its exact trustline. After you confirm that transaction, a compatible USDC distributor is still required.", usdcFunded: (balance: string) => `The wallet already has **${balance} compatible Testnet USDC** and can prepare a DeFindex USDC deposit.`, usdcBlocked: "The wallet can receive the exact USDC, but agent-assistant does not yet control a distributor for that issuer. I will not label another Testnet USDC as compatible. Use the XLM vault proof now, or later configure a funded distributor/custom vault.", fund: "Fund Testnet XLM", activateUsdc: "Activate USDC", status: "Check setup", depositXlm: "Prepare 1 XLM deposit", depositUsdc: "Prepare 1 USDC deposit", explorer: "Open Friendbot receipt",
+    },
+    es: {
+      title: "**Onboarding de Stellar Testnet**", wallet: "Wallet", xlm: "Activación de cuenta con XLM", trustline: "Trustline USDC exacta de DeFindex", usdc: "Saldo USDC Testnet compatible", ready: "lista", pending: "pendiente", unavailable: "temporalmente no disponible", noWallet: "Tu identidad Privy está activa, pero el registro de la wallet Stellar todavía no está listo. Reabre el workspace para completar el bootstrap automático.", lookupFailed: "No pude verificar la wallet en Stellar Testnet, por lo que no solicité fondos. Puedes reintentar cuando Horizon esté disponible.", alreadyFunded: (balance: string) => `Tu wallet ya está activa en Stellar Testnet con **${balance} XLM**. XLM es el activo nativo, por lo que no existe una trustline XLM separada que debamos activar.`, funded: (balance: string) => `Friendbot activó tu cuenta de Stellar Testnet y la wallet ahora tiene **${balance} XLM**. Es valor ficticio exclusivo de Testnet.`, fundFailed: "Friendbot no pudo activar la cuenta ahora. No se modificó nada y puedes reintentar de forma segura.", xlmReady: (balance: string) => `XLM ya está activo porque la cuenta Stellar Testnet existe con **${balance} XLM**. El siguiente paso opcional es la trustline USDC exacta de DeFindex.`, xlmMissing: "XLM es nativo de Stellar. Primero activa la cuenta con Friendbot; eso crea la cuenta y agrega XLM ficticio de Testnet en un solo paso.", usdcReady: (balance: string) => `La trustline USDC exacta de DeFindex ya está activa. Saldo USDC Testnet compatible: **${balance} USDC**.`, prepareUsdc: "Prepararé ahora la trustline USDC exacta de DeFindex. Es una transacción on-chain en Testnet: el texto puede prepararla, pero el botón específico de Privy debe autorizar la firma.", prepareBeforeFunding: "Antes de recibir el USDC compatible con DeFindex debo preparar su trustline exacta. Después de confirmarla aún necesitaremos un distribuidor de ese USDC.", usdcFunded: (balance: string) => `La wallet ya tiene **${balance} USDC Testnet compatible** y puede preparar un depósito USDC en DeFindex.`, usdcBlocked: "La wallet puede recibir el USDC exacto, pero agent-assistant todavía no controla un distribuidor para ese issuer. No marcaré otro USDC Testnet como compatible. Podemos demostrar el vault XLM ahora o configurar más adelante un distribuidor/vault propio.", fund: "Recargar XLM Testnet", activateUsdc: "Activar USDC", status: "Revisar configuración", depositXlm: "Preparar depósito de 1 XLM", depositUsdc: "Preparar depósito de 1 USDC", explorer: "Abrir recibo Friendbot",
+    },
+    pt: {
+      title: "**Onboarding da Stellar Testnet**", wallet: "Wallet", xlm: "Ativação da conta com XLM", trustline: "Trustline USDC exata da DeFindex", usdc: "Saldo USDC Testnet compatível", ready: "pronta", pending: "pendente", unavailable: "temporariamente indisponível", noWallet: "Sua identidade Privy está ativa, mas o registro da wallet Stellar ainda não está pronto. Reabra o workspace para concluir o bootstrap automático.", lookupFailed: "Não consegui verificar a wallet na Stellar Testnet, então não solicitei fundos. Tente novamente quando a Horizon estiver disponível.", alreadyFunded: (balance: string) => `Sua wallet já está ativa na Stellar Testnet com **${balance} XLM**. XLM é o ativo nativo, portanto não existe uma trustline XLM separada para ativar.`, funded: (balance: string) => `A Friendbot ativou sua conta Stellar Testnet e a wallet agora tem **${balance} XLM**. É valor fictício exclusivo da Testnet.`, fundFailed: "A Friendbot não conseguiu ativar a conta agora. Nada foi alterado e você pode tentar novamente com segurança.", xlmReady: (balance: string) => `O XLM já está ativo porque a conta Stellar Testnet existe com **${balance} XLM**. O próximo passo opcional é a trustline USDC exata da DeFindex.`, xlmMissing: "XLM é nativo da Stellar. Primeiro ative a conta com a Friendbot; isso cria a conta e adiciona XLM fictício da Testnet em uma etapa.", usdcReady: (balance: string) => `A trustline USDC exata da DeFindex já está ativa. Saldo USDC Testnet compatível: **${balance} USDC**.`, prepareUsdc: "Vou preparar agora a trustline USDC exata da DeFindex. É uma transação on-chain na Testnet: o texto pode prepará-la, mas o botão específico da Privy deve autorizar a assinatura.", prepareBeforeFunding: "Antes de receber o USDC compatível com a DeFindex, preciso preparar a trustline exata. Depois da confirmação, ainda precisaremos de um distribuidor desse USDC.", usdcFunded: (balance: string) => `A wallet já tem **${balance} USDC Testnet compatível** e pode preparar um depósito USDC na DeFindex.`, usdcBlocked: "A wallet pode receber o USDC exato, mas agent-assistant ainda não controla um distribuidor desse issuer. Não vou marcar outro USDC Testnet como compatível. Podemos demonstrar o vault XLM agora ou configurar depois um distribuidor/vault próprio.", fund: "Recarregar XLM Testnet", activateUsdc: "Ativar USDC", status: "Verificar configuração", depositXlm: "Preparar depósito de 1 XLM", depositUsdc: "Preparar depósito de 1 USDC", explorer: "Abrir recibo Friendbot",
+    },
+  }[language];
+  const prompts = {
+    en: { fund: "Fund my wallet with Testnet XLM", activateUsdc: "Activate the DeFindex USDC trustline", status: "What is the next Testnet setup step?", depositXlm: "Deposit 1 XLM into DeFindex on Testnet", depositUsdc: "Deposit 1 USDC into DeFindex on Testnet" },
+    es: { fund: "Recarga mi wallet con XLM de Testnet", activateUsdc: "Activa la trustline USDC de DeFindex", status: "¿Cuál es el siguiente paso de configuración Testnet?", depositXlm: "Deposita 1 XLM en DeFindex Testnet", depositUsdc: "Deposita 1 USDC en DeFindex Testnet" },
+    pt: { fund: "Recarregue minha wallet com XLM da Testnet", activateUsdc: "Ative a trustline USDC da DeFindex", status: "Qual é o próximo passo da configuração Testnet?", depositXlm: "Deposite 1 XLM na DeFindex Testnet", depositUsdc: "Deposite 1 USDC na DeFindex Testnet" },
+  }[language];
+
+  if (!wallet) {
+    return { content: copy.noWallet, actions: [] };
+  }
+
+  const xlmBalance = wallet.balance ?? "0";
+  const setupStatus = () => [
+    copy.title,
+    `1. ✅ ${copy.wallet}: ${wallet.address}`,
+    `2. ${wallet.accountExists ? "✅" : wallet.accountExists === false ? "○" : "?"} ${copy.xlm}: ${wallet.accountExists ? `${copy.ready} (${xlmBalance} XLM)` : wallet.accountExists === false ? copy.pending : copy.unavailable}`,
+    `3. ${wallet.usdcTrustlineActive ? "✅" : "○"} ${copy.trustline}: ${wallet.usdcTrustlineActive ? copy.ready : copy.pending}`,
+    `4. ${Number(wallet.usdcBalance) > 0 ? "✅" : "○"} ${copy.usdc}: ${wallet.usdcBalance} USDC`,
+  ].join("\n");
+
+  if (intent === "wallet_status" || intent === "readiness") {
+    const actions = wallet.accountExists === false
+      ? [{ label: copy.fund, message: prompts.fund }]
+      : !wallet.usdcTrustlineActive
+        ? [{ label: copy.activateUsdc, message: prompts.activateUsdc }, { label: copy.depositXlm, message: prompts.depositXlm }]
+        : Number(wallet.usdcBalance) > 0
+          ? [{ label: copy.depositUsdc, message: prompts.depositUsdc }, { label: copy.depositXlm, message: prompts.depositXlm }]
+          : [{ label: copy.depositXlm, message: prompts.depositXlm }];
+    return { content: setupStatus(), actions };
+  }
+
+  if (intent === "fund_xlm") {
+    if (wallet.accountExists === null) {
+      return { content: copy.lookupFailed, actions: [{ label: copy.status, message: prompts.status }] };
+    }
+    if (wallet.accountExists) {
+      return { content: copy.alreadyFunded(xlmBalance), actions: [{ label: copy.activateUsdc, message: prompts.activateUsdc }, { label: copy.depositXlm, message: prompts.depositXlm }] };
+    }
+    try {
+      const funding = await fundStellarTestnetWallet(wallet.address);
+      const refreshed = await getStellarTestnetAccount(wallet.address);
+      const refreshedXlm = refreshed.balances.find((balance) => balance.asset === "XLM")?.balance ?? "0";
+      if (refreshed.exists) {
+        const now = new Date();
+        await getDb()
+          .update(agentWallets)
+          .set({ status: "active", updatedAt: now })
+          .where(
+            and(
+              eq(agentWallets.userId, userId),
+              eq(agentWallets.address, wallet.address),
+            ),
+          );
+        await getDb().insert(agentActivities).values({
+          id: randomUUID(),
+          userId,
+          eventType: "wallet.testnet_funded",
+          summary: "Stellar Testnet wallet funded through agent chat",
+          metadata: {
+            address: wallet.address,
+            balance: refreshedXlm,
+            transactionHash: funding.transactionHash,
+          },
+        });
+      }
+      return {
+        content: copy.funded(refreshedXlm),
+        actions: [
+          ...(funding.transactionHash ? [{ label: copy.explorer, href: `https://stellar.expert/explorer/testnet/tx/${funding.transactionHash}` }] : []),
+          { label: copy.activateUsdc, message: prompts.activateUsdc },
+          { label: copy.status, message: prompts.status },
+        ],
+      };
+    } catch {
+      return { content: copy.fundFailed, actions: [{ label: copy.fund, message: prompts.fund }] };
+    }
+  }
+
+  if (intent === "activate_xlm") {
+    return wallet.accountExists
+      ? { content: copy.xlmReady(xlmBalance), actions: [{ label: copy.activateUsdc, message: prompts.activateUsdc }, { label: copy.depositXlm, message: prompts.depositXlm }] }
+      : { content: copy.xlmMissing, actions: [{ label: copy.fund, message: prompts.fund }] };
+  }
+
+  if (intent === "activate_usdc") {
+    if (!wallet.accountExists) {
+      return { content: copy.xlmMissing, actions: [{ label: copy.fund, message: prompts.fund }] };
+    }
+    if (wallet.usdcTrustlineActive) {
+      return { content: copy.usdcReady(wallet.usdcBalance), actions: Number(wallet.usdcBalance) > 0 ? [{ label: copy.depositUsdc, message: prompts.depositUsdc }] : [{ label: copy.depositXlm, message: prompts.depositXlm }] };
+    }
+    return {
+      content: copy.prepareUsdc,
+      actions: [],
+      defindexIntent: { operation: "usdc_trustline", asset: "USDC" },
+    };
+  }
+
+  if (!wallet.accountExists) {
+    return { content: copy.xlmMissing, actions: [{ label: copy.fund, message: prompts.fund }] };
+  }
+  if (!wallet.usdcTrustlineActive) {
+    return {
+      content: copy.prepareBeforeFunding,
+      actions: [],
+      defindexIntent: { operation: "usdc_trustline", asset: "USDC" },
+    };
+  }
+  return Number(wallet.usdcBalance) > 0
+    ? { content: copy.usdcFunded(wallet.usdcBalance), actions: [{ label: copy.depositUsdc, message: prompts.depositUsdc }] }
+    : { content: copy.usdcBlocked, actions: [{ label: copy.depositXlm, message: prompts.depositXlm }, { label: copy.status, message: prompts.status }] };
+}
 export async function sendAgentMessage(userId: string, content: string) {
   const db = getDb();
   const id = await ensureConversation(userId);
@@ -179,9 +325,11 @@ export async function sendAgentMessage(userId: string, content: string) {
   const normalizedContent = content
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();  const language = detectAgentLanguage(content);
+    .toLowerCase();
+  const language = detectAgentLanguage(content);
   const local = (english: string, portuguese: string) =>
     language === "pt" ? portuguese : english;
+  const setupIntent = parseTestnetSetupIntent(content);
 
   const marketSymbol = extractMarketSymbol(content);
   const requestsWatchlistAdd =
@@ -235,8 +383,10 @@ export async function sendAgentMessage(userId: string, content: string) {
       "page",
     ].some((term) => normalizedContent.includes(term));
 
-  let reply;
-  if (requestsNotionSearch) {
+  let reply: AgentChatReply;
+  if (setupIntent) {
+    reply = await buildTestnetSetupReply(userId, setupIntent, wallet, language);
+  } else if (requestsNotionSearch) {
     try {
       const result = await searchNotion(userId, content);
       reply = {
@@ -497,6 +647,7 @@ export async function sendAgentMessage(userId: string, content: string) {
     conversationId: id,
     userMessage: publicMessage(userMessage),
     assistantMessage: publicMessage(assistantMessage),
+    wallet: await walletContext(userId),
   };
 }
 

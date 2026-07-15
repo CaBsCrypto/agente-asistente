@@ -62,6 +62,7 @@ type DefindexApproval = {
 };
 
 type DefindexStatus = {
+  balances: { asset: string; balance: string }[];
   usdcTrustline: { active: boolean; balance: string; issuer: string };
   positions: {
     XLM: { shares: string } | null;
@@ -113,6 +114,7 @@ export default function AgentChat({
   const ui = chatUi[locale];
   const dui = defindexUi[locale];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [liveWalletBalance, setLiveWalletBalance] = useState(walletBalance);
   const [status, setStatus] = useState<"loading" | "ready" | "sending" | "error">(
     "loading",
   );
@@ -225,6 +227,9 @@ export default function AgentChat({
         body.userMessage,
         assistantMessage,
       ]);
+      if (body.wallet) {
+        setLiveWalletBalance(body.wallet.balance ?? "0");
+      }
       setStatus("ready");
       if (assistantMessage.defindexIntent) {
         const intent = assistantMessage.defindexIntent;
@@ -303,7 +308,12 @@ export default function AgentChat({
     setDefindexBusy("status");
     setDefindexNotice(null);
     try {
-      setDefindexStatus(await defindexFetch());
+      const nextStatus = await defindexFetch();
+      setDefindexStatus(nextStatus);
+      const xlm = nextStatus.balances?.find(
+        (balance: { asset: string; balance: string }) => balance.asset === "XLM",
+      );
+      setLiveWalletBalance(xlm?.balance ?? "0");
     } catch (caught) {
       setDefindexNotice(caught instanceof Error ? caught.message : dui.statusFailed);
     } finally {
@@ -366,7 +376,12 @@ export default function AgentChat({
           ? dui.replayed
           : dui.confirmed,
       );
-      setDefindexStatus(await defindexFetch());
+      const nextStatus = await defindexFetch();
+      setDefindexStatus(nextStatus);
+      const xlm = nextStatus.balances?.find(
+        (balance: { asset: string; balance: string }) => balance.asset === "XLM",
+      );
+      setLiveWalletBalance(xlm?.balance ?? "0");
     } catch (caught) {
       setDefindexNotice(
         caught instanceof Error ? caught.message : dui.executeFailed,
@@ -504,7 +519,7 @@ export default function AgentChat({
               <div className="defindex-agent-grid">
                 <article>
                   <strong>{dui.xlmVault}</strong>
-                  <span>{dui.walletBalance}: {walletBalance} XLM</span>
+                  <span>{dui.walletBalance}: {liveWalletBalance} XLM</span>
                   <span>{dui.shares}: {defindexStatus.positions.XLM?.shares ?? "0"}</span>
                   <label>
                     {dui.amount}
@@ -609,7 +624,7 @@ export default function AgentChat({
         <dl>
           <div><dt>{ui.identity}</dt><dd>{email}</dd></div>
           <div><dt>Wallet</dt><dd>{walletAddress.slice(0, 8) + "..." + walletAddress.slice(-6)}</dd></div>
-          <div><dt>{ui.balance}</dt><dd>{walletBalance} XLM</dd></div>
+          <div><dt>{ui.balance}</dt><dd>{liveWalletBalance} XLM</dd></div>
           <div><dt>{ui.network}</dt><dd>Stellar Testnet</dd></div>
         </dl>
         <a

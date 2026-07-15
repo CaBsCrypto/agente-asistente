@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { persistAgentAccount } from "@/app/agent-account";
 import {
   PRIVY_WALLET_ARCHITECTURE,
-  fundStellarTestnetWallet,
   getOrCreateUserStellarWallet,
   getPrivyStellarReadiness,
   getPrivyUserIdentity,
@@ -34,20 +33,10 @@ export async function POST(request: Request) {
   try {
     const claims = await verifyPrivyAccessToken(bearerToken(request));
     const wallet = await getOrCreateUserStellarWallet(claims.user_id);
-    let account = await getStellarTestnetAccount(wallet.address);
-    let activation: "active" | "activated" | "pending" = account.exists
+    const account = await getStellarTestnetAccount(wallet.address);
+    const activation: "active" | "pending" = account.exists
       ? "active"
       : "pending";
-
-    if (!account.exists) {
-      try {
-        await fundStellarTestnetWallet(wallet.address);
-        account = await getStellarTestnetAccount(wallet.address);
-        activation = account.exists ? "activated" : "pending";
-      } catch {
-        activation = "pending";
-      }
-    }
 
     const identity = await getPrivyUserIdentity(claims.user_id).catch(() => ({
       id: claims.user_id,

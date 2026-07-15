@@ -24,8 +24,9 @@ Status meanings are shared across all project documentation:
 | Capability | Status | Current proof |
 | --- | --- | --- |
 | Google/email login | Live | Privy authentication on /agent |
-| EN/ES/PT experience | Live | Persistent locale on landing, login and public portals; multilingual core agent commands | Expand all technical evidence and partner copy |
-| Automatic Stellar wallet | Live | One user-owned wallet, activated on Stellar Testnet |
+| EN/ES/PT experience | Live | Persistent locale and multilingual core agent commands |
+| Automatic Stellar wallet | Live | One user-owned wallet created at login |
+| Chat-requested Testnet XLM | Ready to validate | Friendbot only runs after a text request for an absent account |
 | Wallet balance and explorer link | Live | Horizon account lookup |
 | Persistent chat and user state | Live | Neon Postgres |
 | CoinMarketCap quotes | Live, read-only | Official Trial Pro API |
@@ -38,7 +39,8 @@ Status meanings are shared across all project documentation:
 | Service provider MCP | Development foundation | Scoped catalog administration at /api/mcp/provider |
 | Chrome WebMCP | Experimental sandbox | Offer discovery and intent preparation |
 | Wallet-signed Stellar transaction | Ready to validate | Privy JWT authorization, verified Ed25519 signature and durable receipt |
-| DeFindex XLM and USDC | Ready to validate | Conversational EN/ES/PT intent, exact transaction review and direct public Soroban vault integration |
+| DeFindex XLM | Ready to validate | Conversational intent, exact transaction review and public Soroban vault integration |
+| DeFindex USDC | Trustline ready; deposit funding blocked | Exact trustline flow, but no controlled compatible-USDC distributor |
 | UNBLCK and ArcusX | Planned partner pilots | Contact or integration path only |
 | Gmail, Drive, Calendar and Trello | Planned | Catalog entries only |
 
@@ -51,9 +53,21 @@ The dated source of truth is [docs/product-status.md](docs/product-status.md).
 1. Open [the agent](https://agente-asistente.vercel.app/agent).
 2. Sign in with Google or email through Privy.
 3. The server verifies the Privy access token and creates one user-owned Stellar wallet when needed.
-4. The wallet is activated on Stellar Testnet and displayed with its balance and explorer link.
+4. The chat reads the wallet's current on-chain state and guides each Testnet step.
 
-The application does not generate a password or expose a seed phrase. Login establishes identity; it does not authorize a payment.
+Try the onboarding entirely through text:
+
+~~~text
+Dame mi wallet
+Recarga mi wallet con XLM de Testnet
+Activa XLM
+Activa USDC
+¿Cuál es el siguiente paso de configuración Testnet?
+~~~
+
+Wallet creation is automatic; Testnet funding is requested from the chat. XLM is Stellar's native asset, so Friendbot creates the Testnet account and funds it in one step. USDC activation prepares the exact DeFindex-compatible trustline, but the user must still approve that on-chain transaction with Privy.
+
+The application does not generate a password or expose a seed phrase. Login establishes identity; it does not authorize a transaction.
 
 ### 2. Query CoinMarketCap
 
@@ -86,13 +100,15 @@ Settlement is simulated. Persistence, authorization hashes, audit records and re
 
 ### 5. Review a DeFindex Testnet action
 
-Open the agent and say **"Deposita 1 XLM en DeFindex Testnet"**. The agent extracts the amount and asset, then automatically prepares the exact review. It can also prepare:
+After the wallet has Testnet XLM, say **"Deposita 1 XLM en DeFindex Testnet"**. The agent extracts the amount and asset, builds the exact XDR, simulates it and opens a transaction review. It can also prepare:
 
 - A deposit into the public XLM Testnet vault.
 - The exact trustline required by the public USDC Testnet vault.
-- A USDC deposit after the wallet has the compatible Testnet asset.
+- A USDC deposit after the wallet has the exact issuer-compatible Testnet asset.
 
-Every action is simulated and shown before Privy receives a signing request. Natural language never authorizes settlement; the transaction-specific Privy confirmation button is required. See [the DeFindex Testnet guide](docs/defindex-testnet.md).
+Every on-chain action is shown before Privy receives a signing request. Natural language prepares the action; it never authorizes settlement. The transaction-specific **Confirm and sign with Privy** button is required.
+
+The XLM path is available for the acceptance proof now. The exact USDC trustline can also be prepared now, but automatic USDC funding is not claimed: this project does not yet control a distributor for the issuer required by the public vault and will not substitute a different asset. See [the DeFindex Testnet guide](docs/defindex-testnet.md).
 
 ## Product model
 

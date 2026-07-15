@@ -1,74 +1,100 @@
 # DeFindex on Stellar Testnet
 
-agent-assistant integrates directly with the public DeFindex Soroban vaults. It does not require a DeFindex API key or a DeFindex-hosted MCP server.
+agent-assistant integrates directly with public DeFindex Soroban vaults. It does not require a DeFindex API key or a DeFindex-hosted MCP server.
 
 ## Public contracts
 
 | Asset | Vault | Strategy |
 | --- | --- | --- |
-| XLM | `CCLV4H7WTLJQ7ATLHBBQV2WW3OINF3FOY5XZ7VPHZO7NH3D2ZS4GFSF6` | `CDVLOSPJPQOTB6ZCWO5VSGTOLGMKTXSFWYTUP572GTPNOWX4F76X3HPM` |
-| USDC | `CBMVK2JK6NTOT2O4HNQAIQFJY232BHKGLIMXDVQVHIIZKDACXDFZDWHN` | `CALLOM5I7XLQPPOPQMYAHUWW4N7O3JKT42KQ4ASEEVBXDJQNJOALFSUY` |
+| XLM | CCLV4H7WTLJQ7ATLHBBQV2WW3OINF3FOY5XZ7VPHZO7NH3D2ZS4GFSF6 | CDVLOSPJPQOTB6ZCWO5VSGTOLGMKTXSFWYTUP572GTPNOWX4F76X3HPM |
+| USDC | CBMVK2JK6NTOT2O4HNQAIQFJY232BHKGLIMXDVQVHIIZKDACXDFZDWHN | CALLOM5I7XLQPPOPQMYAHUWW4N7O3JKT42KQ4ASEEVBXDJQNJOALFSUY |
 
 The exact Testnet USDC issuer is:
 
-`GATALTGTWIOT6BUDBCZM3Q4OQ4BO2COLOAZ7IYSKPLC2PMSOPPGF5V56`
+GATALTGTWIOT6BUDBCZM3Q4OQ4BO2COLOAZ7IYSKPLC2PMSOPPGF5V56
 
 Do not substitute another Testnet USDC issuer. Stellar assets with the same code but different issuers are different assets.
 
-## Conversational entry
+## Chat-first prerequisite flow
 
-The preferred entry point is the authenticated agent chat. These messages create a structured preparation request:
+The user does not operate a DeFi console to initialize the wallet. The authenticated agent chat reads the live account state and accepts this sequence:
 
-```text
+~~~text
+Dame mi wallet
+Recarga mi wallet con XLM de Testnet
+Activa XLM
+Activa USDC
+¿Cuál es el siguiente paso de configuración Testnet?
+~~~
+
+- **Dame mi wallet** returns the address and the current on-chain checklist.
+- **Recarga mi wallet con XLM de Testnet** invokes Friendbot only for an absent account.
+- **Activa XLM** reports that XLM is native and requires no trustline.
+- **Activa USDC** prepares the exact ChangeTrust transaction and opens its Privy review.
+- **Recarga mi wallet con USDC** checks the exact issuer balance. It does not pretend that another Testnet USDC is compatible.
+- **Cuál es el siguiente paso** recomputes the state from Horizon instead of trusting a stored wizard step.
+
+## Conversational transaction preparation
+
+After the account has Testnet XLM:
+
+~~~text
 Deposita 1 XLM en DeFindex Testnet
 Deposit 1 XLM into DeFindex on Testnet
 Deposite 1 XLM na DeFindex Testnet
-```
+~~~
 
-The agent extracts the operation, asset and amount, then automatically builds and simulates the exact transaction review. Natural language never signs or submits the transaction. The user must review the transaction-specific card and press **Confirm and sign with Privy**.
+The agent extracts the operation, asset and amount, then builds and simulates the exact transaction review. Natural language never signs or submits the transaction. The user must review the transaction-specific card and press **Confirm and sign with Privy**.
 
-USDC trustline preparation is also conversational:
+The same rule applies to the trustline:
 
-```text
-Prepara la trustline USDC de DeFindex
-Prepare the DeFindex USDC trustline
-Prepare a trustline USDC da DeFindex
-```
+~~~text
+Activa USDC
+Activate USDC
+Ative USDC
+~~~
+
 ## User flow
 
-1. The authenticated user opens DeFindex from the agent chat.
-2. The server reads the user-owned Stellar wallet and public vault state.
-3. For USDC, the agent first prepares the exact trustline transaction.
-4. The server constructs and simulates the requested transaction.
-5. The UI presents the network, asset, amount, destination contract and investment flag.
-6. The user explicitly confirms.
-7. The user's current Privy JWT authorizes `rawSign` for the transaction hash.
-8. agent-assistant verifies the Ed25519 signature against the wallet address.
-9. The signed XDR is submitted once.
-10. The transaction hash, status and explorer link are stored as a durable receipt.
+1. The authenticated user asks the agent for a wallet or Testnet setup.
+2. The server resolves the user-owned Privy Stellar wallet.
+3. Horizon supplies the current account, XLM and exact-issuer USDC state.
+4. Friendbot creates and funds the Testnet account only when requested and absent.
+5. For USDC, the agent prepares the exact trustline transaction.
+6. For a deposit, the server constructs and simulates the requested Soroban transaction.
+7. The UI presents the network, asset, amount, destination contract and investment flag.
+8. The user explicitly confirms.
+9. The current Privy JWT authorizes rawSign for the transaction hash.
+10. agent-assistant verifies the Ed25519 signature against the wallet address.
+11. The signed XDR is submitted once.
+12. The transaction hash, status and explorer link are stored as a durable receipt.
+13. A retry returns the existing receipt instead of submitting again.
 
 ## Safety boundary
 
 - Stellar Testnet only.
 - No private key or seed phrase reaches agent-assistant.
-- Login alone does not submit a transaction.
+- Login alone does not request funds or submit a transaction.
+- Friendbot funding is requested by chat and guarded by live account existence.
 - Every trustline and deposit requires a transaction-specific confirmation.
 - Prepared XDR, signed XDR and transaction hash are persisted for replay protection.
-- A retry returns the existing receipt when the transaction is already confirmed.
 - Mainnet remains disabled.
 
-## Current caveat
+## Current proof status
 
-The public XLM and USDC vaults were readable on-chain, but both reported zero capital allocated to their configured Blend strategy during the latest verification. Deposits can still mint vault shares, but Testnet yield must not be claimed unless a later on-chain query proves funds are invested.
+The XLM path is ready for an authenticated acceptance test: wallet lookup, chat-requested Testnet funding, transaction preparation, Privy confirmation, submission and receipt handling are implemented.
 
-The wallet must separately receive the exact Blend Testnet USDC before the USDC deposit can succeed. Circle Testnet USDC with a different issuer is incompatible with this vault.
+The USDC trustline path is also implemented. An end-to-end USDC deposit still requires a funded distributor for the exact issuer used by the public vault. agent-assistant does not currently control one, so the product must not claim automatic USDC funding or substitute Circle Testnet USDC with a different issuer.
+
+The public XLM and USDC vaults were readable on-chain, but both reported zero capital allocated to their configured Blend strategy during the latest verification. Deposits can mint vault shares, but Testnet yield must not be claimed unless a later on-chain query proves funds are invested.
 
 ## API
 
-Authenticated browser endpoint:
+Authenticated browser endpoints:
 
-- `GET /api/agent/defindex` — wallet, trustline, shares and recent receipts.
-- `POST /api/agent/defindex` with `action: prepare` — create a transaction-specific approval.
-- `POST /api/agent/defindex` with `action: execute`, the approval ID and `explicitConfirmation: true` — authorize, sign and submit.
+- GET /api/agent/defindex — wallet, balances, trustline, positions and recent receipts.
+- POST /api/agent/defindex with action prepare — create a transaction-specific approval.
+- POST /api/agent/defindex with action execute and explicitConfirmation true — authorize, sign and submit.
+- POST /api/agent/chat — detect chat-native onboarding and DeFindex transaction intents.
 
-The endpoint requires the current Privy bearer token and same-origin requests.
+Every endpoint requires the current Privy bearer token and same-origin requests.

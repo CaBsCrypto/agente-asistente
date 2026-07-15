@@ -5,6 +5,7 @@ import {
   detectAgentLanguage,
   findRequestedConnection,
   parseDefindexIntent,
+  parseTestnetSetupIntent,
 } from "../app/agent-chat-logic";
 
 test("recognizes active pilot aliases in natural language", () => {
@@ -148,4 +149,22 @@ test("returns a structured DeFindex review intent from the chat", () => {
   });
   assert.match(reply.content, /Todavía no se firmará ni enviará nada/);
   assert.equal(reply.actions.length, 0);
+});
+test("parses the chat-native Testnet onboarding sequence", () => {
+  assert.equal(parseTestnetSetupIntent("Dame mi wallet"), "wallet_status");
+  assert.equal(
+    parseTestnetSetupIntent("Recarga mi wallet con saldo de Testnet"),
+    "fund_xlm",
+  );
+  assert.equal(parseTestnetSetupIntent("Actívalo con XLM"), "activate_xlm");
+  assert.equal(parseTestnetSetupIntent("Actívalo con USDC"), "activate_usdc");
+  assert.equal(parseTestnetSetupIntent("Recarga mi wallet con USDC"), "fund_usdc");
+  assert.equal(
+    parseTestnetSetupIntent("¿Cuál es el siguiente paso de configuración Testnet?"),
+    "readiness",
+  );
+  assert.equal(
+    parseTestnetSetupIntent("Recarregue minha wallet com XLM da Testnet"),
+    "fund_xlm",
+  );
 });

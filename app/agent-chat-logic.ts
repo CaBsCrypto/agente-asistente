@@ -9,6 +9,80 @@ export type AgentChatAction = {
   connect?: string;
 };
 
+export type AgentTestnetSetupIntent =
+  | "wallet_status"
+  | "fund_xlm"
+  | "activate_xlm"
+  | "activate_usdc"
+  | "fund_usdc"
+  | "readiness";
+
+export function parseTestnetSetupIntent(
+  message: string,
+): AgentTestnetSetupIntent | null {
+  const query = normalized(message);
+  const mentionsUsdc = /\busdc\b/.test(query);
+  const mentionsXlm = /\bxlm\b/.test(query) || query.includes("lumen");
+  const mentionsWallet = ["wallet", "billetera", "carteira"].some((term) =>
+    query.includes(term),
+  );
+  const wantsFunding = [
+    "recarga",
+    "recargar",
+    "carga saldo",
+    "fondea",
+    "fondear",
+    "fund",
+    "top up",
+    "recarregue",
+    "recarregar",
+    "carregue",
+    "adicionar saldo",
+  ].some((term) => query.includes(term));
+  const wantsActivation = [
+    "activa",
+    "activar",
+    "activate",
+    "active",
+    "ative",
+    "ativar",
+  ].some((term) => query.includes(term));
+
+  if (wantsFunding && mentionsUsdc) return "fund_usdc";
+  if (wantsActivation && mentionsUsdc) return "activate_usdc";
+  if (wantsFunding && (mentionsWallet || mentionsXlm || query.includes("testnet"))) {
+    return "fund_xlm";
+  }
+  if (wantsActivation && mentionsXlm) return "activate_xlm";
+
+  const asksForWallet = [
+    "dame mi wallet",
+    "muestra mi wallet",
+    "mostrar mi wallet",
+    "show my wallet",
+    "give me my wallet",
+    "mostre minha wallet",
+    "qual e minha wallet",
+  ].some((term) => query.includes(term));
+  if (asksForWallet) return "wallet_status";
+
+  const asksForReadiness = [
+    "que sigue",
+    "siguiente paso",
+    "estado testnet",
+    "status testnet",
+    "configura mi wallet",
+    "prepara mi wallet",
+    "testnet onboarding",
+    "what is next",
+    "next step",
+    "configure my wallet",
+    "qual e o proximo",
+    "proximo passo",
+    "configure minha wallet",
+  ].some((term) => query.includes(term));
+  return asksForReadiness ? "readiness" : null;
+}
 export type AgentDefindexIntent =
   | { operation: "deposit"; asset: "XLM" | "USDC"; amount: string }
   | { operation: "usdc_trustline"; asset: "USDC" };
@@ -85,8 +159,8 @@ export function parseDefindexIntent(message: string): AgentDefindexIntent | null
 }
 
 const languageSignals: Record<"es" | "pt", string[]> = {
-  es: ["quiero", "deposita", "invierte", "conectame", "muestrame", "billetera", "prueba", "puedes", "busquemos", "archivo", "correo", "viaje", "mi cuenta"],
-  pt: ["quero", "deposite", "invista", "investir", "conecte", "conectar ao", "mostre", "minha", "meu", "carteira", "teste", "voce", "nao", "pesquise", "arquivo", "viagem", "cotacao", "preco"],
+  es: ["quiero", "recarga", "activa", "siguiente", "deposita", "invierte", "conectame", "muestrame", "billetera", "prueba", "puedes", "busquemos", "archivo", "correo", "viaje", "mi cuenta"],
+  pt: ["quero", "recarregue", "ative", "proximo", "deposite", "invista", "investir", "conecte", "conectar ao", "mostre", "minha", "meu", "carteira", "teste", "voce", "nao", "pesquise", "arquivo", "viagem", "cotacao", "preco"],
 };
 
 export function detectAgentLanguage(message: string): AgentLanguage {
