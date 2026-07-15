@@ -15,7 +15,7 @@ import {
 } from "@/app/privy-stellar";
 import { X402_TESTNET_USDC } from "@/app/x402/assets";
 
-export const INTERNAL_TESTNET_USDC_DRIP = "1.0000000";
+export const INTERNAL_TESTNET_USDC_DRIP = "0.5000000";
 
 export function getInternalTestnetFaucetReadiness() {
   const secret = process.env.STELLAR_TESTNET_USDC_DISTRIBUTOR_SECRET?.trim();

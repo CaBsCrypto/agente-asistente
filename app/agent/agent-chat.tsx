@@ -379,7 +379,11 @@ export default function AgentChat({
           const fundedStatus = await x402Fetch();
           setX402Status(fundedStatus);
           if (Number(fundedStatus.x402Usdc.balance) < 0.01) throw new Error("testnet_usdc_funding_not_visible");
-          setX402Notice("1 USDC Testnet was added automatically by the internal faucet.");
+          setX402Notice(
+            locale === "es" ? "El faucet interno agreg? autom?ticamente 0,50 USDC Testnet."
+              : locale === "pt" ? "O faucet interno adicionou automaticamente 0,50 USDC Testnet."
+                : "The internal faucet automatically added 0.50 USDC Testnet.",
+          );
         } else {
           setX402Notice(xui.trustline);
           return;

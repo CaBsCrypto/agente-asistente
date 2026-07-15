@@ -17,7 +17,7 @@ This integration lets an authenticated user pay the official Stellar x402 demo f
 1. Sign in with Privy and open the agent.
 2. Ask: `Prueba el demo x402 en testnet`.
 3. If required, review and confirm the official x402 USDC trustline.
-4. When the internal faucet is configured, the agent sends `1 USDC` from its Testnet-only distributor automatically. Circle remains the manual fallback.
+4. When the internal faucet is configured, the agent sends `0.50 USDC` from its Testnet-only distributor automatically. Circle remains the manual fallback.
 5. The agent reads the live `PAYMENT-REQUIRED` challenge without leaving the chat.
 6. Review the exact `0.01 USDC` payment and confirm it with Privy.
 7. The custom signer hashes the Soroban auth-entry, requests an Ed25519 `rawSign` from the user-owned Privy wallet, and returns the SEP-43 signature to the x402 client.
@@ -40,7 +40,7 @@ The code path and signature primitive are implemented and tested. The remaining 
 
 ## Internal faucet boundary
 
-Set `STELLAR_TESTNET_USDC_DISTRIBUTOR_SECRET` only on the server. The corresponding account must hold XLM for fees, the official Circle Testnet USDC trustline and faucet USDC. It sends exactly `1 USDC` per user per UTC hour.
+Set `STELLAR_TESTNET_USDC_DISTRIBUTOR_SECRET` only on the server. The corresponding account must hold XLM for fees, the official Circle Testnet USDC trustline and faucet USDC. It sends exactly `0.50 USDC` per user per UTC hour.
 
 - It is hard-coded to Stellar Testnet and the official Testnet USDC issuer.
 - The secret and distributor address are never sent together to the browser.
