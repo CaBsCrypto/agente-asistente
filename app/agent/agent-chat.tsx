@@ -188,7 +188,12 @@ export default function AgentChat({
   const [x402Trustline, setX402Trustline] = useState<X402TrustlineApproval | null>(null);
   const [x402Busy, setX402Busy] = useState(false);
   const [x402Notice, setX402Notice] = useState<string | null>(null);
-  const endRef = useRef<HTMLDivElement | null>(null);
+  const threadRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const followsLatestRef = useRef(true);
+  const initialScrollRef = useRef(false);
+  const [isAtLatest, setIsAtLatest] = useState(true);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -245,8 +250,56 @@ export default function AgentChat({
   }, [getAccessToken]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const thread = threadRef.current;
+    if (!thread) return;
+
+    if (!initialScrollRef.current) {
+      thread.scrollTop = thread.scrollHeight;
+      initialScrollRef.current = true;
+      followsLatestRef.current = true;
+      setIsAtLatest(true);
+      return;
+    }
+
+    if (followsLatestRef.current || status === "sending") {
+      thread.scrollTo({ top: thread.scrollHeight, behavior: "smooth" });
+      setIsAtLatest(true);
+      setHasNewMessages(false);
+      return;
+    }
+
+    setHasNewMessages(true);
   }, [messages, status]);
+
+  useEffect(() => {
+    if (!defindexOpen && !x402Open) return;
+    function closeActionPanel(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setDefindexOpen(false);
+      setX402Open(false);
+      composerRef.current?.focus();
+    }
+    window.addEventListener("keydown", closeActionPanel);
+    return () => window.removeEventListener("keydown", closeActionPanel);
+  }, [defindexOpen, x402Open]);
+
+  function handleThreadScroll() {
+    const thread = threadRef.current;
+    if (!thread) return;
+    const nearLatest = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 72;
+    followsLatestRef.current = nearLatest;
+    setIsAtLatest(nearLatest);
+    if (nearLatest) setHasNewMessages(false);
+  }
+
+  function scrollToLatest() {
+    const thread = threadRef.current;
+    if (!thread) return;
+    followsLatestRef.current = true;
+    thread.scrollTo({ top: thread.scrollHeight, behavior: "smooth" });
+    setIsAtLatest(true);
+    setHasNewMessages(false);
+  }
 
   async function sendMessage(content: string) {
     const message = content.trim();
@@ -263,6 +316,7 @@ export default function AgentChat({
       },
     ]);
     setDraft("");
+    if (composerRef.current) composerRef.current.style.height = "";
     setStatus("sending");
     setError(null);
 
@@ -367,6 +421,7 @@ export default function AgentChat({
   }
 
   async function prepareX402(requestId = crypto.randomUUID()) {
+    setDefindexOpen(false);
     setX402Open(true);
     setX402Busy(true);
     setX402Notice(null);
@@ -477,6 +532,7 @@ export default function AgentChat({
   }
 
   async function loadDefindex() {
+    setX402Open(false);
     setDefindexOpen(true);
     setDefindexBusy("status");
     setDefindexNotice(null);
@@ -500,6 +556,7 @@ export default function AgentChat({
     amount?: string,
     requestId = crypto.randomUUID(),
   ) {
+    setX402Open(false);
     setDefindexOpen(true);
     setDefindexBusy(operation + (asset ?? ""));
     setDefindexNotice(null);
@@ -605,7 +662,12 @@ export default function AgentChat({
           </div>
         )}
 
-        <div className="agent-chat-thread" aria-live="polite">
+        <div
+          className="agent-chat-thread"
+          aria-live="polite"
+          ref={threadRef}
+          onScroll={handleThreadScroll}
+        >
           {status === "loading" && (
             <div className="agent-chat-loading">
               <i />
@@ -690,12 +752,20 @@ export default function AgentChat({
               <span>{ui.thinking}</span>
             </div>
           )}
-          <div ref={endRef} />
         </div>
+
+        {!isAtLatest && !defindexOpen && !x402Open && (
+          <button className="agent-chat-jump" type="button" onClick={scrollToLatest}>
+            <span aria-hidden="true">{"\u2193"}</span>
+            {hasNewMessages
+              ? locale === "es" ? "Nuevos mensajes" : locale === "pt" ? "Novas mensagens" : "New messages"
+              : locale === "es" ? "Ir al final" : locale === "pt" ? "Ir ao fim" : "Jump to latest"}
+          </button>
+        )}
 
 
         {defindexOpen && (
-          <section className="defindex-agent-panel" aria-label="DeFindex Testnet actions">
+          <section className="defindex-agent-panel" aria-label="DeFindex Testnet actions" role="dialog">
             <header>
               <div>
                 <span>{dui.label}</span>
@@ -782,7 +852,7 @@ export default function AgentChat({
         )}
 
         {x402Open && (
-          <section className="defindex-agent-panel" aria-label="x402 Stellar Testnet payment">
+          <section className="defindex-agent-panel" aria-label="x402 Stellar Testnet payment" role="dialog">
             <header>
               <div><span>{xui.label}</span><h3>{xui.heading}</h3></div>
               <button type="button" onClick={() => setX402Open(false)}>{xui.close}</button>
@@ -839,8 +909,13 @@ export default function AgentChat({
         <form className="agent-chat-composer" onSubmit={submit}>
           <textarea
             aria-label="Message your agent"
+            ref={composerRef}
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              event.currentTarget.style.height = "auto";
+              event.currentTarget.style.height = `${Math.min(event.currentTarget.scrollHeight, 112)}px`;
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
@@ -848,7 +923,7 @@ export default function AgentChat({
               }
             }}
             placeholder={ui.placeholder}
-            rows={2}
+            rows={1}
             maxLength={2000}
           />
           <button disabled={!draft.trim() || status === "sending"}>{ui.send}</button>
