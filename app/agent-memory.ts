@@ -1,3 +1,5 @@
+import { evaluateAutopilot } from "@/app/agent-autopilot";
+
 export type VaultLanguage = "en" | "es" | "pt";
 
 export type ParsedVaultCommand =
@@ -29,6 +31,7 @@ export type ActionPreflight = {
   amount?: number;
   irreversible?: boolean;
   financial?: boolean;
+  autopilotActionsToday?: number;
 };
 
 export type PolicyDecision = {
@@ -230,6 +233,8 @@ export function evaluateExecutionPolicies(
   const reasons: string[] = [];
   const applied: string[] = [];
   let requiresApproval = Boolean(action.financial || action.irreversible);
+  let explicitApprovalRequired = false;
+  let delegatedByAutopilot = false;
 
   if (action.network.includes("mainnet")) {
     reasons.push("mainnet_disabled");
@@ -256,13 +261,24 @@ export function evaluateExecutionPolicies(
     }
     if (policy.kind === "approval" && policy.config.alwaysRequireApproval === true) {
       applied.push(policy.label);
-      requiresApproval = true;
+      explicitApprovalRequired = true;
     }
     if (policy.kind === "risk") applied.push(policy.label);
+    if (policy.kind === "autopilot") {
+      const autopilot = evaluateAutopilot(policy.config, action);
+      if (autopilot.applied) {
+        applied.push(...autopilot.rules);
+        reasons.push(...autopilot.reasons);
+        delegatedByAutopilot ||= autopilot.delegated;
+      }
+    }
   }
 
   const uniqueReasons = [...new Set(reasons)];
   const uniqueApplied = [...new Set(applied)];
+  if (delegatedByAutopilot) requiresApproval = false;
+  if (explicitApprovalRequired) requiresApproval = true;
+
   const allowed = uniqueReasons.length === 0;
   return {
     allowed,

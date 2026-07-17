@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, gte } from "drizzle-orm";
 import { getDatabaseUrl, getDb } from "@/db";
 import {
   agentDecisionEvents,
@@ -12,6 +12,11 @@ import {
   type ActionPreflight,
   type ParsedVaultCommand,
 } from "@/app/agent-memory";
+import {
+  DEFAULT_AUTOPILOT_CONFIG,
+  normalizeAutopilotConfig,
+} from "@/app/agent-autopilot";
+
 
 let schemaPromise: Promise<void> | null = null;
 
@@ -238,7 +243,20 @@ export async function evaluateUserAction(userId: string, action: ActionPreflight
     })
     .from(agentPolicies)
     .where(and(eq(agentPolicies.userId, userId), eq(agentPolicies.status, "active")));
-  const decision = evaluateExecutionPolicies(rows, action);
+  let evaluatedAction = action;
+  if (rows.some((row) => row.kind === "autopilot")) {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [daily] = await db
+      .select({ total: count() })
+      .from(agentDecisionEvents)
+      .where(and(
+        eq(agentDecisionEvents.userId, userId),
+        eq(agentDecisionEvents.outcome, "allowed"),
+        gte(agentDecisionEvents.createdAt, since),
+      ));
+    evaluatedAction = { ...action, autopilotActionsToday: Number(daily?.total ?? 0) };
+  }
+  const decision = evaluateExecutionPolicies(rows, evaluatedAction);
   await db.insert(agentDecisionEvents).values({
     id: randomUUID(),
     userId,
@@ -246,7 +264,7 @@ export async function evaluateUserAction(userId: string, action: ActionPreflight
     outcome: decision.outcome,
     reasonCodes: decision.reasonCodes,
     explanation: {
-      ...action,
+      ...evaluatedAction,
       appliedRules: decision.appliedRules,
       requiresApproval: decision.requiresApproval,
       summary: decision.summary,
@@ -255,3 +273,147 @@ export async function evaluateUserAction(userId: string, action: ActionPreflight
   return decision;
 }
 
+
+type AutopilotUpdate =
+  | {
+      action: "activate";
+      acknowledged: true;
+      durationHours: 1 | 8 | 24;
+      xlmPerAction: number;
+      usdcPerAction: number;
+      maxDailyActions: number;
+    }
+  | { action: "pause" };
+
+function publicAutopilot(row?: typeof agentPolicies.$inferSelect) {
+  if (!row) {
+    return {
+      status: "off" as const,
+      config: DEFAULT_AUTOPILOT_CONFIG,
+      signer: {
+        ready: false,
+        status: "manual_signature_required",
+      },
+    };
+  }
+  const config = normalizeAutopilotConfig(row.config);
+  const expired =
+    row.status === "active" &&
+    Boolean(config.expiresAt) &&
+    Date.parse(config.expiresAt!) <= Date.now();
+  return {
+    id: row.id,
+    status: expired ? "expired" as const : row.status,
+    config,
+    signer: {
+      ready: config.delegatedSignerReady,
+      status: config.delegatedSignerReady
+        ? "delegated"
+        : "manual_signature_required",
+    },
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+export async function getAutopilotState(userId: string) {
+  await ensureAgentVaultSchema();
+  const rows = await getDb()
+    .select()
+    .from(agentPolicies)
+    .where(and(
+      eq(agentPolicies.userId, userId),
+      eq(agentPolicies.kind, "autopilot"),
+    ))
+    .orderBy(desc(agentPolicies.updatedAt))
+    .limit(1);
+  return publicAutopilot(rows[0]);
+}
+
+export async function updateAutopilotState(
+  userId: string,
+  input: AutopilotUpdate,
+) {
+  await ensureAgentVaultSchema();
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(agentPolicies)
+    .where(and(
+      eq(agentPolicies.userId, userId),
+      eq(agentPolicies.kind, "autopilot"),
+    ))
+    .orderBy(desc(agentPolicies.updatedAt))
+    .limit(1);
+  const existing = rows[0];
+  const now = new Date();
+
+  if (input.action === "pause") {
+    if (!existing) return publicAutopilot();
+    await db
+      .update(agentPolicies)
+      .set({
+        status: "paused",
+        config: {
+          ...normalizeAutopilotConfig(existing.config),
+          pausedAt: now.toISOString(),
+        },
+        updatedAt: now,
+      })
+      .where(and(eq(agentPolicies.id, existing.id), eq(agentPolicies.userId, userId)));
+    await db.insert(agentDecisionEvents).values({
+      id: randomUUID(),
+      userId,
+      actionType: "autopilot.policy",
+      outcome: "paused",
+      reasonCodes: ["autopilot_paused_by_user"],
+      explanation: { pausedAt: now.toISOString() },
+    });
+    return getAutopilotState(userId);
+  }
+
+  const config = {
+    ...DEFAULT_AUTOPILOT_CONFIG,
+    durationHours: input.durationHours,
+    xlmPerAction: input.xlmPerAction,
+    usdcPerAction: input.usdcPerAction,
+    maxDailyActions: input.maxDailyActions,
+    delegatedSignerReady: false,
+    executionMode: "policy_only" as const,
+    activatedAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + input.durationHours * 60 * 60 * 1000).toISOString(),
+  };
+  if (existing) {
+    await db
+      .update(agentPolicies)
+      .set({
+        label: "Testnet Autopilot",
+        enforcement: "hard",
+        config,
+        source: "autopilot_control",
+        status: "active",
+        updatedAt: now,
+      })
+      .where(and(eq(agentPolicies.id, existing.id), eq(agentPolicies.userId, userId)));
+  } else {
+    await db.insert(agentPolicies).values({
+      id: randomUUID(),
+      userId,
+      kind: "autopilot",
+      label: "Testnet Autopilot",
+      enforcement: "hard",
+      config,
+      source: "autopilot_control",
+      status: "active",
+      updatedAt: now,
+    });
+  }
+  await db.insert(agentDecisionEvents).values({
+    id: randomUUID(),
+    userId,
+    actionType: "autopilot.policy",
+    outcome: "allowed",
+    reasonCodes: ["autopilot_activated_by_user"],
+    explanation: { ...config, summary: "Testnet Autopilot activated by the wallet owner." },
+  });
+  return getAutopilotState(userId);
+}

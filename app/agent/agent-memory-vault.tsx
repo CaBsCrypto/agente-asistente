@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import AutopilotControl from "./autopilot-control";
 import { useLocale } from "../language-toggle";
 
 type VaultItem = {
@@ -221,6 +222,8 @@ export default function AgentMemoryVault({
           <span>active controls</span>
         </div>
       </header>
+
+      <AutopilotControl getAccessToken={getAccessToken} />
 
       <form onSubmit={save}>
         <input

@@ -41,6 +41,7 @@ Status meanings are shared across all project documentation:
 | Wallet-signed Stellar transaction | Ready to validate | Client-side Privy confirmation, server-verified Ed25519 signature and durable receipt |
 | Stellar x402 payment | Live Testnet proof | A second Privy user completed the official 0.01 USDC flow; settlement, delivery evidence and the replay-safe receipt are durable |
 | Acceptance runner | Live, read-only | Production doctor validates health, MCP discovery, official x402 challenge and distributor balances |
+| Testnet Autopilot | Policy layer live; delegated signer pending | Time-bound activation, risk colors, allowlist, hard XLM/USDC limits, daily cap and immediate pause |
 | DeFindex XLM | Ready to validate | Conversational intent, exact transaction review and public Soroban vault integration |
 | DeFindex USDC | Trustline ready; deposit funding blocked | Exact trustline flow, but no controlled compatible-USDC distributor |
 | UNBLCK and ArcusX | Planned partner pilots | Contact or integration path only |
@@ -176,6 +177,7 @@ Example client configuration:
 | demo_authorize_intent | Record sandbox confirmation | Yes |
 | execute_authorized_intent | Create or replay one sandbox receipt | Yes |
 | get_receipt | Retrieve execution evidence | No |
+The delegated-autonomy boundary is documented in [Testnet Autopilot security model](docs/testnet-autopilot.md).
 
 Inbound MCP lets other agents use agent-assistant. Outbound connectors let agent-assistant use Notion, CoinMarketCap and Travala. These directions may use MCP, OAuth or a conventional API.
 

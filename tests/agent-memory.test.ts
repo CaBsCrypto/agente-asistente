@@ -147,3 +147,120 @@ test("understands natural-language spend limits", () => {
     assert.equal(command.enforcement, "hard");
   }
 });
+
+test("Testnet Autopilot enforces caps before delegated execution", () => {
+  const decision = evaluateExecutionPolicies(
+    [
+      {
+        id: "autopilot-1",
+        kind: "autopilot",
+        label: "Testnet Autopilot",
+        enforcement: "hard",
+        config: {
+          network: "stellar:testnet",
+          allowedActionTypes: ["defindex.deposit.xlm.prepare"],
+          xlmPerAction: 5,
+          usdcPerAction: 0.05,
+          maxDailyActions: 10,
+          delegatedSignerReady: true,
+          executionMode: "delegated",
+          expiresAt: new Date(Date.now() + 60_000).toISOString(),
+        },
+      },
+    ],
+    {
+      actionType: "defindex.deposit.xlm.prepare",
+      network: "stellar:testnet",
+      asset: "XLM",
+      amount: 6,
+      financial: true,
+      irreversible: true,
+      autopilotActionsToday: 0,
+    },
+  );
+  assert.equal(decision.allowed, false);
+  assert.ok(decision.reasonCodes.includes("autopilot_xlm_limit_exceeded"));
+});
+
+test("Testnet Autopilot removes the approval step only when delegated signing is ready", () => {
+  const basePolicy = {
+    id: "autopilot-1",
+    kind: "autopilot",
+    label: "Testnet Autopilot",
+    enforcement: "hard",
+    config: {
+      network: "stellar:testnet",
+      allowedActionTypes: ["x402.payment"],
+      xlmPerAction: 5,
+      usdcPerAction: 0.05,
+      maxDailyActions: 10,
+      executionMode: "policy_only",
+      delegatedSignerReady: false,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    },
+  };
+  const action = {
+    actionType: "x402.payment",
+    network: "stellar:testnet",
+    asset: "USDC",
+    amount: 0.01,
+    financial: true,
+    irreversible: true,
+    autopilotActionsToday: 0,
+  };
+  const manual = evaluateExecutionPolicies([basePolicy], action);
+  assert.equal(manual.allowed, true);
+  assert.equal(manual.requiresApproval, true);
+  const delegated = evaluateExecutionPolicies(
+    [{
+      ...basePolicy,
+      config: {
+        ...basePolicy.config,
+        executionMode: "delegated",
+        delegatedSignerReady: true,
+      },
+    }],
+    action,
+  );
+  assert.equal(delegated.allowed, true);
+  assert.equal(delegated.requiresApproval, false);
+});
+
+test("an explicit approval rule overrides Testnet Autopilot delegation", () => {
+  const decision = evaluateExecutionPolicies(
+    [
+      {
+        id: "autopilot-1",
+        kind: "autopilot",
+        label: "Testnet Autopilot",
+        enforcement: "hard",
+        config: {
+          network: "stellar:testnet",
+          allowedActionTypes: ["x402.payment"],
+          usdcPerAction: 0.05,
+          maxDailyActions: 10,
+          delegatedSignerReady: true,
+          executionMode: "delegated",
+          expiresAt: new Date(Date.now() + 60_000).toISOString(),
+        },
+      },
+      {
+        id: "approval-1",
+        kind: "approval",
+        label: "Always ask",
+        enforcement: "hard",
+        config: { alwaysRequireApproval: true },
+      },
+    ],
+    {
+      actionType: "x402.payment",
+      network: "stellar:testnet",
+      asset: "USDC",
+      amount: 0.01,
+      financial: true,
+      irreversible: true,
+    },
+  );
+  assert.equal(decision.allowed, true);
+  assert.equal(decision.requiresApproval, true);
+});
