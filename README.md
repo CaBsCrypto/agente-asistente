@@ -39,6 +39,8 @@ Status meanings are shared across all project documentation:
 | Service provider MCP | Development foundation | Scoped catalog administration at /api/mcp/provider |
 | Chrome WebMCP | Experimental sandbox | Offer discovery and intent preparation |
 | Wallet-signed Stellar transaction | Ready to validate | Privy JWT authorization, verified Ed25519 signature and durable receipt |
+| Stellar x402 payment | Ready to validate | Official live 402 challenge, pinned USDC, internal Testnet funding, atomic execution claim and durable replay receipt |
+| Acceptance runner | Live, read-only | Production doctor validates health, MCP discovery, official x402 challenge and distributor balances |
 | DeFindex XLM | Ready to validate | Conversational intent, exact transaction review and public Soroban vault integration |
 | DeFindex USDC | Trustline ready; deposit funding blocked | Exact trustline flow, but no controlled compatible-USDC distributor |
 | UNBLCK and ArcusX | Planned partner pilots | Contact or integration path only |
@@ -293,6 +295,7 @@ Start at the [documentation index](docs/README.md).
 - [Bidirectional MCP gateway](docs/mcp-gateway.md)
 - [MCP integration](docs/mcp-integration.md)
 - [Privy and Stellar Testnet](docs/privy-stellar-testnet.md)
+- [Acceptance testing](docs/acceptance-testing.md)
 - [CoinMarketCap partner pilot](docs/coinmarketcap-partner-pilot.md)
 - [Admin operations](docs/admin-operations.md)
 - [Waitlist operations](docs/waitlist-operations.md)
@@ -307,3 +310,5 @@ Join the [waitlist](https://agente-asistente.vercel.app/waitlist) or propose a p
 ## Privy + x402 Testnet
 
 The agent now has a Testnet-only x402 payment path for the official Stellar demo. It uses a custom `ClientStellarSigner` backed by the user's embedded Privy Stellar wallet, freezes the live HTTP 402 requirements before approval, and stores settlement and delivery evidence without exporting a secret key or requiring Freighter. See [docs/x402-privy-testnet.md](docs/x402-privy-testnet.md).
+
+Run `npm run qa:local` before deployment and `npm run acceptance:doctor` after Vercel is ready. The optional authenticated runner can complete the trustline, internal `0.50 USDC` funding, live `0.01 USDC` payment and same-receipt replay when supplied with a temporary dedicated-test-user Privy token and the explicit Testnet mutation flag. See [acceptance testing](docs/acceptance-testing.md).

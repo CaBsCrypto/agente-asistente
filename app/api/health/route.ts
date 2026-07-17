@@ -1,1 +1,22 @@
-import{NextResponse}from"next/server";import{backend}from"@/app/commerce-backend";export function GET(){return NextResponse.json({service:"agente-asistente",status:"ok",mode:"demo",persistence:backend.mode(),custody:false,payments:"simulated",mcp:"/api/mcp",timestamp:new Date().toISOString()})}
+import { NextResponse } from "next/server";
+import { backend } from "@/app/commerce-backend";
+
+export function GET() {
+  return NextResponse.json({
+    service: "agente-asistente",
+    status: "ok",
+    environment: "stellar-testnet",
+    persistence: backend.mode(),
+    custody: {
+      userFunds: false,
+      testnetDistributor: true,
+    },
+    payments: {
+      commerceSandbox: "simulated",
+      x402StellarTestnet: "enabled",
+      mainnet: "disabled",
+    },
+    mcp: "/api/mcp",
+    timestamp: new Date().toISOString(),
+  });
+}

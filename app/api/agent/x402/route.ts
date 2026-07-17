@@ -32,6 +32,7 @@ import {
   payX402Resource,
   type FrozenX402Requirement,
 } from "@/app/x402/protocol";
+import { guardX402Execution } from "@/app/x402/execution-guard";
 import { getDatabaseUrl, getDb, hasDatabase } from "@/db";
 import {
   agentActivities,
@@ -334,10 +335,33 @@ export async function POST(request: Request) {
     const execute = executeSchema.safeParse(body);
     if (execute.success) {
       let payment = await findPayment(userId, execute.data.paymentId);
-      if (payment.status === "confirmed") {
+      const guard = guardX402Execution(payment.status);
+      if (guard.action === "replay") {
         return NextResponse.json({ replayed: true, payment: publicPayment(payment) });
       }
+      if (guard.action === "reject") throw new Error(guard.error);
       if (payment.expiresAt.getTime() <= Date.now()) throw new Error("x402_approval_expired");
+      const claimed = await getDb()
+        .update(agentX402Payments)
+        .set({ status: "signing", updatedAt: new Date(), error: null })
+        .where(and(
+          eq(agentX402Payments.id, payment.id),
+          eq(agentX402Payments.userId, userId),
+          eq(agentX402Payments.status, "prepared"),
+        ))
+        .returning({ id: agentX402Payments.id });
+      if (!claimed.length) {
+        payment = await findPayment(userId, payment.id);
+        const latestGuard = guardX402Execution(payment.status);
+        if (latestGuard.action === "replay") {
+          return NextResponse.json({ replayed: true, payment: publicPayment(payment) });
+        }
+        throw new Error(
+          latestGuard.action === "reject"
+            ? latestGuard.error
+            : "x402_payment_concurrent_execution",
+        );
+      }
       const frozen = payment.paymentRequired as FrozenX402Requirement;
       const signer = createPrivyX402Signer({
         userId,
@@ -346,10 +370,12 @@ export async function POST(request: Request) {
         address: payment.walletAddress,
         paymentId: payment.id,
       });
-      await getDb().update(agentX402Payments).set({ status: "signing", updatedAt: new Date(), error: null }).where(eq(agentX402Payments.id, payment.id));
       try {
         const result = await payX402Resource({ resourceUrl: payment.resourceUrl, signer, frozen });
         const transactionHash = result.settlement?.transaction ?? null;
+        if (!transactionHash) {
+          throw new Error("x402_settlement_transaction_missing");
+        }
         const now = new Date();
         await getDb().update(agentX402Payments).set({
           status: "confirmed",
@@ -366,7 +392,20 @@ export async function POST(request: Request) {
           metadata: { paymentId: payment.id, transactionHash, amount: payment.amountDisplay, asset: "USDC" },
         });
       } catch (error) {
-        await getDb().update(agentX402Payments).set({ status: "failed", error: error instanceof Error ? error.message : "x402_payment_failed", updatedAt: new Date() }).where(eq(agentX402Payments.id, payment.id));
+        const errorMessage = error instanceof Error ? error.message : "x402_payment_failed";
+        await getDb().update(agentX402Payments).set({
+          status: "reconciliation_required",
+          error: errorMessage,
+          updatedAt: new Date(),
+        }).where(and(
+          eq(agentX402Payments.id, payment.id),
+          eq(agentX402Payments.status, "signing"),
+        ));
+        await getDb().insert(agentActivities).values({
+          id: randomUUID(), userId, eventType: "x402.payment.reconciliation_required",
+          summary: "Stopped automatic retries after an ambiguous x402 result",
+          metadata: { paymentId: payment.id, error: errorMessage },
+        }).catch(() => undefined);
         throw error;
       }
       payment = await findPayment(userId, payment.id);
@@ -405,7 +444,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ replayed: rows[0].createdAt.getTime() < Date.now() - 2_000, decision, payment: publicPayment(rows[0]) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "x402_request_failed";
-    const status = message.includes("authorization") ? 401 : message.includes("expired") ? 409 : 400;
+    const conflict = [
+      "expired", "reconciliation", "requires_new_review", "concurrent_execution",
+    ].some((code) => message.includes(code));
+    const status = message.includes("authorization")
+      ? 401
+      : conflict ? 409 : 400;
     return NextResponse.json({ error: message }, { status });
   }
 }

@@ -36,7 +36,11 @@ export function GET(request: Request) {
     },
     security: {
       custody: false,
-      payments: "simulated",
+      payments: {
+        commerceSandbox: "simulated",
+        x402StellarTestnet: "explicit-user-approval",
+        mainnet: "disabled",
+      },
       providerTokens: "SHA-256 hashes at rest; raw token returned once",
       oauth: "MCP OAuth 2.1 discovery remains a production milestone",
     },

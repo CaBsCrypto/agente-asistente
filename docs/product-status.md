@@ -1,6 +1,6 @@
 # Product status
 
-Last reviewed: **July 15, 2026**
+Last reviewed: **July 17, 2026**
 
 This document separates deployed proof from product vision. Status definitions live in the [documentation index](README.md).
 
@@ -38,7 +38,7 @@ This document separates deployed proof from product vision. Status definitions l
 | Duplicate-resistant receipt | Sandbox | Unique receipt per intent | Reuse on-chain hash on retry |
 | Privy Stellar transaction signing | Ready to validate | User JWT authorization plus verified Ed25519 transaction signature | Complete authenticated acceptance test |
 | Privy x402 auth-entry signing | Implemented, ready to validate | Custom ClientStellarSigner hashes SEP-43 auth entries and delegates Ed25519 raw signing to the user-owned Privy wallet | Complete one live 0.01 USDC Testnet payment |
-| Stellar x402 demo payment | Implemented, awaiting funded acceptance | Live 402 challenge inspection, strict asset/amount lock, explicit approval, paid retry and durable receipt | Add official x402 USDC and record explorer hash |
+| Stellar x402 demo payment | Implemented, ready for acceptance | Live 402 challenge inspection, pinned asset/amount, automatic 0.50 USDC Testnet funding, atomic execution claim and durable replay receipt | Complete one live payment and record explorer hash |
 | DeFindex XLM deposit | Ready to validate, P0 | Conversational EN/ES/PT intent, public vault simulation, prepared XDR and explicit Privy review | Confirm with Privy and explorer receipt |
 | DeFindex USDC trustline | Ready to validate, P0 | Exact issuer and ChangeTrust review implemented from chat | Confirm with Privy and explorer receipt |
 | DeFindex USDC deposit | Blocked on compatible funding | Exact vault flow implemented; no controlled distributor for its issuer | Source exact Testnet USDC or deploy a controlled vault |
@@ -64,7 +64,7 @@ This document separates deployed proof from product vision. Status definitions l
 Already demonstrable:
 
 - A new user authenticates through Privy.
-- The user receives a real user-owned Stellar wallet automatically; Testnet funding is then requested from chat.
+- The user receives a real user-owned Stellar wallet automatically; the x402 flow activates it with Friendbot and funds 0.50 USDC from the Testnet-only distributor after trustline approval.
 - The agent reads real CoinMarketCap and Travala data.
 - User state, chat and watchlists persist.
 - The sandbox returns the same receipt on duplicate execution.

@@ -8,6 +8,7 @@ This directory is the source of truth for operating, demonstrating and extending
 2. Keep the guide beside the authenticated agent.
 3. Follow the wallet, Testnet XLM, USDC trustline and DeFindex sequence.
 4. Use [the repository manual](user-guide.md) when a markdown version is needed.
+
 ## Choose a path
 
 ### Product and fundraising
@@ -18,16 +19,18 @@ This directory is the source of truth for operating, demonstrating and extending
 4. Follow the [YC closeout roadmap](yc-closeout-roadmap.md).
 5. Use only claims marked **Live** or **Sandbox** in external materials.
 6. Use the [CoinMarketCap pilot brief](coinmarketcap-partner-pilot.md) for outreach.
+7. Read the [Personal Execution Vault guide](personal-execution-vault.md) for user memory, policies and decision evidence.
+8. Use the [acceptance testing guide](acceptance-testing.md) before claiming an integration works.
 
 ### Developers and integrations
-3. Read the [Personal Execution Vault guide](personal-execution-vault.md) for user memory, policies and decision evidence.
 
 1. Read the [developer guide](developer-guide.md).
 2. Review the [architecture diagrams](architecture.md).
 3. Read the [bidirectional MCP gateway](mcp-gateway.md).
 4. Read the [MCP integration guide](mcp-integration.md).
 5. Read the [Privy + Stellar architecture](privy-stellar-testnet.md).
-6. Send the [new product integration prompt](NEW_PRODUCT_INTEGRATION_AGENT_PROMPT.md) to an implementation agent or partner engineer.
+6. Run the [acceptance testing workflow](acceptance-testing.md) before and after deployment.
+7. Send the [new product integration prompt](NEW_PRODUCT_INTEGRATION_AGENT_PROMPT.md) to an implementation agent or partner engineer.
 
 ### Founder operations
 

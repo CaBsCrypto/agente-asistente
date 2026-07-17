@@ -16,12 +16,17 @@ import {
 import { X402_TESTNET_USDC } from "@/app/x402/assets";
 
 export const INTERNAL_TESTNET_USDC_DRIP = "0.5000000";
+export const INTERNAL_TESTNET_USDC_DISTRIBUTOR_ADDRESS =
+  "GDN5BJPXG64CNOLWOXJEJE3O5V5G4X53HPLFBJDOKONQRZ4URPF7WPFV";
 
 export function getInternalTestnetFaucetReadiness() {
   const secret = process.env.STELLAR_TESTNET_USDC_DISTRIBUTOR_SECRET?.trim();
   if (!secret) return { configured: false, address: null, amount: INTERNAL_TESTNET_USDC_DRIP };
   try {
     const address = Keypair.fromSecret(secret).publicKey();
+    if (address !== INTERNAL_TESTNET_USDC_DISTRIBUTOR_ADDRESS) {
+      return { configured: false, address: null, amount: INTERNAL_TESTNET_USDC_DRIP };
+    }
     return { configured: true, address, amount: INTERNAL_TESTNET_USDC_DRIP };
   } catch {
     return { configured: false, address: null, amount: INTERNAL_TESTNET_USDC_DRIP };
@@ -36,6 +41,9 @@ export async function sendInternalTestnetUsdc(input: {
   const secret = process.env.STELLAR_TESTNET_USDC_DISTRIBUTOR_SECRET?.trim();
   if (!secret) throw new Error("testnet_usdc_faucet_not_configured");
   const distributor = Keypair.fromSecret(secret);
+  if (distributor.publicKey() !== INTERNAL_TESTNET_USDC_DISTRIBUTOR_ADDRESS) {
+    throw new Error("testnet_usdc_distributor_mismatch");
+  }
   if (distributor.publicKey() === input.destination) throw new Error("testnet_faucet_self_payment_blocked");
 
   const destination = await getStellarTestnetAccount(input.destination);
