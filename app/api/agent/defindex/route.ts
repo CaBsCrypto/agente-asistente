@@ -15,9 +15,9 @@ import {
 } from "@/app/connectors/defindex";
 import {
   getStellarTestnetAccount,
-  signStellarTransactionHash,
   verifyPrivyAccessToken,
 } from "@/app/privy-stellar";
+import { stellarClientSignatureBytes } from "@/app/x402/client-authorization";
 import { getDatabaseUrl, getDb, hasDatabase } from "@/db";
 import {
   agentActivities,
@@ -86,6 +86,7 @@ const executeSchema = z.object({
   action: z.literal("execute"),
   approvalId: z.string().uuid(),
   explicitConfirmation: z.literal(true),
+  signature: z.string().regex(/^0x[0-9a-fA-F]{128}$/),
 });
 
 function sameOrigin(request: Request) {
@@ -105,7 +106,7 @@ async function auth(request: Request) {
   if (!sameOrigin(request)) throw new Error("invalid_origin");
   const accessToken = bearerToken(request);
   const claims = await verifyPrivyAccessToken(accessToken);
-  return { userId: claims.user_id, accessToken };
+  return { userId: claims.user_id };
 }
 
 async function userWallet(userId: string) {
@@ -140,6 +141,10 @@ function publicAction(row: typeof agentStellarActions.$inferSelect) {
     asset: row.asset,
     amount: row.amount,
     status: row.status,
+    signingAddress: row.walletAddress,
+    signingHash: row.status === "prepared" && row.transactionHash
+      ? `0x${row.transactionHash}`
+      : null,
     transactionHash: row.transactionHash,
     explorerUrl: row.transactionHash
       ? DEFINDEX_TESTNET.explorerUrl + "/tx/" + row.transactionHash
@@ -245,11 +250,7 @@ async function prepareAction(
   return { alreadyComplete: false, approval: publicAction(rows[0]) };
 }
 
-async function executeAction(
-  userId: string,
-  accessToken: string,
-  approvalId: string,
-) {
+async function executeAction(userId: string, approvalId: string, clientSignature: string) {
   let action = await findAction(userId, approvalId);
   if (action.status === "confirmed") {
     return { replayed: true, approval: publicAction(action) };
@@ -284,14 +285,7 @@ async function executeAction(
     if (action.transactionHash !== expectedHash) {
       throw new Error("defindex_prepared_hash_mismatch");
     }
-    const signature = await signStellarTransactionHash({
-      userId,
-      accessToken,
-      walletId: action.walletId,
-      address: action.walletAddress,
-      hash: digest,
-      idempotencyKey: action.idempotencyKey,
-    });
+    const signature = stellarClientSignatureBytes(clientSignature);
     const signed = attachStellarSignature(
       action.preparedXdr,
       action.walletAddress,
@@ -409,16 +403,12 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { userId, accessToken } = await auth(request);
+    const { userId } = await auth(request);
     const body = await request.json().catch(() => null);
     const execute = executeSchema.safeParse(body);
     if (execute.success) {
       return NextResponse.json(
-        await executeAction(
-          userId,
-          accessToken,
-          execute.data.approvalId,
-        ),
+        await executeAction(userId, execute.data.approvalId, execute.data.signature),
         { headers: { "Cache-Control": "no-store" } },
       );
     }

@@ -103,3 +103,47 @@ test("mainnet remains blocked independently of user memory", () => {
   assert.ok(decision.reasonCodes.includes("mainnet_disabled"));
 });
 
+
+test("classifies natural Spanish payment obligations as an approval policy", () => {
+  const command = parseVaultCommand(
+    "Siempre debes preguntarme antes de cada pago",
+  );
+  assert.equal(command?.action, "save");
+  if (command?.action !== "save") return;
+  assert.equal(command.record, "policy");
+  assert.equal(command.kind, "approval");
+  assert.equal(command.enforcement, "hard");
+  assert.deepEqual(command.config, {
+    alwaysRequireApproval: true,
+    actionTypes: ["financial", "irreversible"],
+  });
+});
+
+test("classifies English and Portuguese approval obligations as policies", () => {
+  for (const message of [
+    "You must ask me before every payment",
+    "Sempre deve me perguntar antes de cada pagamento",
+  ]) {
+    const command = parseVaultCommand(message);
+    assert.equal(command?.action, "save");
+    if (command?.action !== "save") continue;
+    assert.equal(command.record, "policy");
+    assert.equal(command.kind, "approval");
+    assert.equal(command.status, "active");
+  }
+});
+
+test("understands natural-language spend limits", () => {
+  for (const message of [
+    "Recuerda que no gastes m\u00e1s de 0,10 USDC por pago",
+    "Remember that my spending limit is 2 XLM",
+    "Lembre que n\u00e3o gaste mais de 3 USDC",
+  ]) {
+    const command = parseVaultCommand(message);
+    assert.equal(command?.action, "save");
+    if (command?.action !== "save") continue;
+    assert.equal(command.record, "policy");
+    assert.equal(command.kind, "spend_limit");
+    assert.equal(command.enforcement, "hard");
+  }
+});

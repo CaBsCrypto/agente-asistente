@@ -2,6 +2,7 @@
 
 import { useSignRawHash } from "@privy-io/react-auth/extended-chains";
 import { useEffect, useRef, useState } from "react";
+import { summarizeX402Resource } from "../x402/resource-preview";
 import { useLocale } from "../language-toggle";
 
 const chatUi = {
@@ -27,6 +28,12 @@ const x402Ui = {
   es: { label: "X402 · STELLAR TESTNET", heading: "Pago del demo oficial firmado por tu wallet Privy.", close: "Cerrar", preparing: "Leyendo el desafío HTTP 402 en vivo...", exact: "PAGO EXACTO PARA APROBACIÓN", asset: "Activo", amount: "Monto", destination: "Destinatario", network: "Red", confirm: "Confirmar 0.01 USDC con Privy", paying: "Firmando autorización y pagando...", receipt: "Abrir recibo de liquidación", faucet: "Obtener USDC Testnet", trustline: "Falta la trustline o el saldo del USDC oficial de x402. Prepara la wallet y luego utiliza el faucet de Circle.", confirmed: "El recurso x402 fue pagado y entregado.", replayed: "Este pago ya estaba completado; se devolvió el recibo original." },
   pt: { label: "X402 · STELLAR TESTNET", heading: "Pagamento do demo oficial assinado pela sua wallet Privy.", close: "Fechar", preparing: "Lendo o desafio HTTP 402 ao vivo...", exact: "PAGAMENTO EXATO PARA APROVAÇÃO", asset: "Ativo", amount: "Valor", destination: "Destinatário", network: "Rede", confirm: "Confirmar 0.01 USDC com Privy", paying: "Assinando autorização e pagando...", receipt: "Abrir recibo da liquidação", faucet: "Obter USDC Testnet", trustline: "Falta a trustline ou o saldo do USDC oficial da x402. Prepare a wallet e depois use o faucet da Circle.", confirmed: "O recurso x402 foi pago e entregue.", replayed: "Este pagamento já foi concluído; o recibo original foi retornado." },
 };
+const x402ResultUi = {
+  en: { balance: "x402 balance", updating: "Updating on-chain...", resourceDelivered: "Protected resource delivered", source: "Source", verifyReplay: "Verify duplicate protection", checkingReplay: "Checking original payment..." },
+  es: { balance: "Saldo x402", updating: "Actualizando on-chain...", resourceDelivered: "Recurso protegido entregado", source: "Origen", verifyReplay: "Verificar protecci\u00f3n contra duplicados", checkingReplay: "Comprobando el pago original..." },
+  pt: { balance: "Saldo x402", updating: "Atualizando on-chain...", resourceDelivered: "Recurso protegido entregue", source: "Origem", verifyReplay: "Verificar prote\u00e7\u00e3o contra duplicados", checkingReplay: "Verificando o pagamento original..." },
+};
+
 
 type X402ChatIntent = { operation: "demo_payment"; requestId: string };
 type X402Payment = {
@@ -56,7 +63,12 @@ type X402TrustlineApproval = {
   preview: { title: string; description: string; network: string; asset: string; amount: string; destination: string };
 };
 type X402Status = {
-  x402Usdc: { trustlineActive: boolean; balance: string; faucetUrl: string };
+  x402Usdc: {
+    trustlineActive: boolean;
+    balance: string;
+    faucetUrl: string;
+    internalFaucet?: { configured: boolean };
+  };
   resource: string;
   recent: X402Payment[];
 };
@@ -81,6 +93,8 @@ type DefindexChatIntent =
 type DefindexApproval = {
   id: string;
   action: string;
+  signingAddress: string;
+  signingHash: `0x${string}` | null;
   asset: "XLM" | "USDC";
   amount: string;
   status: string;
@@ -165,6 +179,7 @@ export default function AgentChat({
   const ui = chatUi[locale];
   const dui = defindexUi[locale];
   const xui = x402Ui[locale];
+  const xrui = x402ResultUi[locale];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [liveWalletBalance, setLiveWalletBalance] = useState(walletBalance);
   const [status, setStatus] = useState<"loading" | "ready" | "sending" | "error">(
@@ -184,6 +199,7 @@ export default function AgentChat({
   const [usdcDepositAmount, setUsdcDepositAmount] = useState("1");
   const [x402Open, setX402Open] = useState(false);
   const [x402Status, setX402Status] = useState<X402Status | null>(null);
+  const [liveX402UsdcBalance, setLiveX402UsdcBalance] = useState<string | null>(null);
   const [x402Payment, setX402Payment] = useState<X402Payment | null>(null);
   const [x402Trustline, setX402Trustline] = useState<X402TrustlineApproval | null>(null);
   const [x402Busy, setX402Busy] = useState(false);
@@ -248,6 +264,31 @@ export default function AgentChat({
       active = false;
     };
   }, [getAccessToken]);
+  useEffect(() => {
+    let active = true;
+    async function loadX402Balance() {
+      try {
+        const token = await getAccessToken();
+        if (!token) return;
+        const response = await fetch("/api/agent/x402", {
+          headers: { Authorization: "Bearer " + token },
+          cache: "no-store",
+        });
+        const result = await response.json() as X402Status;
+        if (active && response.ok) {
+          setX402Status(result);
+          setLiveX402UsdcBalance(result.x402Usdc.balance);
+        }
+      } catch {
+        // The chat remains usable while an optional on-chain balance refresh recovers.
+      }
+    }
+    void loadX402Balance();
+    return () => {
+      active = false;
+    };
+  }, [getAccessToken]);
+
 
   useEffect(() => {
     const thread = threadRef.current;
@@ -419,6 +460,31 @@ export default function AgentChat({
     if (!response.ok) throw new Error(result.error ?? "x402 request failed");
     return result;
   }
+  function applyX402Status(nextStatus: X402Status) {
+    setX402Status(nextStatus);
+    setLiveX402UsdcBalance(nextStatus.x402Usdc.balance);
+    return nextStatus;
+  }
+
+  async function refreshX402Status(expectedMaximum?: number) {
+    let latest: X402Status | null = null;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      latest = await x402Fetch() as X402Status;
+      const balance = Number(latest.x402Usdc.balance);
+      if (
+        expectedMaximum === undefined ||
+        (Number.isFinite(balance) && balance <= expectedMaximum + 0.0000001)
+      ) {
+        break;
+      }
+      if (attempt < 3) {
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+      }
+    }
+    if (!latest) throw new Error("x402_status_unavailable");
+    return applyX402Status(latest);
+  }
+
 
   async function prepareX402(requestId = crypto.randomUUID()) {
     setDefindexOpen(false);
@@ -428,7 +494,7 @@ export default function AgentChat({
     setX402Payment(null);
     try {
       const statusResult = await x402Fetch();
-      setX402Status(statusResult);
+      applyX402Status(statusResult);
       if (!statusResult.x402Usdc.trustlineActive) {
         const trustlineResult = await x402Fetch({ action: "prepare_trustline", requestId: `${requestId}-trustline` });
         if (!trustlineResult.alreadyComplete) setX402Trustline(trustlineResult.approval);
@@ -438,10 +504,10 @@ export default function AgentChat({
         if (statusResult.x402Usdc.internalFaucet?.configured) {
           await x402Fetch({ action: "claim_testnet_usdc" });
           const fundedStatus = await x402Fetch();
-          setX402Status(fundedStatus);
+          applyX402Status(fundedStatus);
           if (Number(fundedStatus.x402Usdc.balance) < 0.01) throw new Error("testnet_usdc_funding_not_visible");
           setX402Notice(
-            locale === "es" ? "El faucet interno agreg? autom?ticamente 0,50 USDC Testnet."
+            locale === "es" ? "El faucet interno agreg\u00f3 autom\u00e1ticamente 0,50 USDC Testnet."
               : locale === "pt" ? "O faucet interno adicionou automaticamente 0,50 USDC Testnet."
                 : "The internal faucet automatically added 0.50 USDC Testnet.",
           );
@@ -499,6 +565,7 @@ export default function AgentChat({
         chainType: "stellar",
         hash: x402Payment.signingHash,
       });
+      const previousBalance = Number(x402Status?.x402Usdc.balance ?? liveX402UsdcBalance);
       const result = await x402Fetch({
         action: "execute",
         paymentId: x402Payment.id,
@@ -507,13 +574,43 @@ export default function AgentChat({
       });
       setX402Payment(result.payment);
       setX402Notice(result.replayed ? xui.replayed : xui.confirmed);
-      setX402Status(await x402Fetch());
+      setLiveX402UsdcBalance(null);
+      const paymentAmount = Number(result.payment.amount);
+      const expectedMaximum = !result.replayed && Number.isFinite(previousBalance) && Number.isFinite(paymentAmount)
+        ? Math.max(0, previousBalance - paymentAmount)
+        : undefined;
+      await refreshX402Status(expectedMaximum);
     } catch (caught) {
       setX402Notice(caught instanceof Error ? caught.message : "x402 payment failed");
     } finally {
       setX402Busy(false);
     }
   }
+  async function verifyX402Replay() {
+    if (!x402Payment || x402Payment.status !== "confirmed") return;
+    setX402Busy(true);
+    setX402Notice(null);
+    try {
+      const originalHash = x402Payment.transactionHash;
+      const result = await x402Fetch({
+        action: "execute",
+        paymentId: x402Payment.id,
+        explicitConfirmation: true,
+      });
+      if (!result.replayed || result.payment.transactionHash !== originalHash) {
+        throw new Error("x402_duplicate_protection_not_verified");
+      }
+      setX402Payment(result.payment);
+      setX402Notice(xui.replayed);
+      setLiveX402UsdcBalance(null);
+      await refreshX402Status();
+    } catch (caught) {
+      setX402Notice(caught instanceof Error ? caught.message : "x402 replay check failed");
+    } finally {
+      setX402Busy(false);
+    }
+  }
+
   async function defindexFetch(body?: Record<string, unknown>) {
     const token = await getAccessToken();
     if (!token) throw new Error("Authentication token unavailable");
@@ -595,10 +692,19 @@ export default function AgentChat({
     setDefindexBusy("execute");
     setDefindexNotice(null);
     try {
+      if (!defindexApproval.signingHash) {
+        throw new Error("This DeFindex action must be prepared again.");
+      }
+      const signed = await signRawHash({
+        address: defindexApproval.signingAddress,
+        chainType: "stellar",
+        hash: defindexApproval.signingHash,
+      });
       const result = await defindexFetch({
         action: "execute",
         approvalId: defindexApproval.id,
         explicitConfirmation: true,
+        signature: signed.signature,
       });
       setDefindexApproval(result.approval);
       setDefindexNotice(
@@ -626,6 +732,9 @@ export default function AgentChat({
     void sendMessage(draft);
   }
 
+  const x402ResourceSummary = x402Payment?.resourcePreview
+    ? summarizeX402Resource(x402Payment.resourcePreview, x402Payment.resourceUrl)
+    : null;
   return (
     <section className="agent-chat-layout">
       <div className="agent-chat-panel">
@@ -857,6 +966,10 @@ export default function AgentChat({
               <div><span>{xui.label}</span><h3>{xui.heading}</h3></div>
               <button type="button" onClick={() => setX402Open(false)}>{xui.close}</button>
             </header>
+            <div className="x402-live-balance" aria-live="polite">
+              <span>{xrui.balance}</span>
+              <strong>{liveX402UsdcBalance === null ? xrui.updating : `${liveX402UsdcBalance} USDC`}</strong>
+            </div>
             {x402Busy && !x402Payment && <p className="defindex-agent-loading">{xui.preparing}</p>}
             {x402Status && (!x402Status.x402Usdc.trustlineActive || Number(x402Status.x402Usdc.balance) < 0.01) && (
               <div className="defindex-agent-notice">
@@ -896,9 +1009,23 @@ export default function AgentChat({
                     {x402Busy ? xui.paying : xui.confirm}
                   </button>
                 ) : x402Payment.explorerUrl ? (
-                  <a href={x402Payment.explorerUrl} target="_blank" rel="noreferrer">{xui.receipt}</a>
+                  <div className="x402-confirmed-actions">
+                    <a href={x402Payment.explorerUrl} target="_blank" rel="noreferrer">{xui.receipt}</a>
+                    <button type="button" disabled={x402Busy} onClick={() => void verifyX402Replay()}>
+                      {x402Busy ? xrui.checkingReplay : xrui.verifyReplay}
+                    </button>
+                  </div>
                 ) : null}
-                {x402Payment.resourcePreview && <pre>{x402Payment.resourcePreview}</pre>}
+                {x402ResourceSummary && (
+                  <div className="x402-resource-card">
+                    <span aria-hidden="true">{"\u2713"}</span>
+                    <div>
+                      <strong>{x402ResourceSummary.title ?? xrui.resourceDelivered}</strong>
+                      {x402ResourceSummary.summary && <p>{x402ResourceSummary.summary}</p>}
+                      {x402ResourceSummary.source && <small>{xrui.source}: {x402ResourceSummary.source}</small>}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {x402Notice && <p className="defindex-agent-notice">{x402Notice}</p>}
@@ -942,6 +1069,7 @@ export default function AgentChat({
           <div><dt>{ui.identity}</dt><dd>{email}</dd></div>
           <div><dt>Wallet</dt><dd>{walletAddress.slice(0, 8) + "..." + walletAddress.slice(-6)}</dd></div>
           <div><dt>{ui.balance}</dt><dd>{liveWalletBalance} XLM</dd></div>
+          <div><dt>{xrui.balance}</dt><dd>{liveX402UsdcBalance === null ? "\u2014" : `${liveX402UsdcBalance} USDC`}</dd></div>
           <div><dt>{ui.network}</dt><dd>Stellar Testnet</dd></div>
         </dl>
         <a

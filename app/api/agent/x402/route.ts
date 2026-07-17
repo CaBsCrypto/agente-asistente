@@ -66,7 +66,7 @@ const executeSchema = z.object({
   action: z.literal("execute"),
   paymentId: z.string().uuid(),
   explicitConfirmation: z.literal(true),
-  signature: z.string().regex(/^0x[0-9a-fA-F]{128}$/),
+  signature: z.string().regex(/^0x[0-9a-fA-F]{128}$/).optional(),
 });
 const claimTestnetUsdcSchema = z.object({
   action: z.literal("claim_testnet_usdc"),
@@ -369,6 +369,9 @@ export async function POST(request: Request) {
       if (!isPreparedX402Authorization(payment.paymentRequired)) {
         throw new Error("x402_payment_requires_fresh_review");
       }
+      if (!execute.data.signature) {
+        throw new Error("x402_authorization_signature_required");
+      }
       const signedPayload = await createSignedX402Payload({
         prepared: payment.paymentRequired,
         address: payment.walletAddress,
@@ -466,7 +469,7 @@ export async function POST(request: Request) {
       Math.min(5 * 60_000, challenge.requirement.maxTimeoutSeconds * 1_000 - 5_000),
     );
     const key = createHash("sha256").update(`x402:${userId}:${prepare.data.requestId}`).digest("hex");
-    await getDb().insert(agentX402Payments).values({
+    const inserted = await getDb().insert(agentX402Payments).values({
       id: randomUUID(), userId, walletId: wallet.id, walletAddress: wallet.address,
       resourceUrl: X402_TESTNET_RESOURCE,
       network: challenge.requirement.network,
@@ -478,9 +481,10 @@ export async function POST(request: Request) {
       idempotencyKey: key,
       paymentRequired: clientAuthorization,
       expiresAt: new Date(Date.now() + approvalLifetimeMs),
-    }).onConflictDoNothing({ target: agentX402Payments.idempotencyKey });
+    }).onConflictDoNothing({ target: agentX402Payments.idempotencyKey })
+      .returning({ id: agentX402Payments.id });
     const rows = await getDb().select().from(agentX402Payments).where(eq(agentX402Payments.idempotencyKey, key)).limit(1);
-    return NextResponse.json({ replayed: rows[0].createdAt.getTime() < Date.now() - 2_000, decision, payment: publicPayment(rows[0]) });
+    return NextResponse.json({ replayed: inserted.length === 0, decision, payment: publicPayment(rows[0]) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "x402_request_failed";
     const conflict = [

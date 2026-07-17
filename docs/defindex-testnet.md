@@ -64,9 +64,9 @@ Ative USDC
 6. For a deposit, the server constructs and simulates the requested Soroban transaction.
 7. The UI presents the network, asset, amount, destination contract and investment flag.
 8. The user explicitly confirms.
-9. The current Privy JWT authorizes rawSign for the transaction hash.
-10. agent-assistant verifies the Ed25519 signature against the wallet address.
-11. The signed XDR is submitted once.
+9. The browser calls Privy's `useSignRawHash` for that exact transaction hash.
+10. The browser sends only the resulting 64-byte Ed25519 signature to the same-origin backend.
+11. agent-assistant verifies the signature against the wallet address, attaches it to the frozen XDR and submits once.
 12. The transaction hash, status and explorer link are stored as a durable receipt.
 13. A retry returns the existing receipt instead of submitting again.
 
@@ -74,6 +74,7 @@ Ative USDC
 
 - Stellar Testnet only.
 - No private key or seed phrase reaches agent-assistant.
+- The backend never calls Privy `rawSign` and never receives a private key; signing remains in the authenticated browser.
 - Login alone does not request funds or submit a transaction.
 - Friendbot funding is requested by chat and guarded by live account existence.
 - Every trustline and deposit requires a transaction-specific confirmation.
@@ -95,6 +96,7 @@ Authenticated browser endpoints:
 - GET /api/agent/defindex — wallet, balances, trustline, positions and recent receipts.
 - POST /api/agent/defindex with action prepare — create a transaction-specific approval.
 - POST /api/agent/defindex with action execute and explicitConfirmation true — authorize, sign and submit.
+  The execute body includes the `0x` 64-byte client signature; the backend verifies and attaches it rather than signing.
 - POST /api/agent/chat — detect chat-native onboarding and DeFindex transaction intents.
 
 Every endpoint requires the current Privy bearer token and same-origin requests.

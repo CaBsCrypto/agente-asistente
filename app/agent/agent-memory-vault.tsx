@@ -168,7 +168,11 @@ export default function AgentMemoryVault({
     setError(null);
     try {
       const prefix = locale === "es" ? "Recuerda que " : locale === "pt" ? "Lembre que " : "Remember that ";
-      await request({ method: "POST", body: JSON.stringify({ text: prefix + value }) });
+      const created = await request({
+        method: "POST",
+        body: JSON.stringify({ text: prefix + value }),
+      });
+      if (created.item?.record === "policy") setTab("policies");
       setDraft("");
       await load();
     } catch (caught) {

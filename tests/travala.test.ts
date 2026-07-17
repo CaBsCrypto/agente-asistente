@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { searchTravalaHotels, travalaSearchInput } from "../app/travala";
+import { futureTravalaDates, searchTravalaHotels, travalaSearchInput } from "../app/travala";
 
 test("rejects an invalid hotel date range", () => {
   assert.equal(
     travalaSearchInput.safeParse({
       location: "Santiago",
-      checkIn: "2026-07-20",
-      checkOut: "2026-07-20",
+      checkIn: "2099-07-20",
+      checkOut: "2099-07-20",
       guests: 2,
     }).success,
     false,
@@ -27,8 +27,7 @@ test("calls only Travala hotel search and normalizes its response", async () => 
   const result = await searchTravalaHotels(
     {
       location: "Santiago, Chile",
-      checkIn: "2026-07-20",
-      checkOut: "2026-07-21",
+      ...futureTravalaDates(),
       guests: 2,
       maxPrice: 200,
     },

@@ -3,6 +3,7 @@ import {
   getStellarTestnetAccount,
   isValidStellarAddress,
 } from "../app/privy-stellar";
+import { futureTravalaDates, searchTravalaHotels } from "../app/travala";
 import {
   X402_DEMO_LIMIT_DISPLAY,
   X402_TESTNET_RESOURCE,
@@ -14,10 +15,10 @@ import {
   INTERNAL_TESTNET_USDC_DRIP,
 } from "../app/x402/testnet-faucet";
 
-type Mode = "doctor" | "authenticated" | "execute";
+type Mode = "doctor" | "authenticated" | "execute" | "travala";
 type CheckResult = {
   name: string;
-  layer: "local" | "production" | "stellar" | "authenticated";
+  layer: "local" | "production" | "stellar" | "authenticated" | "travala";
   ok: boolean;
   durationMs: number;
   detail: string;
@@ -25,8 +26,8 @@ type CheckResult = {
 type JsonObject = Record<string, unknown>;
 
 const mode = (process.argv[2] ?? "doctor") as Mode;
-if (!(["doctor", "authenticated", "execute"] as string[]).includes(mode)) {
-  throw new Error("usage: acceptance.ts <doctor|authenticated|execute>");
+if (!(["doctor", "authenticated", "execute", "travala"] as string[]).includes(mode)) {
+  throw new Error("usage: acceptance.ts <doctor|authenticated|execute|travala>");
 }
 
 const baseUrl = (process.env.AGENT_ACCEPTANCE_BASE_URL ?? "https://agente-asistente.vercel.app").replace(/\/$/, "");
@@ -156,6 +157,23 @@ await check("Internal distributor readiness", "stellar", async () => {
   return `${usdc?.balance} USDC, ${xlm?.balance} XLM`;
 });
 
+
+if (mode === "travala") {
+  await check("Live Travala read-only search", "travala", async () => {
+    const location = process.env.TRAVALA_ACCEPTANCE_LOCATION?.trim() || "Santiago, Chile";
+    const dates = futureTravalaDates(new Date(), 45, 2);
+    const result = await searchTravalaHotels({
+      location,
+      ...dates,
+      guests: 2,
+    });
+    invariant(result.sessionId.length > 0, "travala_session_missing");
+    invariant(result.hotels.length > 0, "travala_inventory_empty");
+    invariant(result.hotels.every((hotel) => hotel.totalPriceUSD >= 0), "travala_price_invalid");
+    const first = result.hotels[0];
+    return `${location}, ${dates.checkIn} to ${dates.checkOut}: ${result.hotels.length} options; first=${first.name}`;
+  });
+}
 if (mode === "authenticated" || mode === "execute") {
   let walletAddress = "";
   let paymentId = "";

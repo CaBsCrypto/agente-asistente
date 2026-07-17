@@ -70,12 +70,26 @@ export function parseVaultCommand(message: string): ParsedVaultCommand | null {
   ].some((term) => query.includes(term));
   if (asksList) return { action: "list" };
 
-  const content = extractRememberedContent(message);
+  const remembered = extractRememberedContent(message);
+  const directPolicy = [
+    "siempre debes",
+    "always ask",
+    "you must ask",
+    "sempre deve",
+    "maximo",
+    "maximum",
+    "limite",
+    "limit",
+    "no gastes",
+    "do not spend",
+    "nao gaste",
+  ].some((term) => query.includes(term));
+  const content = remembered ?? (directPolicy ? message.trim() : null);
   if (!content) return null;
   const plain = normalized(content);
 
   const limit = plain.match(
-    /(?:maximo|limite|no mas de|hasta|maximum|max|limit|no more than|ate|limite de)\s*(?:(?:de|es|is|e)\s*)?(\d+(?:[.,]\d{1,7})?)\s*(xlm|usdc|usd)?/i,
+    /(?:maximo(?:\s+de)?|(?:mi\s+)?limite(?:\s+de\s+gasto)?|no\s+(?:gastes?|pagues?|deposites?)\s+mas\s+de|no mas de|hasta|maximum|max|(?:my\s+)?(?:spending\s+)?limit|(?:do not|never)\s+(?:spend|pay|deposit)\s+more\s+than|no more than|nao\s+(?:gaste|pague|deposite)\s+mais\s+de|ate|limite de)\s*(?:(?:de|es|is|e)\s*)?(\d+(?:[.,]\d{1,7})?)\s*(xlm|usdc|usd)?/i,
   );
   if (limit) {
     const amount = Number(limit[1].replace(",", "."));
@@ -111,7 +125,28 @@ export function parseVaultCommand(message: string): ParsedVaultCommand | null {
   }
 
   if (
-    ["preguntame antes", "pide confirmacion", "ask me before", "require confirmation", "pergunte antes", "peca confirmacao"].some(
+    !["sin preguntarme", "without asking me", "sem me perguntar"].some((term) =>
+      plain.includes(term),
+    ) &&
+    [
+      "preguntame antes",
+      "preguntarme antes",
+      "debes preguntarme",
+      "pide confirmacion",
+      "necesitas mi confirmacion",
+      "requiere mi confirmacion",
+      "ask me before",
+      "always ask me",
+      "must ask me",
+      "require confirmation",
+      "need my confirmation",
+      "get my approval",
+      "pergunte antes",
+      "me perguntar antes",
+      "deve me perguntar",
+      "peca confirmacao",
+      "precisa da minha confirmacao",
+    ].some(
       (term) => plain.includes(term),
     )
   ) {

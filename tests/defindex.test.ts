@@ -16,6 +16,7 @@ import {
   parseStellarAmount,
 } from "../app/connectors/defindex";
 
+import { stellarClientSignatureBytes } from "../app/x402/client-authorization";
 test("parses Stellar amounts with seven decimal places", () => {
   assert.equal(parseStellarAmount("1"), BigInt(10_000_000));
   assert.equal(parseStellarAmount("0.0000001"), BigInt(1));
@@ -73,5 +74,33 @@ test("attaches only a signature that matches the transaction source", () => {
         other.sign(transaction.hash()),
       ),
     /invalid_privy_transaction_signature/,
+  );
+});
+
+test("accepts a browser Privy raw signature and attaches it to the prepared XDR", () => {
+  const signer = Keypair.random();
+  const transaction = new TransactionBuilder(
+    new Account(signer.publicKey(), "7"),
+    { fee: BASE_FEE, networkPassphrase: Networks.TESTNET },
+  )
+    .addOperation(
+      Operation.changeTrust({
+        asset: new Asset(DEFINDEX_TESTNET.usdc.code, DEFINDEX_TESTNET.usdc.issuer),
+      }),
+    )
+    .setTimeout(300)
+    .build();
+
+  const browserSignature = `0x${signer.sign(transaction.hash()).toString("hex")}`;
+  const signed = attachStellarSignature(
+    transaction.toXDR(),
+    signer.publicKey(),
+    stellarClientSignatureBytes(browserSignature),
+  );
+
+  assert.equal(signed.signatures.length, 1);
+  assert.throws(
+    () => stellarClientSignatureBytes("0x1234"),
+    /invalid_stellar_client_signature/,
   );
 });

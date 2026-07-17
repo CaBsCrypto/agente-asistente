@@ -15,6 +15,11 @@ import {
   isPreparedX402Authorization,
   stellarClientSignatureBytes,
 } from "../app/x402/client-authorization";
+import {
+  proveX402ConfirmedReplay,
+  proveX402FirstExecutionAndReplay,
+  stellarAmountToAtomic,
+} from "../app/x402/replay-proof";
 
 function challenge(overrides: Record<string, unknown> = {}) {
   return {
@@ -80,4 +85,90 @@ test("accepts only a complete client-signature authorization envelope", () => {
 test("rejects malformed Privy Stellar signatures before submission", () => {
   assert.equal(stellarClientSignatureBytes(`0x${"ab".repeat(64)}`).length, 64);
   assert.throws(() => stellarClientSignatureBytes("0x12"), /invalid_stellar_client_signature/);
+});
+
+test("converts Stellar decimal balances to exact atomic units", () => {
+  assert.equal(stellarAmountToAtomic("0.0100000"), BigInt(100000));
+  assert.equal(stellarAmountToAtomic("0.49"), BigInt(4900000));
+  assert.throws(() => stellarAmountToAtomic("0.00000001"), /invalid_stellar_amount/);
+});
+
+test("proves one x402 debit and a zero-debit replay with the original receipt", async () => {
+  let balance = BigInt(5_000_000);
+  let calls = 0;
+  const paymentId = "87c8a4e8-f60c-48d1-bdc8-35d9c6681f9c";
+  const transactionHash = "14fcc8c31d26d8024a46e1509254502a9f722d6cbaa697af6c54d00e7803742e";
+  const proof = await proveX402FirstExecutionAndReplay({
+    paymentId,
+    readUsdcBalance: async () => `${balance / BigInt(10_000_000)}.${(balance % BigInt(10_000_000)).toString().padStart(7, "0")}`,
+    executeSameApproval: async () => {
+      calls += 1;
+      if (calls === 1) balance -= BigInt(100_000);
+      return {
+        replayed: calls > 1,
+        payment: {
+          id: paymentId,
+          network: "stellar:testnet",
+          amount: "0.0100000",
+          status: "confirmed",
+          transactionHash,
+          resourcePreview: "delivered",
+        },
+      };
+    },
+  });
+  assert.equal(proof.firstDebitAtomic, "100000");
+  assert.equal(proof.replayDebitAtomic, "0");
+  assert.equal(proof.transactionHash, transactionHash);
+  assert.equal(proof.duplicatePrevented, true);
+});
+
+test("fails the replay proof if an adapter debits twice", async () => {
+  let balance = BigInt(5_000_000);
+  let calls = 0;
+  const paymentId = "87c8a4e8-f60c-48d1-bdc8-35d9c6681f9c";
+  await assert.rejects(
+    proveX402FirstExecutionAndReplay({
+      paymentId,
+      readUsdcBalance: async () => `${balance / BigInt(10_000_000)}.${(balance % BigInt(10_000_000)).toString().padStart(7, "0")}`,
+      executeSameApproval: async () => {
+        calls += 1;
+        balance -= BigInt(100_000);
+        return {
+          replayed: calls > 1,
+          payment: {
+            id: paymentId,
+            network: "stellar:testnet",
+            amount: "0.0100000",
+            status: "confirmed",
+            transactionHash: "a".repeat(64),
+            resourcePreview: "delivered",
+          },
+        };
+      },
+    }),
+    /x402_replay_balance_changed/,
+  );
+});
+
+test("audits an already confirmed replay without another debit", async () => {
+  const paymentId = "87c8a4e8-f60c-48d1-bdc8-35d9c6681f9c";
+  const transactionHash = "ad55ea6adac08e9b09cce2bc51f8df6b40539ba1464cb768ee1c5174ff97d175";
+  const proof = await proveX402ConfirmedReplay({
+    paymentId,
+    expectedTransactionHash: transactionHash,
+    readUsdcBalance: async () => "0.4800000",
+    replayConfirmedPayment: async () => ({
+      replayed: true,
+      payment: {
+        id: paymentId,
+        network: "stellar:testnet",
+        amount: "0.0100000",
+        status: "confirmed",
+        transactionHash,
+      },
+    }),
+  });
+  assert.equal(proof.balanceBefore, proof.balanceAfterReplay);
+  assert.equal(proof.replayDebitAtomic, "0");
 });
