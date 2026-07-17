@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useUser } from "@privy-io/react-auth";
 import AgentChat from "./agent-chat";
 import AgentMemoryVault from "./agent-memory-vault";
 import { useEffect, useRef, useState } from "react";
@@ -149,6 +149,7 @@ function PrivySetupRequired() {
 function PrivyAgent({ locale }: { locale: Locale }) {
   const t = onboardingUi[locale];
   const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
+  const { refreshUser } = useUser();
   const [result, setResult] = useState<BootstrapResult | null>(null);
   const [status, setStatus] = useState<"idle" | "creating" | "ready" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -176,6 +177,10 @@ function PrivyAgent({ locale }: { locale: Locale }) {
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? "Wallet bootstrap failed");
+      // The wallet may have just been created by the Privy server SDK. Refresh
+      // the browser identity so extended-chain signing can discover it without
+      // forcing the user through a sign-out/sign-in cycle.
+      await refreshUser();
       setResult(body);
       setStatus("ready");
     } catch (caught) {
