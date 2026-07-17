@@ -4,7 +4,7 @@ import RecordingGuide from "./recording-guide";
 
 export const metadata = {
   title: "Live action demo | agent-assistant",
-  description: "Prepare, approve and replay-protect an agent action in the live sandbox.",
+  description: "See the live Privy, Stellar Testnet and x402 payment proof.",
 };
 
 export default function DemoPage() {
@@ -12,21 +12,21 @@ export default function DemoPage() {
     <main className="demo-page">
       <nav className="demo-nav shell">
         <Link className="brand" href="/"><b>AA</b>agent-assistant</Link>
-        <div><span>LIVE SANDBOX</span><Link href="/developers">API docs</Link></div>
+        <div><span>LIVE TESTNET</span><Link href="/developers">API docs</Link></div>
       </nav>
 
       <header className="demo-intro shell">
         <div>
           <p className="eyebrow">90-SECOND PRODUCT PROOF</p>
           <h1>One agent action. <em>Zero duplicate charges.</em></h1>
-          <p>Prepare an intent, evaluate policy, approve the exact action and execute it twice. The second request must return the original receipt instead of creating another transaction.</p>
+          <p>A Privy-owned wallet paid the official Stellar x402 resource once. Replaying the same payment returns the original receipt and leaves the USDC balance unchanged.</p>
         </div>
         <aside>
           <strong>What is real today</strong>
-          <span>Durable intents in Postgres</span>
-          <span>Policy and authorization records</span>
-          <span>Database-enforced replay protection</span>
-          <small>Settlement is simulated. No wallet or funds are used.</small>
+          <span>Privy wallet authorization</span>
+          <span>0.01 USDC settled on Stellar Testnet</span>
+          <span>Durable receipt and replay protection in Neon</span>
+          <small>The action console below remains a separate no-funds architecture sandbox.</small>
         </aside>
       </header>
 
@@ -34,8 +34,8 @@ export default function DemoPage() {
       <div id="safety-proof"><ActionConsole /></div>
 
       <section className="demo-next shell">
-        <div><p className="eyebrow">NEXT PROOF</p><h2>Replace the simulated receipt with a Stellar testnet transaction.</h2></div>
-        <Link href="/connections">Follow the integration lab</Link>
+        <div><p className="eyebrow">LIVE RECEIPT</p><h2>Open the agent, restore the latest x402 payment and verify a zero-debit replay.</h2></div>
+        <Link href="/agent">Open the agent</Link>
       </section>
     </main>
   );

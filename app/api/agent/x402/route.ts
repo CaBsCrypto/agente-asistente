@@ -42,6 +42,7 @@ import {
   agentStellarActions,
   agentTestnetFaucetClaims,
   agentWallets,
+  agentX402Events,
   agentX402Payments,
 } from "@/db/schema";
 
@@ -106,6 +107,18 @@ async function ensureSchema() {
     await sql.query("CREATE UNIQUE INDEX IF NOT EXISTS agent_x402_payments_tx_hash_uidx ON agent_x402_payments(transaction_hash)", []);
     await sql.query("CREATE INDEX IF NOT EXISTS agent_x402_payments_user_created_idx ON agent_x402_payments(user_id, created_at)", []);
     await sql.query("CREATE INDEX IF NOT EXISTS agent_x402_payments_status_idx ON agent_x402_payments(status)", []);
+    await sql.query(`CREATE TABLE IF NOT EXISTS agent_x402_events (
+      id text PRIMARY KEY,
+      payment_id text NOT NULL REFERENCES agent_x402_payments(id) ON DELETE CASCADE,
+      user_id text NOT NULL REFERENCES agent_users(id) ON DELETE CASCADE,
+      event_type text NOT NULL,
+      payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`, []);
+    await sql.query("CREATE INDEX IF NOT EXISTS agent_x402_events_payment_created_idx ON agent_x402_events(payment_id, created_at)", []);
+    await sql.query("CREATE INDEX IF NOT EXISTS agent_x402_events_user_created_idx ON agent_x402_events(user_id, created_at)", []);
+    await sql.query("CREATE INDEX IF NOT EXISTS agent_x402_events_type_idx ON agent_x402_events(event_type)", []);
+
     await sql.query(`CREATE TABLE IF NOT EXISTS agent_testnet_faucet_claims (
       id text PRIMARY KEY,
       user_id text NOT NULL REFERENCES agent_users(id) ON DELETE CASCADE,
@@ -179,6 +192,10 @@ function publicPayment(row: typeof agentX402Payments.$inferSelect) {
       ? `https://stellar.expert/explorer/testnet/tx/${row.transactionHash}`
       : null,
     resourcePreview: row.resourcePreview,
+    evidence: row.settlement &&
+      typeof row.settlement.resourceEvidence === "object"
+      ? row.settlement.resourceEvidence
+      : null,
     expiresAt: row.expiresAt.toISOString(),
     confirmedAt: row.confirmedAt?.toISOString() ?? null,
     error: row.error,
@@ -216,6 +233,16 @@ async function findPayment(userId: string, id: string) {
   )).limit(1);
   if (!rows[0]) throw new Error("x402_payment_not_found");
   return rows[0];
+}
+async function appendX402Event(
+  paymentId: string,
+  userId: string,
+  eventType: string,
+  payload: Record<string, unknown> = {},
+) {
+  await getDb().insert(agentX402Events).values({
+    id: randomUUID(), paymentId, userId, eventType, payload,
+  });
 }
 
 export async function GET(request: Request) {
@@ -362,6 +389,10 @@ export async function POST(request: Request) {
       let payment = await findPayment(userId, execute.data.paymentId);
       const guard = guardX402Execution(payment.status);
       if (guard.action === "replay") {
+        await Promise.allSettled([appendX402Event(payment.id, userId, "replay_returned", {
+          transactionHash: payment.transactionHash,
+          status: payment.status,
+        })]);
         return NextResponse.json({ replayed: true, payment: publicPayment(payment) });
       }
       if (guard.action === "reject") throw new Error(guard.error);
@@ -390,6 +421,11 @@ export async function POST(request: Request) {
         payment = await findPayment(userId, payment.id);
         const latestGuard = guardX402Execution(payment.status);
         if (latestGuard.action === "replay") {
+          await Promise.allSettled([appendX402Event(payment.id, userId, "replay_returned", {
+            transactionHash: payment.transactionHash,
+            status: payment.status,
+            concurrentRequest: true,
+          })]);
           return NextResponse.json({ replayed: true, payment: publicPayment(payment) });
         }
         throw new Error(
@@ -398,6 +434,11 @@ export async function POST(request: Request) {
             : "x402_payment_concurrent_execution",
         );
       }
+      await Promise.allSettled([appendX402Event(payment.id, userId, "execution_claimed", {
+        walletAddress: payment.walletAddress,
+        amount: payment.amountDisplay,
+        asset: "USDC",
+      })]);
       try {
         const result = await payPreparedX402Resource({
           resourceUrl: payment.resourceUrl,
@@ -410,20 +451,38 @@ export async function POST(request: Request) {
           throw new Error("x402_settlement_transaction_missing");
         }
         const now = new Date();
+        const resourceEvidence = {
+          status: result.resourceStatus,
+          contentType: result.resourceContentType,
+          sha256: result.resourceSha256,
+          deliveredAt: now.toISOString(),
+        };
         await getDb().update(agentX402Payments).set({
           status: "confirmed",
-          settlement: result.settlement as unknown as Record<string, unknown> | null,
+          settlement: {
+            ...(result.settlement
+              ? result.settlement as unknown as Record<string, unknown>
+              : {}),
+            resourceEvidence,
+          },
           transactionHash,
           resourcePreview: result.resourcePreview,
           confirmedAt: now,
           updatedAt: now,
           error: null,
         }).where(eq(agentX402Payments.id, payment.id));
-        await getDb().insert(agentActivities).values({
-          id: randomUUID(), userId, eventType: "x402.payment.confirmed",
-          summary: "Paid the Stellar x402 Testnet demo with Privy",
-          metadata: { paymentId: payment.id, transactionHash, amount: payment.amountDisplay, asset: "USDC" },
-        });
+        await Promise.allSettled([
+          appendX402Event(payment.id, userId, "settled", {
+            transactionHash,
+            settlement: result.settlement,
+          }),
+          appendX402Event(payment.id, userId, "resource_delivered", resourceEvidence),
+          getDb().insert(agentActivities).values({
+            id: randomUUID(), userId, eventType: "x402.payment.confirmed",
+            summary: "Paid the Stellar x402 Testnet demo with Privy",
+            metadata: { paymentId: payment.id, transactionHash, amount: payment.amountDisplay, asset: "USDC" },
+          }),
+        ]);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "x402_payment_failed";
         await getDb().update(agentX402Payments).set({
@@ -484,6 +543,21 @@ export async function POST(request: Request) {
     }).onConflictDoNothing({ target: agentX402Payments.idempotencyKey })
       .returning({ id: agentX402Payments.id });
     const rows = await getDb().select().from(agentX402Payments).where(eq(agentX402Payments.idempotencyKey, key)).limit(1);
+    if (inserted.length > 0) {
+      await Promise.allSettled([
+        appendX402Event(rows[0].id, userId, "prepared", {
+          requestId: prepare.data.requestId,
+          amount: rows[0].amountDisplay,
+          asset: "USDC",
+          network: rows[0].network,
+        }),
+        appendX402Event(rows[0].id, userId, "policy_allowed", {
+          outcome: decision.outcome,
+          reasonCodes: decision.reasonCodes,
+          requiresApproval: decision.requiresApproval,
+        }),
+      ]);
+    }
     return NextResponse.json({ replayed: inserted.length === 0, decision, payment: publicPayment(rows[0]) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "x402_request_failed";

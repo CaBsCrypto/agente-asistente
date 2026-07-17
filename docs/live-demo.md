@@ -1,86 +1,80 @@
 # 90-second live demo
 
-Use this sequence for YC, partner calls and product walkthroughs. Show one coherent story, not every planned integration.
+Use one coherent story for YC: identity, one real payment, duplicate protection and one useful read-only connection.
 
 ## Preflight
 
-- Production health responds at /api/health.
-- Privy login works for the demo account.
-- The Stellar Testnet wallet is visible and activated.
-- CoinMarketCap returns an XLM quote.
+- Production health responds at `/api/health`.
+- Privy login works for the dedicated demo account.
+- The Stellar Testnet wallet and explorer link are visible.
+- The latest x402 payment is confirmed and the wallet has `0.4900000 USDC`.
 - Neon persistence is active.
-- If showing Notion, complete a real consent and search test before recording.
+- Travala acceptance returns at least one current hotel result.
+- Never show Privy tokens, signatures, OTPs or environment variables.
 
 ## Recommended script
 
-### 0-20 seconds: identity and owned wallet
+### 0-20 seconds: identity and wallet
 
-Open /agent and sign in. Show the Stellar Testnet address, balance and explorer link.
+Open `/agent` and sign in. Show the wallet address, Testnet label and explorer link.
 
-Say: “Every user gets a user-owned wallet automatically. The agent can prepare actions, but login alone never authorizes a payment.”
+Say: “Every user gets a user-owned Stellar wallet through Privy. Login establishes identity, but it never authorizes a payment.”
 
-### 20-45 seconds: real external data
+### 20-45 seconds: real x402 settlement
 
-Send:
+Click **x402 receipt** to restore the latest confirmed payment from Neon. Show:
 
-~~~text
-What is the current XLM price on CoinMarketCap?
-Add XLM to my CoinMarketCap watchlist
-~~~
+- `0.0100000 USDC`;
+- Stellar Testnet;
+- the recipient;
+- the transaction receipt;
+- the delivered protected resource.
 
-Show the timestamped quote and persistent watchlist.
+Say: “The user approved exactly 0.01 USDC. Privy signed only that authorization and Stellar settled it once.”
 
-Say: “This is a real read-only connection. It cannot trade or move funds.”
+### 45-65 seconds: duplicate-resistant replay
 
-### 45-65 seconds: permissioned connections
+Click **Verify duplicate protection**. Show:
 
-If Notion has passed acceptance testing, show **Connect Notion**, approve access and search for a known page.
+- the original transaction hash;
+- balance before: `0.4900000 USDC`;
+- balance after: `0.4900000 USDC`;
+- second debit: `0.0000000 USDC`;
+- same receipt.
 
-If it has not passed, show the connection UI and say: “The OAuth and MCP path is implemented; complete production validation is pending.” Do not attempt an unpredictable consent flow during the recording.
+Say: “A retry never reaches signing or settlement. It returns the original receipt and the wallet balance does not change.”
 
-### 65-90 seconds: payment safety proof
+### 65-90 seconds: useful external service
 
-Open /demo. Create an intent, evaluate policy, approve it and execute twice. Highlight replayed: true and the unchanged receipt.
+Search live Travala hotel inventory. Do not imply booking or payment.
 
-Say: “Settlement here is simulated. Intent, policy and receipt are durable, and a retry cannot create a second execution. The next milestone replaces the simulated reference with one Privy-signed Stellar Testnet transaction.”
+Say: “The same agent can discover real services without moving funds. We are building the control and commerce layer that lets agents act for people safely.”
 
-## Real versus simulated
+## Verified evidence
 
-Real:
+- Privy-created Stellar wallet for a second user.
+- Friendbot Testnet activation.
+- Official x402 USDC trustline.
+- Internal `0.50 USDC` Testnet funding.
+- Real `0.01 USDC` x402 settlement.
+- Explorer hash: `8ec3c7e8197aa286328329b6715295b45ac498195f280b5d18598f78d541f18f`.
+- Final balance: `0.4900000 USDC`.
+- Neon payment record with settlement, delivery preview and idempotency key.
+- Live Travala read-only MCP search.
 
-- Privy authentication and token verification.
-- User-owned Stellar wallet creation and Testnet activation.
-- Horizon balance lookup.
-- Neon users, chat, connections and watchlists.
-- CoinMarketCap Trial Pro quotes.
-- Travala read-only hotel discovery.
-- Commerce intent persistence and receipt uniqueness.
+## Boundaries to state clearly
 
-Ready to validate:
+- Testnet assets have no real monetary value.
+- Travala is search-only today; booking remains disabled.
+- The `/demo` action console is a separate no-funds architecture sandbox.
+- Mainnet payments remain disabled.
+- DeFindex has a successful 1 XLM Testnet receipt, but it should be a separate optional clip.
 
-- Notion OAuth, encrypted token storage and MCP search.
+## Recording checklist
 
-Simulated:
-
-- Wallet authorization in /demo.
-- Network settlement and transaction reference in /demo.
-- Partner fulfillment confirmation.
-
-## Failure-safe recording plan
-
-1. Record login and wallet as one clip.
-2. Record CoinMarketCap quote/watchlist as a second clip.
-3. Record replay protection as a third clip.
-4. Add Notion only after its real-user test succeeds twice.
-5. Keep an explorer tab ready, but do not imply the wallet balance proves a payment.
-
-## Definition of the next milestone
-
-The payment demo is complete only when the product:
-
-1. Freezes destination, asset and amount in an intent.
-2. Requests explicit transaction-scoped approval.
-3. Builds and signs a Stellar Testnet payment through Privy.
-4. Submits it once to Horizon.
-5. Persists the transaction hash as the receipt.
-6. Returns that receipt for every retry without resubmitting.
+1. Use the dedicated demo email and hide inbox/OTP screens.
+2. Keep the explorer receipt ready.
+3. Restore the existing x402 receipt; do not prepare a new payment.
+4. Run the replay once and show the zero-debit evidence card.
+5. Search Travala with future valid dates.
+6. Record each proof separately and assemble the cleanest 90 seconds.

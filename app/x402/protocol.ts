@@ -1,4 +1,5 @@
 import { x402Client } from "@x402/core/client";
+import { createHash } from "node:crypto";
 import {
   decodePaymentRequiredHeader,
   decodePaymentResponseHeader,
@@ -114,6 +115,9 @@ export async function payX402Resource(input: {
   return {
     settlement,
     resourcePreview: resource.slice(0, 4_000),
+    resourceStatus: response.status,
+    resourceContentType: contentType,
+    resourceSha256: createHash("sha256").update(resource).digest("hex"),
   };
 }
 
@@ -169,5 +173,8 @@ export async function payPreparedX402Resource(input: {
   return {
     settlement,
     resourcePreview: resource.slice(0, 4_000),
+    resourceStatus: response.status,
+    resourceContentType: contentType,
+    resourceSha256: createHash("sha256").update(resource).digest("hex"),
   };
 }

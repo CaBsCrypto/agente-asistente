@@ -39,7 +39,7 @@ Status meanings are shared across all project documentation:
 | Service provider MCP | Development foundation | Scoped catalog administration at /api/mcp/provider |
 | Chrome WebMCP | Experimental sandbox | Offer discovery and intent preparation |
 | Wallet-signed Stellar transaction | Ready to validate | Client-side Privy confirmation, server-verified Ed25519 signature and durable receipt |
-| Stellar x402 payment | Ready to validate | Official live 402 challenge, pinned USDC, internal Testnet funding, atomic execution claim and durable replay receipt |
+| Stellar x402 payment | Live Testnet proof | A second Privy user completed the official 0.01 USDC flow; settlement, delivery evidence and the replay-safe receipt are durable |
 | Acceptance runner | Live, read-only | Production doctor validates health, MCP discovery, official x402 challenge and distributor balances |
 | DeFindex XLM | Ready to validate | Conversational intent, exact transaction review and public Soroban vault integration |
 | DeFindex USDC | Trustline ready; deposit funding blocked | Exact trustline flow, but no controlled compatible-USDC distributor |
@@ -267,7 +267,7 @@ npm run db:migrate
 5. Collect three design-partner commitments.
 6. Move CoinMarketCap toward an official API, MCP or x402 pilot.
 
-For YC, the strongest claim is: **a user can create a permissioned agent, receive a real Testnet wallet, connect real data sources and see the safety mechanism that will prevent duplicate payments; the next proof is one reproducible DeFindex deposit with an explorer-verifiable receipt.**
+For YC, the strongest claim is: **a user can sign in, receive a Stellar wallet through Privy, authorize one 0.01 USDC x402 payment, receive the protected resource and replay the same payment without a second debit; the same agent can also search live services and execute a separate DeFindex Testnet deposit.**
 
 ## Security principles
 

@@ -33,6 +33,12 @@ const x402ResultUi = {
   es: { balance: "Saldo x402", updating: "Actualizando on-chain...", resourceDelivered: "Recurso protegido entregado", source: "Origen", verifyReplay: "Verificar protecci\u00f3n contra duplicados", checkingReplay: "Comprobando el pago original..." },
   pt: { balance: "Saldo x402", updating: "Atualizando on-chain...", resourceDelivered: "Recurso protegido entregue", source: "Origem", verifyReplay: "Verificar prote\u00e7\u00e3o contra duplicados", checkingReplay: "Verificando o pagamento original..." },
 };
+const x402ReplayUi = {
+  en: { verified: "Duplicate protection verified", sameReceipt: "Same receipt", zeroDebit: "Second debit", before: "Before", after: "After" },
+  es: { verified: "Protecci\u00f3n contra duplicados verificada", sameReceipt: "Mismo recibo", zeroDebit: "Segundo d\u00e9bito", before: "Antes", after: "Despu\u00e9s" },
+  pt: { verified: "Prote\u00e7\u00e3o contra duplicados verificada", sameReceipt: "Mesmo recibo", zeroDebit: "Segundo d\u00e9bito", before: "Antes", after: "Depois" },
+};
+
 
 
 type X402ChatIntent = { operation: "demo_payment"; requestId: string };
@@ -72,6 +78,13 @@ type X402Status = {
   resource: string;
   recent: X402Payment[];
 };
+type X402ReplayEvidence = {
+  transactionHash: string;
+  balanceBefore: string;
+  balanceAfter: string;
+  replayDebit: "0.0000000 USDC";
+};
+
 type ChatAction = {
   label: string;
   message?: string;
@@ -180,6 +193,7 @@ export default function AgentChat({
   const dui = defindexUi[locale];
   const xui = x402Ui[locale];
   const xrui = x402ResultUi[locale];
+  const xreui = x402ReplayUi[locale];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [liveWalletBalance, setLiveWalletBalance] = useState(walletBalance);
   const [status, setStatus] = useState<"loading" | "ready" | "sending" | "error">(
@@ -203,6 +217,7 @@ export default function AgentChat({
   const [x402Payment, setX402Payment] = useState<X402Payment | null>(null);
   const [x402Trustline, setX402Trustline] = useState<X402TrustlineApproval | null>(null);
   const [x402Busy, setX402Busy] = useState(false);
+  const [x402ReplayEvidence, setX402ReplayEvidence] = useState<X402ReplayEvidence | null>(null);
   const [x402Notice, setX402Notice] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
@@ -491,6 +506,7 @@ export default function AgentChat({
     setX402Open(true);
     setX402Busy(true);
     setX402Notice(null);
+    setX402ReplayEvidence(null);
     setX402Payment(null);
     try {
       const statusResult = await x402Fetch();
@@ -556,6 +572,7 @@ export default function AgentChat({
     if (!x402Payment) return;
     setX402Busy(true);
     setX402Notice(null);
+    setX402ReplayEvidence(null);
     try {
       if (!x402Payment.signingHash) {
         throw new Error("This payment must be prepared again.");
@@ -590,8 +607,11 @@ export default function AgentChat({
     if (!x402Payment || x402Payment.status !== "confirmed") return;
     setX402Busy(true);
     setX402Notice(null);
+    setX402ReplayEvidence(null);
     try {
+      const before = await refreshX402Status();
       const originalHash = x402Payment.transactionHash;
+      if (!originalHash) throw new Error("x402_original_receipt_missing");
       const result = await x402Fetch({
         action: "execute",
         paymentId: x402Payment.id,
@@ -600,12 +620,53 @@ export default function AgentChat({
       if (!result.replayed || result.payment.transactionHash !== originalHash) {
         throw new Error("x402_duplicate_protection_not_verified");
       }
+      const after = await refreshX402Status();
+      if (before.x402Usdc.balance !== after.x402Usdc.balance) {
+        throw new Error("x402_duplicate_replay_changed_balance");
+      }
       setX402Payment(result.payment);
       setX402Notice(xui.replayed);
-      setLiveX402UsdcBalance(null);
-      await refreshX402Status();
+      setX402ReplayEvidence({
+        transactionHash: originalHash,
+        balanceBefore: before.x402Usdc.balance,
+        balanceAfter: after.x402Usdc.balance,
+        replayDebit: "0.0000000 USDC",
+      });
     } catch (caught) {
       setX402Notice(caught instanceof Error ? caught.message : "x402 replay check failed");
+    } finally {
+      setX402Busy(false);
+    }
+  }
+
+  async function openLatestX402Receipt() {
+    setDefindexOpen(false);
+    setX402Open(true);
+    setX402Busy(true);
+    setX402Notice(null);
+    setX402ReplayEvidence(null);
+    try {
+      const current = await x402Fetch() as X402Status;
+      applyX402Status(current);
+      const latest = current.recent.find(
+        (payment) => payment.status === "confirmed" && Boolean(payment.transactionHash),
+      );
+      if (!latest) {
+        setX402Notice(
+          locale === "es" ? "Todav\u00eda no existe un pago x402 confirmado."
+            : locale === "pt" ? "Ainda n\u00e3o existe um pagamento x402 confirmado."
+              : "No confirmed x402 payment exists yet.",
+        );
+        return;
+      }
+      setX402Payment(latest);
+      setX402Notice(
+        locale === "es" ? "\u00daltimo recibo x402 recuperado desde Neon."
+          : locale === "pt" ? "\u00daltimo recibo x402 recuperado da Neon."
+            : "Latest x402 receipt restored from Neon.",
+      );
+    } catch (caught) {
+      setX402Notice(caught instanceof Error ? caught.message : "x402 receipt lookup failed");
     } finally {
       setX402Busy(false);
     }
@@ -1016,6 +1077,18 @@ export default function AgentChat({
                     </button>
                   </div>
                 ) : null}
+                {x402ReplayEvidence && (
+                  <div className="x402-replay-proof" role="status">
+                    <strong>{xreui.verified}</strong>
+                    <code>{x402ReplayEvidence.transactionHash}</code>
+                    <dl>
+                      <div><dt>{xreui.before}</dt><dd>{x402ReplayEvidence.balanceBefore} USDC</dd></div>
+                      <div><dt>{xreui.after}</dt><dd>{x402ReplayEvidence.balanceAfter} USDC</dd></div>
+                      <div><dt>{xreui.zeroDebit}</dt><dd>{x402ReplayEvidence.replayDebit}</dd></div>
+                    </dl>
+                    <span>{xreui.sameReceipt} {"\u00b7"} {"\u2713"}</span>
+                  </div>
+                )}
                 {x402ResourceSummary && (
                   <div className="x402-resource-card">
                     <span aria-hidden="true">{"\u2713"}</span>
@@ -1127,6 +1200,9 @@ export default function AgentChat({
             onClick={() => void sendMessage(ui.watchlistPrompt)}
           >
             {ui.watchlist}
+          </button>
+          <button onClick={() => void openLatestX402Receipt()}>
+            {locale === "es" ? "Recibo x402" : locale === "pt" ? "Recibo x402" : "x402 receipt"}
           </button>
           <button onClick={() => void sendMessage(ui.proofPrompt)}>{ui.proof}</button>
           <button onClick={() => void sendMessage(ui.travalaPrompt)}>Travala</button>
