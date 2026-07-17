@@ -1,5 +1,6 @@
 "use client";
 
+import { useSignRawHash } from "@privy-io/react-auth/extended-chains";
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "../language-toggle";
 
@@ -30,6 +31,8 @@ const x402Ui = {
 type X402ChatIntent = { operation: "demo_payment"; requestId: string };
 type X402Payment = {
   id: string;
+  signingAddress: string;
+  signingHash: `0x${string}` | null;
   resourceUrl: string;
   network: string;
   asset: "USDC";
@@ -44,6 +47,8 @@ type X402Payment = {
 };
 type X402TrustlineApproval = {
   id: string;
+  signingAddress: string;
+  signingHash: `0x${string}` | null;
   status: string;
   transactionHash: string | null;
   explorerUrl: string | null;
@@ -156,6 +161,7 @@ export default function AgentChat({
   getAccessToken: () => Promise<string | null>;
 }) {
   const { locale } = useLocale();
+  const { signRawHash } = useSignRawHash();
   const ui = chatUi[locale];
   const dui = defindexUi[locale];
   const xui = x402Ui[locale];
@@ -403,7 +409,20 @@ export default function AgentChat({
     setX402Busy(true);
     setX402Notice(null);
     try {
-      const result = await x402Fetch({ action: "execute_trustline", approvalId: x402Trustline.id, explicitConfirmation: true });
+      if (!x402Trustline.signingHash) {
+        throw new Error("This approval must be prepared again.");
+      }
+      const signed = await signRawHash({
+        address: x402Trustline.signingAddress,
+        chainType: "stellar",
+        hash: x402Trustline.signingHash,
+      });
+      const result = await x402Fetch({
+        action: "execute_trustline",
+        approvalId: x402Trustline.id,
+        explicitConfirmation: true,
+        signature: signed.signature,
+      });
       setX402Trustline(result.approval);
       await prepareX402(crypto.randomUUID());
     } catch (caught) {
@@ -417,7 +436,20 @@ export default function AgentChat({
     setX402Busy(true);
     setX402Notice(null);
     try {
-      const result = await x402Fetch({ action: "execute", paymentId: x402Payment.id, explicitConfirmation: true });
+      if (!x402Payment.signingHash) {
+        throw new Error("This payment must be prepared again.");
+      }
+      const signed = await signRawHash({
+        address: x402Payment.signingAddress,
+        chainType: "stellar",
+        hash: x402Payment.signingHash,
+      });
+      const result = await x402Fetch({
+        action: "execute",
+        paymentId: x402Payment.id,
+        explicitConfirmation: true,
+        signature: signed.signature,
+      });
       setX402Payment(result.payment);
       setX402Notice(result.replayed ? xui.replayed : xui.confirmed);
       setX402Status(await x402Fetch());

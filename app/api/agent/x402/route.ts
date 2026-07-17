@@ -12,14 +12,19 @@ import {
 import {
   getStellarTestnetAccount,
   fundStellarTestnetWallet,
-  signStellarTransactionHash,
+  verifyStellarSignature,
   verifyPrivyAccessToken,
 } from "@/app/privy-stellar";
 import {
   X402_TESTNET_RESOURCE,
   X402_TESTNET_USDC,
 } from "@/app/x402/assets";
-import { createPrivyX402Signer } from "@/app/x402/privy-signer";
+import {
+  createSignedX402Payload,
+  isPreparedX402Authorization,
+  prepareX402ClientAuthorization,
+  stellarClientSignatureBytes,
+} from "@/app/x402/client-authorization";
 import { prepareX402UsdcTrustline } from "@/app/x402/trustline";
 import {
   getInternalTestnetFaucetReadiness,
@@ -27,10 +32,8 @@ import {
   sendInternalTestnetUsdc,
 } from "@/app/x402/testnet-faucet";
 import {
-  freezeRequirement,
   inspectX402Resource,
-  payX402Resource,
-  type FrozenX402Requirement,
+  payPreparedX402Resource,
 } from "@/app/x402/protocol";
 import { guardX402Execution } from "@/app/x402/execution-guard";
 import { getDatabaseUrl, getDb, hasDatabase } from "@/db";
@@ -57,11 +60,13 @@ const executeTrustlineSchema = z.object({
   action: z.literal("execute_trustline"),
   approvalId: z.string().uuid(),
   explicitConfirmation: z.literal(true),
+  signature: z.string().regex(/^0x[0-9a-fA-F]{128}$/),
 });
 const executeSchema = z.object({
   action: z.literal("execute"),
   paymentId: z.string().uuid(),
   explicitConfirmation: z.literal(true),
+  signature: z.string().regex(/^0x[0-9a-fA-F]{128}$/),
 });
 const claimTestnetUsdcSchema = z.object({
   action: z.literal("claim_testnet_usdc"),
@@ -155,8 +160,13 @@ async function userWallet(userId: string) {
   return rows[0];
 }
 function publicPayment(row: typeof agentX402Payments.$inferSelect) {
+  const prepared = isPreparedX402Authorization(row.paymentRequired)
+    ? row.paymentRequired
+    : null;
   return {
     id: row.id,
+    signingAddress: row.walletAddress,
+    signingHash: prepared?.authorizationHash ?? null,
     resourceUrl: row.resourceUrl,
     network: row.network,
     asset: "USDC",
@@ -178,8 +188,14 @@ function publicTrustline(row: typeof agentStellarActions.$inferSelect) {
   return {
     id: row.id,
     status: row.status,
-    transactionHash: row.transactionHash,
-    explorerUrl: row.transactionHash ? `https://stellar.expert/explorer/testnet/tx/${row.transactionHash}` : null,
+    signingAddress: row.walletAddress,
+    signingHash: row.status === "prepared" && row.transactionHash
+      ? `0x${row.transactionHash}`
+      : null,
+    transactionHash: row.status === "confirmed" ? row.transactionHash : null,
+    explorerUrl: row.status === "confirmed" && row.transactionHash
+      ? `https://stellar.expert/explorer/testnet/tx/${row.transactionHash}`
+      : null,
     preview: row.preview,
     expiresAt: row.expiresAt.toISOString(),
     confirmedAt: row.confirmedAt?.toISOString() ?? null,
@@ -233,7 +249,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { userId, accessToken } = await auth(request);
+    const { userId } = await auth(request);
     const wallet = await userWallet(userId);
     const body = await request.json();
     const claimTestnetUsdc = claimTestnetUsdcSchema.safeParse(body);
@@ -290,10 +306,19 @@ export async function POST(request: Request) {
       if (action.status === "confirmed") return NextResponse.json({ replayed: true, approval: publicTrustline(action) });
       if (action.expiresAt.getTime() <= Date.now()) throw new Error("x402_trustline_approval_expired");
       const transaction = transactionFromXdr(action.preparedXdr);
-      const signature = await signStellarTransactionHash({
-        userId, accessToken, walletId: action.walletId, address: action.walletAddress,
-        hash: transaction.hash(), idempotencyKey: action.idempotencyKey,
-      });
+      const transactionHash = transaction.hash();
+      if (
+        !action.transactionHash ||
+        Buffer.from(transactionHash).toString("hex") !== action.transactionHash
+      ) {
+        throw new Error("x402_trustline_payload_changed");
+      }
+      const signature = stellarClientSignatureBytes(executeTrustline.data.signature);
+      if (
+        !verifyStellarSignature(action.walletAddress, transactionHash, signature)
+      ) {
+        throw new Error("stellar_client_signature_verification_failed");
+      }
       const signed = attachStellarSignature(action.preparedXdr, action.walletAddress, signature);
       const result = await submitPreparedDefindexTransaction({ action: "usdc_trustline", signedXdr: signed.toXDR() });
       const now = new Date();
@@ -341,6 +366,14 @@ export async function POST(request: Request) {
       }
       if (guard.action === "reject") throw new Error(guard.error);
       if (payment.expiresAt.getTime() <= Date.now()) throw new Error("x402_approval_expired");
+      if (!isPreparedX402Authorization(payment.paymentRequired)) {
+        throw new Error("x402_payment_requires_fresh_review");
+      }
+      const signedPayload = await createSignedX402Payload({
+        prepared: payment.paymentRequired,
+        address: payment.walletAddress,
+        signature: execute.data.signature,
+      });
       const claimed = await getDb()
         .update(agentX402Payments)
         .set({ status: "signing", updatedAt: new Date(), error: null })
@@ -362,16 +395,13 @@ export async function POST(request: Request) {
             : "x402_payment_concurrent_execution",
         );
       }
-      const frozen = payment.paymentRequired as FrozenX402Requirement;
-      const signer = createPrivyX402Signer({
-        userId,
-        accessToken,
-        walletId: payment.walletId,
-        address: payment.walletAddress,
-        paymentId: payment.id,
-      });
       try {
-        const result = await payX402Resource({ resourceUrl: payment.resourceUrl, signer, frozen });
+        const result = await payPreparedX402Resource({
+          resourceUrl: payment.resourceUrl,
+          frozen: signedPayload.requirement,
+          x402Version: signedPayload.x402Version,
+          transaction: signedPayload.transaction,
+        });
         const transactionHash = result.settlement?.transaction ?? null;
         if (!transactionHash) {
           throw new Error("x402_settlement_transaction_missing");
@@ -426,6 +456,15 @@ export async function POST(request: Request) {
     if (!decision.allowed) {
       return NextResponse.json({ error: "x402_policy_blocked", decision }, { status: 403 });
     }
+    const clientAuthorization = await prepareX402ClientAuthorization({
+      x402Version: challenge.paymentRequired.x402Version,
+      requirement: challenge.requirement,
+      address: wallet.address,
+    });
+    const approvalLifetimeMs = Math.max(
+      15_000,
+      Math.min(5 * 60_000, challenge.requirement.maxTimeoutSeconds * 1_000 - 5_000),
+    );
     const key = createHash("sha256").update(`x402:${userId}:${prepare.data.requestId}`).digest("hex");
     await getDb().insert(agentX402Payments).values({
       id: randomUUID(), userId, walletId: wallet.id, walletAddress: wallet.address,
@@ -437,8 +476,8 @@ export async function POST(request: Request) {
       amountDisplay: challenge.amountDisplay,
       status: "prepared",
       idempotencyKey: key,
-      paymentRequired: freezeRequirement(challenge.requirement),
-      expiresAt: new Date(Date.now() + 5 * 60_000),
+      paymentRequired: clientAuthorization,
+      expiresAt: new Date(Date.now() + approvalLifetimeMs),
     }).onConflictDoNothing({ target: agentX402Payments.idempotencyKey });
     const rows = await getDb().select().from(agentX402Payments).where(eq(agentX402Payments.idempotencyKey, key)).limit(1);
     return NextResponse.json({ replayed: rows[0].createdAt.getTime() < Date.now() - 2_000, decision, payment: publicPayment(rows[0]) });

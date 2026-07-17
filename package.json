@@ -10,6 +10,7 @@
         "build": "next build",
         "start": "next start",
         "test": "tsx --test tests/*.test.ts",
+        "x402:signing:doctor": "tsx --env-file=.env.local scripts/x402-signing-doctor.ts",
         "acceptance:doctor": "tsx scripts/acceptance.ts doctor",
         "acceptance:authenticated": "tsx scripts/acceptance.ts authenticated",
         "acceptance:execute": "tsx scripts/acceptance.ts execute",
