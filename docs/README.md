@@ -17,11 +17,13 @@ This directory is the source of truth for operating, demonstrating and extending
 2. Rehearse the [90-second live demo](live-demo.md).
 3. Complete the [YC application answer bank](yc-application.md).
 4. Follow the [YC closeout roadmap](yc-closeout-roadmap.md).
-5. Use only claims marked **Live** or **Sandbox** in external materials.
-6. Use the [CoinMarketCap pilot brief](coinmarketcap-partner-pilot.md) for outreach.
-7. Read the [Personal Execution Vault guide](personal-execution-vault.md) for user memory, policies and decision evidence.
-8. Use the [acceptance testing guide](acceptance-testing.md) before claiming an integration works.
-9. Review the [graph memory and project map](graph-memory.md) to validate topic-scoped memory.
+5. Execute the [YC seven-day closeout plan](yc-seven-day-plan.md).
+6. Track verified proof in the [YC evidence ledger](yc-evidence-ledger.md).
+7. Use only claims marked **Live** or **Sandbox** in external materials.
+8. Use the [CoinMarketCap pilot brief](coinmarketcap-partner-pilot.md) for outreach.
+9. Read the [Personal Execution Vault guide](personal-execution-vault.md) for user memory, policies and decision evidence.
+10. Use the [acceptance testing guide](acceptance-testing.md) before claiming an integration works.
+11. Review the [graph memory and project map](graph-memory.md) to validate topic-scoped memory.
 
 ### Developers and integrations
 

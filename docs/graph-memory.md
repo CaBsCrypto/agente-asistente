@@ -49,8 +49,8 @@ Graphify maps the application code into an interactive knowledge graph. The curr
 
 Current validated snapshot (it changes automatically as the code evolves):
 
-- 960 nodes
-- 1,848 edges
+- 957 nodes
+- 1,847 edges
 - 59 detected communities
 - 99% extracted relations
 - 0 LLM tokens
@@ -79,7 +79,7 @@ Graphify is installed as a project-scoped Codex skill. The project instructions 
 - The Graphify merge driver is registered for graph JSON conflicts.
 - .codex/hooks.json runs the Graphify pre-tool freshness check for Codex.
 
-The .graphifyignore file excludes the installed Graphify skill and AGENTS.md from the project graph so Graphify does not index its own instructions. Use npm run graph:doctor to verify hook status and npm run graph:update to force an incremental AST-only refresh. Documentation and image changes are not semantically processed by the Git hook; the current project intentionally remains in code-only mode to avoid external model calls.
+The .graphifyignore file excludes the installed Graphify skill, AGENTS.md and product Markdown from the executable graph so Graphify does not index its own instructions or fenced documentation examples as code. Product documentation remains directly searchable and can receive a separate semantic graph after the YC submission. Use npm run graph:doctor to verify hook status and npm run graph:update to force an incremental AST-only refresh. Documentation and image changes are not semantically processed by the Git hook; the current project intentionally remains in code-only mode to avoid external model calls.
 
 Then open graphify-out/graph.html in a browser. Search for agent-memory-store.ts, evaluateUserAction, DeFindex or x402. Node colors represent detected code communities; edges show imports, calls and other relationships.
 
@@ -90,6 +90,18 @@ graphify query "what connects agent memory to policy execution"
 ~~~
 
 The optional SQL parser is installed, so SQL migrations and schema relationships are included in the local graph. Snapshot JSON files that contain no executable symbols are expected to produce zero nodes.
+
+## Graphify MCP for Codex
+
+The project-scoped .codex/config.toml registers the local Graphify stdio server. It exposes only read-only graph tools to Codex. Project configuration is loaded only for trusted repositories and a new Codex task may be required after changing MCP configuration.
+
+Validate the protocol independently:
+
+~~~powershell
+npm run graph:mcp:smoke
+~~~
+
+The smoke test starts the real server, lists tools, calls graph statistics and executes a scoped architecture query. It does not expose the server over the network.
 
 ## Why Graphiti is not active yet
 

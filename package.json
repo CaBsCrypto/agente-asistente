@@ -33,7 +33,8 @@
         "graph:report": "graphify cluster-only .",
         "graph:update": "graphify update .",
         "graph:doctor": "graphify hook status",
-        "graph:rebuild": "graphify extract . --code-only --force"
+        "graph:rebuild": "graphify extract . --code-only --force",
+        "graph:mcp:smoke": "tsx scripts/graphify-mcp-smoke.ts"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.26.0",
