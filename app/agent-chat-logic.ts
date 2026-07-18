@@ -95,6 +95,14 @@ export type AgentDefindexIntent =
   | { operation: "deposit"; asset: "XLM" | "USDC"; amount: string }
   | { operation: "usdc_trustline"; asset: "USDC" };
 
+export type AgentSoroswapIntent = {
+  operation: "swap";
+  assetIn: "XLM" | "USDC";
+  assetOut: "XLM" | "USDC";
+  amount: string;
+  slippageBps: number;
+};
+
 export type AgentChatReply = {
   content: string;
   actions: AgentChatAction[];
@@ -105,6 +113,7 @@ export type AgentChatReply = {
   };
   defindexIntent?: AgentDefindexIntent;
   x402Intent?: AgentX402Intent;
+  soroswapIntent?: AgentSoroswapIntent;
   memoryUpdated?: boolean;
   memoryContext?: {
     provider: "neon-topic-router";

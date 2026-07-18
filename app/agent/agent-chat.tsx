@@ -112,6 +112,39 @@ type ExternalConnection = {
 };
 
 
+type SoroswapChatIntent = {
+  operation: "swap";
+  assetIn: "XLM" | "USDC";
+  assetOut: "XLM" | "USDC";
+  amount: string;
+  slippageBps: number;
+  requestId: string;
+};
+
+type SoroswapApproval = {
+  id: string;
+  action: "soroswap.swap";
+  status: string;
+  signingAddress: string;
+  signingHash: `0x${string}` | null;
+  transactionHash: string | null;
+  explorerUrl: string | null;
+  expiresAt: string;
+  preview: {
+    title: string;
+    description: string;
+    network: string;
+    wallet: string;
+    assetIn: "XLM" | "USDC";
+    assetOut: "XLM" | "USDC";
+    amountIn: string;
+    amountOut: string;
+    minimumAmountOut: string;
+    priceImpactPct: string;
+    platform: string;
+    slippageBps: number;
+  };
+};
 type DefindexChatIntent =
   | { operation: "deposit"; asset: "XLM" | "USDC"; amount: string; requestId: string }
   | { operation: "usdc_trustline"; asset: "USDC"; requestId: string };
@@ -162,6 +195,7 @@ type ChatMessage = {
     priority: string;
   };
   defindexIntent?: DefindexChatIntent;
+  soroswapIntent?: SoroswapChatIntent;
   x402Intent?: X402ChatIntent;
   memoryUpdated?: boolean;
   memoryContext?: {
@@ -248,6 +282,10 @@ export default function AgentChat({
   const [defindexStatus, setDefindexStatus] = useState<DefindexStatus | null>(null);
   const [defindexApproval, setDefindexApproval] = useState<DefindexApproval | null>(null);
   const [defindexBusy, setDefindexBusy] = useState<string | null>(null);
+  const [soroswapOpen, setSoroswapOpen] = useState(false);
+  const [soroswapApproval, setSoroswapApproval] = useState<SoroswapApproval | null>(null);
+  const [soroswapBusy, setSoroswapBusy] = useState(false);
+  const [soroswapNotice, setSoroswapNotice] = useState<string | null>(null);
   const [defindexNotice, setDefindexNotice] = useState<string | null>(null);
   const [xlmDepositAmount, setXlmDepositAmount] = useState("1");
   const [usdcDepositAmount, setUsdcDepositAmount] = useState("1");
@@ -368,17 +406,18 @@ export default function AgentChat({
   }, [messages, status]);
 
   useEffect(() => {
-    if (!defindexOpen && !x402Open && !connectionPopup) return;
+    if (!defindexOpen && !soroswapOpen && !x402Open && !connectionPopup) return;
     function closeActionPanel(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       setDefindexOpen(false);
+      setSoroswapOpen(false);
       setX402Open(false);
       setConnectionPopup(null);
       composerRef.current?.focus();
     }
     window.addEventListener("keydown", closeActionPanel);
     return () => window.removeEventListener("keydown", closeActionPanel);
-  }, [defindexOpen, x402Open, connectionPopup]);
+  }, [defindexOpen, soroswapOpen, x402Open, connectionPopup]);
 
   useEffect(() => {
     if (connectionPopup?.status !== "waiting") return;
@@ -510,7 +549,9 @@ export default function AgentChat({
         setLiveWalletBalance(body.wallet.balance ?? "0");
       }
       setStatus("ready");
-      if (assistantMessage.x402Intent) {
+      if (assistantMessage.soroswapIntent) {
+        await prepareSoroswap(assistantMessage.soroswapIntent);
+      } else if (assistantMessage.x402Intent) {
         await prepareX402(assistantMessage.x402Intent.requestId);
       } else if (assistantMessage.defindexIntent) {
         const intent = assistantMessage.defindexIntent;
@@ -676,6 +717,7 @@ export default function AgentChat({
 
   async function prepareX402(requestId = crypto.randomUUID()) {
     setDefindexOpen(false);
+    setSoroswapOpen(false);
     setX402Open(true);
     setX402Busy(true);
     setX402Notice(null);
@@ -814,6 +856,7 @@ export default function AgentChat({
 
   async function openLatestX402Receipt() {
     setDefindexOpen(false);
+    setSoroswapOpen(false);
     setX402Open(true);
     setX402Busy(true);
     setX402Notice(null);
@@ -845,6 +888,97 @@ export default function AgentChat({
     }
   }
 
+  async function soroswapFetch(body?: Record<string, unknown>) {
+    const token = await getAccessToken();
+    if (!token) throw new Error("Authentication token unavailable");
+    const response = await fetch("/api/agent/soroswap", {
+      method: body ? "POST" : "GET",
+      headers: {
+        Authorization: "Bearer " + token,
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: "no-store",
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error ?? "Soroswap request failed");
+    return result;
+  }
+
+  async function prepareSoroswap(intent: SoroswapChatIntent) {
+    setDefindexOpen(false);
+    setX402Open(false);
+    setSoroswapOpen(true);
+    setSoroswapBusy(true);
+    setSoroswapNotice(null);
+    setSoroswapApproval(null);
+    try {
+      const result = await soroswapFetch({
+        action: "prepare",
+        assetIn: intent.assetIn,
+        assetOut: intent.assetOut,
+        amount: intent.amount,
+        slippageBps: intent.slippageBps,
+        requestId: intent.requestId,
+      });
+      setSoroswapApproval(result.approval);
+      if (result.replayed) {
+        setSoroswapNotice(
+          locale === "es"
+            ? "Esta solicitud ya estaba preparada o confirmada."
+            : locale === "pt"
+              ? "Esta solicitacao ja estava preparada ou confirmada."
+              : "This request was already prepared or confirmed.",
+        );
+      }
+    } catch (caught) {
+      setSoroswapNotice(
+        caught instanceof Error ? caught.message : "Soroswap preparation failed",
+      );
+    } finally {
+      setSoroswapBusy(false);
+    }
+  }
+
+  async function confirmSoroswap() {
+    if (!soroswapApproval?.signingHash) return;
+    setSoroswapBusy(true);
+    setSoroswapNotice(null);
+    try {
+      const signed = await signRawHash({
+        address: soroswapApproval.signingAddress,
+        chainType: "stellar",
+        hash: soroswapApproval.signingHash,
+      });
+      const result = await soroswapFetch({
+        action: "execute",
+        approvalId: soroswapApproval.id,
+        explicitConfirmation: true,
+        signature: signed.signature,
+      });
+      setSoroswapApproval(result.approval);
+      setSoroswapNotice(
+        result.replayed
+          ? locale === "es"
+            ? "El swap ya estaba confirmado; se recupero el mismo recibo."
+            : locale === "pt"
+              ? "O swap ja estava confirmado; o mesmo recibo foi recuperado."
+              : "The swap was already confirmed; the same receipt was returned."
+          : locale === "es"
+            ? "Swap confirmado en Stellar Testnet."
+            : locale === "pt"
+              ? "Swap confirmado na Stellar Testnet."
+              : "Swap confirmed on Stellar Testnet.",
+      );
+    } catch (caught) {
+      setSoroswapNotice(
+        caught instanceof Error ? caught.message : "Soroswap execution failed",
+      );
+    } finally {
+      setSoroswapBusy(false);
+    }
+  }
+
   async function defindexFetch(body?: Record<string, unknown>) {
     const token = await getAccessToken();
     if (!token) throw new Error("Authentication token unavailable");
@@ -864,6 +998,7 @@ export default function AgentChat({
 
   async function loadDefindex() {
     setX402Open(false);
+    setSoroswapOpen(false);
     setDefindexOpen(true);
     setDefindexBusy("status");
     setDefindexNotice(null);
@@ -888,6 +1023,7 @@ export default function AgentChat({
     requestId = crypto.randomUUID(),
   ) {
     setX402Open(false);
+    setSoroswapOpen(false);
     setDefindexOpen(true);
     setDefindexBusy(operation + (asset ?? ""));
     setDefindexNotice(null);
@@ -1226,7 +1362,7 @@ export default function AgentChat({
           </div>
         )}
 
-        {!isAtLatest && !defindexOpen && !x402Open && !connectionPopup && (
+        {!isAtLatest && !defindexOpen && !soroswapOpen && !x402Open && !connectionPopup && (
           <button className="agent-chat-jump" type="button" onClick={scrollToLatest}>
             <span aria-hidden="true">{"\u2193"}</span>
             {hasNewMessages
@@ -1235,6 +1371,68 @@ export default function AgentChat({
           </button>
         )}
 
+
+        {soroswapOpen && (
+          <section className="defindex-agent-panel" aria-label="Soroswap Stellar Testnet swap" role="dialog">
+            <header>
+              <div>
+                <span>SOROSWAP ? STELLAR TESTNET</span>
+                <h3>
+                  {locale === "es"
+                    ? "Swap preparado desde el chat, con aprobacion Privy."
+                    : locale === "pt"
+                      ? "Swap preparado pelo chat, com aprovacao Privy."
+                      : "Swap prepared from chat, with Privy approval."}
+                </h3>
+              </div>
+              <button type="button" onClick={() => setSoroswapOpen(false)}>
+                {locale === "es" ? "Cerrar" : locale === "pt" ? "Fechar" : "Close"}
+              </button>
+            </header>
+            {soroswapBusy && !soroswapApproval && (
+              <p className="defindex-agent-loading">
+                {locale === "es"
+                  ? "Cotizando y construyendo el XDR sin firmar..."
+                  : locale === "pt"
+                    ? "Cotando e construindo o XDR sem assinatura..."
+                    : "Quoting and building the unsigned XDR..."}
+              </p>
+            )}
+            {soroswapApproval && (
+              <div className={"defindex-approval " + soroswapApproval.status}>
+                <span>
+                  {locale === "es"
+                    ? "SWAP EXACTO PARA APROBACION"
+                    : locale === "pt"
+                      ? "SWAP EXATO PARA APROVACAO"
+                      : "EXACT SWAP FOR APPROVAL"}
+                </span>
+                <h4>{soroswapApproval.preview.title}</h4>
+                <p>{soroswapApproval.preview.description}</p>
+                <dl>
+                  <div><dt>{ui.network}</dt><dd>{soroswapApproval.preview.network}</dd></div>
+                  <div><dt>{locale === "es" ? "Entregas" : locale === "pt" ? "Voce envia" : "You send"}</dt><dd>{soroswapApproval.preview.amountIn} {soroswapApproval.preview.assetIn}</dd></div>
+                  <div><dt>{locale === "es" ? "Estimado" : locale === "pt" ? "Estimado" : "Estimated"}</dt><dd>{soroswapApproval.preview.amountOut} {soroswapApproval.preview.assetOut}</dd></div>
+                  <div><dt>{locale === "es" ? "Minimo" : locale === "pt" ? "Minimo" : "Minimum"}</dt><dd>{soroswapApproval.preview.minimumAmountOut} {soroswapApproval.preview.assetOut}</dd></div>
+                  <div><dt>Slippage</dt><dd>{soroswapApproval.preview.slippageBps / 100}%</dd></div>
+                  <div><dt>{locale === "es" ? "Ruta" : locale === "pt" ? "Rota" : "Route"}</dt><dd>{soroswapApproval.preview.platform}</dd></div>
+                </dl>
+                {soroswapApproval.status === "prepared" ? (
+                  <button type="button" disabled={soroswapBusy} onClick={() => void confirmSoroswap()}>
+                    {soroswapBusy
+                      ? locale === "es" ? "Firmando y enviando..." : locale === "pt" ? "Assinando e enviando..." : "Signing and submitting..."
+                      : locale === "es" ? "Confirmar swap con Privy" : locale === "pt" ? "Confirmar swap com Privy" : "Confirm swap with Privy"}
+                  </button>
+                ) : soroswapApproval.explorerUrl ? (
+                  <a href={soroswapApproval.explorerUrl} target="_blank" rel="noreferrer">
+                    {locale === "es" ? "Abrir recibo" : locale === "pt" ? "Abrir recibo" : "Open receipt"}
+                  </a>
+                ) : null}
+              </div>
+            )}
+            {soroswapNotice && <p className="defindex-agent-notice">{soroswapNotice}</p>}
+          </section>
+        )}
 
         {defindexOpen && (
           <section className="defindex-agent-panel" aria-label="DeFindex Testnet actions" role="dialog">

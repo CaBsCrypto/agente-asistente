@@ -2,11 +2,27 @@ import { NextResponse } from "next/server";
 import { getChannelsReadiness } from "@/app/infrastructure/openzeppelin-channels";
 import { discoverMppRouterServices } from "@/app/infrastructure/mpp-router";
 import { stellar8004Draft } from "@/app/infrastructure/stellar-8004";
+import { getAgentPlannerReadiness } from "@/app/agent-planner";
+import { getSoroswapHealth } from "@/app/connectors/soroswap";
 
 export async function GET() {
-  const catalog = await discoverMppRouterServices();
+  const [catalog, soroswapHealth] = await Promise.all([
+    discoverMppRouterServices(),
+    getSoroswapHealth().catch(() => null),
+  ]);
 
   return NextResponse.json({
+    soroswap: {
+      configured: Boolean(process.env.SOROSWAP_API_KEY?.trim()),
+      network: "testnet",
+      assets: ["XLM", "USDC"],
+      quote: "live-read-only",
+      execution: "privy-explicit-approval",
+      apiReachable: soroswapHealth?.reachable ?? false,
+      routeAvailable: soroswapHealth?.available ?? false,
+      protocols: soroswapHealth?.protocols ?? [],
+    },
+    langchain: getAgentPlannerReadiness(),
     openzeppelin: getChannelsReadiness(),
     mppRouter: {
       network: "mainnet",

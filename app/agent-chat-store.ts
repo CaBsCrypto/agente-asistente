@@ -13,10 +13,12 @@ import {
   buildAgentReply,
   detectAgentLanguage,
   findRequestedConnection,
+  parseDefindexIntent,
   parseTestnetSetupIntent,
   type AgentChatReply,
   type AgentDefindexIntent,
   type AgentX402Intent,
+  type AgentSoroswapIntent,
 } from "@/app/agent-chat-logic";
 import {
   fundStellarTestnetWallet,
@@ -38,6 +40,13 @@ import {
   getCoinMarketCapQuote,
   listMarketWatchlist,
 } from "@/app/connectors/coinmarketcap";
+import {
+  getAgentPlannerReadiness,
+  planAgentRequest,
+  shouldUseAgentPlanner,
+  type AgentPlan,
+} from "@/app/agent-planner";
+import { getSoroswapQuote } from "@/app/connectors/soroswap";
 
 export type StoredAgentMessage = {
   id: string;
@@ -59,6 +68,7 @@ export type StoredAgentMessage = {
   connection?: { name: string; stage: string; priority: string };
   defindexIntent?: AgentDefindexIntent & { requestId: string };
   x402Intent?: AgentX402Intent & { requestId: string };
+  soroswapIntent?: AgentSoroswapIntent & { requestId: string };
   memoryUpdated?: boolean;
   memoryContext?: AgentChatReply["memoryContext"];
   decision?: {
@@ -177,6 +187,10 @@ function publicMessage(row: {
     x402Intent:
       metadata.x402Intent && typeof metadata.x402Intent === "object"
         ? (metadata.x402Intent as StoredAgentMessage["x402Intent"])
+        : undefined,
+    soroswapIntent:
+      metadata.soroswapIntent && typeof metadata.soroswapIntent === "object"
+        ? (metadata.soroswapIntent as StoredAgentMessage["soroswapIntent"])
         : undefined,
     memoryUpdated: metadata.memoryUpdated === true,
     memoryContext:
@@ -430,6 +444,29 @@ export async function sendAgentMessage(userId: string, content: string) {
       "pagina",
       "page",
     ].some((term) => normalizedContent.includes(term));
+
+  const deterministicDefindex = parseDefindexIntent(content);
+  const deterministicConnection = findRequestedConnection(content);
+  const hasDeterministicIntent = Boolean(
+    vaultCommand ||
+      setupIntent ||
+      requestsNotionSearch ||
+      requestsWatchlistAdd ||
+      requestsWatchlist ||
+      requestsMarketQuote ||
+      deterministicDefindex ||
+      deterministicConnection ||
+      normalizedContent.includes("x402"),
+  );
+  let plannerPlan: AgentPlan | null = null;
+  if (shouldUseAgentPlanner({ hasDeterministicIntent, message: content })) {
+    plannerPlan = await planAgentRequest({
+      message: content,
+      walletReady: Boolean(wallet?.address),
+      connectedProviders,
+      memoryDomains: relevantMemory.domains,
+    }).catch(() => null);
+  }
 
   let reply: AgentChatReply;
   if (vaultCommand?.action === "list") {
@@ -692,7 +729,92 @@ export async function sendAgentMessage(userId: string, content: string) {
       };
     }
   } else {
-    reply = buildAgentReply(content, { wallet, connectedProviders });
+    let routedContent = content;
+    if (plannerPlan?.intent === "defindex_deposit") {
+      const { amount, asset } = plannerPlan.parameters;
+      if (amount && asset) {
+        routedContent = "Deposit " + amount + " " + asset + " into DeFindex on Testnet";
+      }
+    } else if (plannerPlan?.intent === "defindex_trustline") {
+      routedContent = "Prepare the USDC trustline for DeFindex";
+    } else if (
+      plannerPlan?.intent === "connection" &&
+      plannerPlan.parameters.provider
+    ) {
+      routedContent = "Connect me to " + plannerPlan.parameters.provider;
+    }
+    reply = buildAgentReply(routedContent, { wallet, connectedProviders });
+
+    if (
+      plannerPlan &&
+      (plannerPlan.intent === "soroswap_quote" ||
+        plannerPlan.intent === "soroswap_swap")
+    ) {
+      const amount = plannerPlan.parameters.amount;
+      const assetIn = plannerPlan.parameters.assetIn ?? "XLM";
+      const assetOut = plannerPlan.parameters.assetOut ?? "USDC";
+      if (!amount) {
+        reply = {
+          content: {
+            en: "Tell me the exact Testnet amount, for example: **Quote 1 XLM to USDC on Soroswap**.",
+            es: "Dime el monto exacto de Testnet, por ejemplo: **Cotiza 1 XLM a USDC en Soroswap**.",
+            pt: "Informe o valor exato da Testnet, por exemplo: **Cote 1 XLM para USDC na Soroswap**.",
+          }[language],
+          actions: [],
+        };
+      } else {
+        try {
+          const quote = await getSoroswapQuote({
+            assetIn,
+            assetOut,
+            amount,
+            slippageBps: plannerPlan.parameters.maxSlippageBps ?? 50,
+          });
+          const route = `**${quote.amountIn} ${assetIn} -> ${quote.amountOut} ${assetOut}**`;
+          const minimum = `**${quote.minimumAmountOut} ${assetOut}**`;
+          const copy = {
+            en: `Live Soroswap Testnet quote: ${route}. Minimum after slippage: ${minimum}. Route: **${quote.platform}**; estimated price impact: **${quote.priceImpactPct}%**. A quote is read-only.`,
+            es: `Cotizacion real de Soroswap Testnet: ${route}. Minimo despues del slippage: ${minimum}. Ruta: **${quote.platform}**; impacto estimado: **${quote.priceImpactPct}%**. Cotizar es de solo lectura.`,
+            pt: `Cotacao real da Soroswap Testnet: ${route}. Minimo apos slippage: ${minimum}. Rota: **${quote.platform}**; impacto estimado: **${quote.priceImpactPct}%**. A cotacao e somente leitura.`,
+          }[language];
+          reply = {
+            content: copy,
+            actions:
+              plannerPlan.intent === "soroswap_quote"
+                ? [{
+                    label: "Review swap",
+                    message: `Swap ${amount} ${assetIn} to ${assetOut} on Soroswap Testnet`,
+                  }]
+                : [],
+            connection: {
+              name: "Soroswap",
+              stage: "Ready to test",
+              priority: "P0",
+            },
+            soroswapIntent:
+              plannerPlan.intent === "soroswap_swap"
+                ? {
+                    operation: "swap",
+                    assetIn,
+                    assetOut,
+                    amount,
+                    slippageBps: quote.slippageBps,
+                  }
+                : undefined,
+          };
+        } catch (error) {
+          const code =
+            error instanceof Error ? error.message : "soroswap_quote_failed";
+          reply = {
+            content: `Soroswap Testnet could not return a verified quote (**${code}**). No transaction was prepared and no funds moved.`,
+            actions: [{
+              label: "Retry quote",
+              message: `Quote ${amount} ${assetIn} to ${assetOut} on Soroswap Testnet`,
+            }],
+          };
+        }
+      }
+    }
   }
   if (reply.defindexIntent) {
     const intent = reply.defindexIntent;
@@ -739,8 +861,21 @@ export async function sendAgentMessage(userId: string, content: string) {
         ? { ...reply.x402Intent, requestId: userMessage.id }
         : undefined,
       memoryUpdated: reply.memoryUpdated,
+      soroswapIntent: reply.soroswapIntent
+        ? { ...reply.soroswapIntent, requestId: userMessage.id }
+        : undefined,
       memoryContext: reply.memoryContext,
       decision: reply.decision,
+      planner: plannerPlan
+        ? {
+            provider: `langchain-${getAgentPlannerReadiness().provider}`,
+            mode: "plan-only",
+            intent: plannerPlan.intent,
+            confidence: plannerPlan.confidence,
+            financial: plannerPlan.financial,
+            requiresApproval: plannerPlan.requiresApproval,
+          }
+        : undefined,
     },
     createdAt: new Date(),
   };

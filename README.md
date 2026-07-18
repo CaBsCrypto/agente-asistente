@@ -47,6 +47,7 @@ Status meanings are shared across all project documentation:
 | Stellar 8004 | Registration draft ready | MCP and payment profile prepared without claiming on-chain registration |
 | DeFindex XLM | Ready to validate | Conversational intent, exact transaction review and public Soroban vault integration |
 | DeFindex USDC | Trustline ready; deposit funding blocked | Exact trustline flow, but no controlled compatible-USDC distributor |
+| Soroswap XLM/USDC | Integration ready; external Testnet unavailable | Quote/build/send client, Privy review and durable receipts are implemented; live validation on Jul 18 found the Soroswap API reachable but reporting zero Testnet protocols |
 | UNBLCK and ArcusX | Planned partner pilots | Contact or integration path only |
 | Gmail, Drive, Calendar and Trello | Planned | Catalog entries only |
 
@@ -115,6 +116,21 @@ After the wallet has Testnet XLM, say **"Deposita 1 XLM en DeFindex Testnet"**. 
 Every on-chain action is shown before Privy receives a signing request. Natural language prepares the action; it never authorizes settlement. The transaction-specific **Confirm and sign with Privy** button is required.
 
 The XLM path is available for the acceptance proof now. The exact USDC trustline can also be prepared now, but automatic USDC funding is not claimed: this project does not yet control a distributor for the issuer required by the public vault and will not substitute a different asset. See [the DeFindex Testnet guide](docs/defindex-testnet.md).
+
+### 6. Quote and review a Soroswap Testnet swap
+
+After OpenRouter and Soroswap are configured server-side, try:
+
+~~~text
+Cotiza 1 XLM a USDC en Soroswap Testnet
+Intercambia 1 XLM por USDC en Soroswap Testnet
+~~~
+
+The agent uses structured planning to extract the exact pair and amount, obtains
+a live read-only quote, then creates an unsigned XDR only when a swap is
+requested. The exact minimum output is shown before Privy asks for a
+transaction-specific signature. See the [Soroswap Testnet guide](docs/soroswap-testnet.md).
+
 
 ## Product model
 
@@ -295,7 +311,9 @@ Start at the [documentation index](docs/README.md).
 - [Product status](docs/product-status.md)
 - [Personal Execution Vault](docs/personal-execution-vault.md)
 - [Graph memory and visual project map](docs/graph-memory.md)
+- [LangChain orchestration and security boundary](docs/langchain-orchestration.md)
 - [90-second demo](docs/live-demo.md)
+- [Soroswap Testnet quote and swap flow](docs/soroswap-testnet.md)
 - [YC application answer bank](docs/yc-application.md)
 - [YC closeout roadmap](docs/yc-closeout-roadmap.md)
 - [YC seven-day closeout plan](docs/yc-seven-day-plan.md)

@@ -34,9 +34,13 @@
         "graph:update": "graphify update .",
         "graph:doctor": "graphify hook status",
         "graph:rebuild": "graphify extract . --code-only --force",
-        "graph:mcp:smoke": "tsx scripts/graphify-mcp-smoke.ts"
+        "graph:mcp:smoke": "tsx scripts/graphify-mcp-smoke.ts",
+        "langchain:smoke": "tsx --env-file=.env.local scripts/langchain-planner-smoke.ts"
     },
     "dependencies": {
+        "@langchain/langgraph": "^1.4.8",
+        "@langchain/openai": "^1.5.5",
+        "@langchain/openrouter": "^0.4.5",
         "@modelcontextprotocol/sdk": "^1.26.0",
         "@neondatabase/serverless": "^1.1.0",
         "@openzeppelin/relayer-plugin-channels": "^0.20.0",
@@ -47,6 +51,7 @@
         "@x402/fetch": "^2.18.0",
         "@x402/stellar": "^2.18.0",
         "drizzle-orm": "0.45.2",
+        "langchain": "^1.5.3",
         "mcp-handler": "^1.1.0",
         "next": "16.2.6",
         "react": "19.2.6",

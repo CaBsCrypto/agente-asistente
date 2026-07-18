@@ -33,6 +33,18 @@ export const connections: Connection[] = [
     updated: "Jul 14, 2026",
   },
   {
+    name: "Soroswap",
+    focus: "Stellar swap execution pilot",
+    category: "On-chain exchange",
+    stage: "Ready to test",
+    priority: "P0",
+    route: "Agent plan -> live Testnet quote -> unsigned XDR -> Privy user signature -> Soroswap send",
+    proof: "Authenticated quote/build/send client and Privy review are implemented. Live API validation on Jul 18 found Soroswap reachable but reporting no Testnet protocols, so no route can currently be quoted.",
+    nextAction: "Monitor Soroswap /health until Testnet protocols return, then run the prepared XLM-to-USDC quote, XDR and Privy-signature acceptance test.",
+    href: "https://api.soroswap.finance/docs",
+    updated: "Jul 18, 2026",
+  },
+  {
     name: "UNBLCK / Tellus Hub",
     focus: "Top 2 · active pilot",
     category: "Local ecosystem",
