@@ -29,8 +29,11 @@
         "db:migrate": "drizzle-kit migrate",
         "build:sites": "vinext build",
         "bridge:doctor": "tsx scripts/browser-bridge-doctor.ts",
-        "graph:extract": "graphify . --code-only",
-        "graph:report": "graphify cluster-only ."
+        "graph:extract": "graphify extract . --code-only",
+        "graph:report": "graphify cluster-only .",
+        "graph:update": "graphify update .",
+        "graph:doctor": "graphify hook status",
+        "graph:rebuild": "graphify extract . --code-only --force"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.26.0",

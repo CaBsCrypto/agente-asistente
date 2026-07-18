@@ -49,9 +49,9 @@ Graphify maps the application code into an interactive knowledge graph. The curr
 
 Current snapshot:
 
-- 909 nodes
-- 1,727 edges
-- 55 detected communities
+- 949 nodes
+- 1,838 edges
+- 63 detected communities
 - 99% extracted relations
 - 0 LLM tokens
 
@@ -66,7 +66,20 @@ Generated files are local and ignored by Git:
 ~~~powershell
 npm run graph:extract
 npm run graph:report
+# Only after intentional exclusions or a large refactor:
+npm run graph:rebuild
 ~~~
+
+### Automatic local workflow
+
+Graphify is installed as a project-scoped Codex skill. The project instructions make codebase questions query the existing graph first. Git hooks are also installed locally:
+
+- post-commit incrementally rebuilds the code graph after a commit.
+- post-checkout checks freshness after changing branches.
+- The Graphify merge driver is registered for graph JSON conflicts.
+- .codex/hooks.json runs the Graphify pre-tool freshness check for Codex.
+
+The .graphifyignore file excludes the installed Graphify skill and AGENTS.md from the project graph so Graphify does not index its own instructions. Use npm run graph:doctor to verify hook status and npm run graph:update to force an incremental AST-only refresh. Documentation and image changes are not semantically processed by the Git hook; the current project intentionally remains in code-only mode to avoid external model calls.
 
 Then open graphify-out/graph.html in a browser. Search for agent-memory-store.ts, evaluateUserAction, DeFindex or x402. Node colors represent detected code communities; edges show imports, calls and other relationships.
 
@@ -76,7 +89,7 @@ For a textual path query:
 graphify query "what connects agent memory to policy execution"
 ~~~
 
-The optional SQL parser is not installed, so SQL migration files are not part of the current graph. This does not affect the TypeScript application map.
+The optional SQL parser is installed, so SQL migrations and schema relationships are included in the local graph. Snapshot JSON files that contain no executable symbols are expected to produce zero nodes.
 
 ## Why Graphiti is not active yet
 
