@@ -43,7 +43,7 @@ Status meanings are shared across all project documentation:
 | Acceptance runner | Live, read-only | Production doctor validates health, MCP discovery, official x402 challenge and distributor balances |
 | Testnet Autopilot | Policy layer live; delegated signer pending | Time-bound activation, risk colors, allowlist, hard XLM/USDC limits, daily cap and immediate pause |
 | OpenZeppelin Stellar Channels | Configured; acceptance pending | Testnet-only fee sponsorship and submission after Privy user signature |
-| MPP Router | Discovery live; spending disabled | Free public catalog of paid Mainnet APIs with no automatic payment |
+| MPP Router | Discovery live; spending disabled | Free catalog with live prices for mixed free/paid Mainnet APIs; no automatic payment |
 | Stellar 8004 | Registration draft ready | MCP and payment profile prepared without claiming on-chain registration |
 | DeFindex XLM | Ready to validate | Conversational intent, exact transaction review and public Soroban vault integration |
 | DeFindex USDC | Trustline ready; deposit funding blocked | Exact trustline flow, but no controlled compatible-USDC distributor |

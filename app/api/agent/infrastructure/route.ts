@@ -11,7 +11,7 @@ export async function GET() {
     mppRouter: {
       network: "mainnet",
       catalogAccess: "free",
-      endpointBilling: "paid-per-provider",
+      endpointBilling: "mixed-free-and-paid-live-prices",
       executionEnabled: false,
       catalogSource: catalog.source,
       services: catalog.services,

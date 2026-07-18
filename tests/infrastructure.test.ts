@@ -4,7 +4,7 @@ import {
   getChannelsReadiness,
   OPENZEPPELIN_CHANNELS_TESTNET_URL,
 } from "../app/infrastructure/openzeppelin-channels";
-import { parseMppRouterCatalog } from "../app/infrastructure/mpp-router";
+import { normalizeMppRouterCatalog } from "../app/infrastructure/mpp-router";
 import { stellar8004Draft } from "../app/infrastructure/stellar-8004";
 
 test("OpenZeppelin Channels is pinned to Testnet and does not expose its key", () => {
@@ -27,13 +27,16 @@ test("OpenZeppelin Channels is pinned to Testnet and does not expose its key", (
   }
 });
 
-test("MPP Router parser de-duplicates and bounds service links", () => {
-  const services = parseMppRouterCatalog(
-    "# Catalog\n- [CoinGecko](https://example.com/cg)\n- [CoinGecko](https://example.com/cg)\n- [Search](https://example.com/search)",
+test("MPP Router catalog exposes bounded live prices without payment execution", () => {
+  const services = normalizeMppRouterCatalog(
+    { services: [
+      { id: "cg", name: "CoinGecko", price: "$0.003/request", public_path: "/v1/cg", payment_status: "verified" },
+      { id: "search", name: "Search", price: "free", public_path: "/v1/search", payment_status: "available" },
+    ] },
     1,
   );
   assert.deepEqual(services, [
-    { name: "CoinGecko", url: "https://example.com/cg" },
+    { id: "cg", name: "CoinGecko", price: "$0.003/request", path: "/v1/cg", paymentStatus: "verified" },
   ]);
 });
 

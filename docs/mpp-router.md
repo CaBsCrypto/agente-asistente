@@ -4,21 +4,22 @@ Status: **live catalog discovery, payment execution disabled**.
 
 MPP Router aggregates paid agent APIs behind one Stellar USDC payment route.
 Its public catalog can be inspected without a provider account or individual API
-keys. The API calls advertised by the router are paid and prices vary by
-provider and endpoint.
+keys. The live catalog contains both free and paid endpoints; prices and payment
+verification status vary by provider and can change.
 
 ## What is free
 
 - Opening the catalog and documentation.
 - Discovering available services through the public `llms.txt`.
+- Calling an endpoint whose current live catalog price is explicitly `free`.
 - Comparing candidates before an action is prepared.
 
-## What is paid
+## What may be paid
 
 - Calling a metered provider endpoint through the router.
 - The exact price is provider/endpoint-specific.
-- A provider's independent free tier does not imply a free call through MPP
-  Router.
+- The agent must read the live price; neither the provider's external free tier
+  nor an old cached price is enough evidence.
 
 MPP Router currently describes a Mainnet Stellar USDC flow. Because the product
 is Testnet-first, agent-assistant exposes discovery only. It does not
@@ -26,7 +27,7 @@ automatically pay or silently cross from Testnet to Mainnet.
 
 ## Current implementation
 
-- Catalog source: `https://apiserver.mpprouter.dev/llms.txt`.
+- Catalog source: `https://apiserver.mpprouter.dev/v1/services/search?status=active&limit=20`.
 - Live discovery: `GET /api/agent/infrastructure`.
 - Network response is bounded to 500 KB, cached for one hour and times out after
   six seconds.
