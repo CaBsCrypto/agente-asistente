@@ -8,7 +8,11 @@ import * as schema from "./schema";
  * DATABASE_URL_DATABASE_URL. Keep the standard name first for portability.
  */
 export function getDatabaseUrl() {
-  return process.env.DATABASE_URL || process.env.DATABASE_URL_DATABASE_URL;
+  return (
+    process.env.DATABASE_URL ||
+    process.env.DATABASE_URL_DATABASE_URL ||
+    process.env.DATABASE_URL_UNPOOLED
+  );
 }
 
 export function hasDatabase() {

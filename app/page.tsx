@@ -44,7 +44,7 @@ const copy = {
     langText: "Each layer has one responsibility. The model interprets; our deterministic controls still govern every real-world effect.",
     langStack: [
       ["LIVE", "LangChain", "Interprets English, Spanish and Portuguese requests into schema-validated plans.", "OpenRouter + Zod"],
-      ["NEXT", "LangGraph", "Will persist steps, pause for approval and resume without replaying operations.", "Checkpoints + interrupts"],
+      ["SHADOW", "LangGraph", "Tested reusable workflow kernel; connector-by-connector production cutover comes next.", "Checkpoints + approvals"],
       ["LATER", "LangSmith", "Will measure tool selection, failures and quality without receiving financial authority.", "Tracing + evaluations"],
       ["LOCAL", "Graphify", "Maps source code and dependencies for development; it is not user memory.", "Code graph + MCP"],
     ],
@@ -111,7 +111,7 @@ const copy = {
     langText: "Cada capa tiene una responsabilidad clara. El modelo interpreta; nuestras reglas siguen controlando cualquier efecto real.",
     langStack: [
       ["ACTIVO", "LangChain", "Interpreta solicitudes en espa\u00f1ol, ingl\u00e9s y portugu\u00e9s y produce planes estructurados.", "OpenRouter + Zod"],
-      ["SIGUIENTE", "LangGraph", "Persistir\u00e1 pasos, pausar\u00e1 para aprobaci\u00f3n y reanudar\u00e1 sin repetir operaciones.", "Checkpoints + interrupts"],
+      ["EN PRUEBAS", "LangGraph", "N\u00facleo reutilizable probado; el siguiente paso es migrar cada conector a producci\u00f3n.", "Checkpoints + aprobaciones"],
       ["DESPU\u00c9S", "LangSmith", "Medir\u00e1 selecci\u00f3n de herramientas, errores y calidad sin recibir autoridad financiera.", "Tracing + evaluations"],
       ["LOCAL", "Graphify", "Mapea el c\u00f3digo y sus dependencias para desarrollo; no es memoria del usuario.", "Code graph + MCP"],
     ],
@@ -178,7 +178,7 @@ const copy = {
     langText: "Cada camada tem uma responsabilidade clara. O modelo interpreta; nossas regras continuam controlando qualquer efeito real.",
     langStack: [
       ["ATIVO", "LangChain", "Interpreta pedidos em portugu\u00eas, espanhol e ingl\u00eas e produz planos estruturados.", "OpenRouter + Zod"],
-      ["PR\u00d3XIMO", "LangGraph", "Vai persistir etapas, pausar para aprova\u00e7\u00e3o e retomar sem repetir opera\u00e7\u00f5es.", "Checkpoints + interrupts"],
+      ["EM TESTE", "LangGraph", "N\u00facleo reutiliz\u00e1vel testado; o pr\u00f3ximo passo \u00e9 migrar cada conector para produ\u00e7\u00e3o.", "Checkpoints + aprova\u00e7\u00f5es"],
       ["DEPOIS", "LangSmith", "Vai medir sele\u00e7\u00e3o de ferramentas, erros e qualidade sem receber autoridade financeira.", "Tracing + evaluations"],
       ["LOCAL", "Graphify", "Mapeia o c\u00f3digo e suas depend\u00eancias para desenvolvimento; n\u00e3o \u00e9 mem\u00f3ria do usu\u00e1rio.", "Code graph + MCP"],
     ],

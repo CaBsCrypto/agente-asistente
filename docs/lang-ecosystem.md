@@ -9,7 +9,7 @@ on-chain receipt verification.
 | Component | Current state | Responsibility | Explicit boundary |
 | --- | --- | --- | --- |
 | LangChain | Live in production | Convert natural-language requests into schema-validated plans | Cannot sign, submit or authorize transactions |
-| LangGraph | Package installed; runtime migration pending | Persist multi-step workflows, interrupt for approval and resume safely | Will not bypass policy or approval nodes |
+| LangGraph | Tested shadow kernel; connector cutover pending | Persist multi-step workflows, pause for approval and resume safely | Does not bypass policy or approval nodes |
 | LangSmith | Not enabled | Future tracing, datasets and offline/online evaluation | Must redact wallet and personal-memory data before export |
 | Graphify | Active locally | Visual source-code graph and read-only MCP for development | Not a runtime agent memory and not an authority system |
 
@@ -37,20 +37,19 @@ if the model incorrectly marks them as safe.
 
 ## LangGraph migration
 
-LangGraph is the next orchestration layer, not a rewrite of business logic.
-The first graph should contain these nodes:
+LangGraph is now implemented as a reusable shadow kernel, not a rewrite of
+business logic. Production connectors remain on their current routes until
+each passes its cutover tests. The graph contains these nodes:
 
-1. `classify_request`;
-2. `retrieve_scoped_memory`;
-3. `discover_tools`;
-4. `prepare_action`;
-5. `evaluate_policy`;
-6. `interrupt_for_approval`;
-7. `execute_once`;
-8. `verify_receipt`;
-9. `record_outcome`.
+1. `validate_request`;
+2. `check_connection`;
+3. `prepare_action`;
+4. `evaluate_policy`;
+5. `approval_gate`;
+6. `execute_once`;
+7. `verify_evidence`.
 
-Checkpointing will allow a workflow to stop at approval and resume later. The
+Checkpointing allows a workflow to stop at approval and resume later. The
 idempotency key, frozen transaction hash and durable database receipt remain
 the source of truth against duplicate execution.
 
@@ -72,8 +71,8 @@ receipts remain the acceptance evidence.
 
 Graphify answers developer questions about the repository: which modules call
 which routes, where policies live and what will be affected by a change. Neon
-stores product state and user-scoped memory. LangGraph will store workflow
-checkpoints. These systems must not be presented as interchangeable.
+stores product state and user-scoped memory. LangGraph workflow checkpoints
+are persisted in Neon. These systems must not be presented as interchangeable.
 
 ## Validation
 

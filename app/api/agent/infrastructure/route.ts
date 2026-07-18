@@ -4,6 +4,7 @@ import { discoverMppRouterServices } from "@/app/infrastructure/mpp-router";
 import { stellar8004Draft } from "@/app/infrastructure/stellar-8004";
 import { getAgentPlannerReadiness } from "@/app/agent-planner";
 import { getSoroswapHealth } from "@/app/connectors/soroswap";
+import { getLangGraphReadiness } from "@/app/orchestration/readiness";
 
 export async function GET() {
   const [catalog, soroswapHealth] = await Promise.all([
@@ -24,6 +25,7 @@ export async function GET() {
     },
     langchain: getAgentPlannerReadiness(),
     openzeppelin: getChannelsReadiness(),
+    langgraph: getLangGraphReadiness(),
     mppRouter: {
       network: "mainnet",
       catalogAccess: "free",

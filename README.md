@@ -313,6 +313,7 @@ Start at the [documentation index](docs/README.md).
 - [Graph memory and visual project map](docs/graph-memory.md)
 - [LangChain orchestration and security boundary](docs/langchain-orchestration.md)
 - [Lang ecosystem product map](docs/lang-ecosystem.md)
+- [Reusable LangGraph workflow engine](docs/reusable-workflow-engine.md)
 - [90-second demo](docs/live-demo.md)
 - [Soroswap Testnet quote and swap flow](docs/soroswap-testnet.md)
 - [YC application answer bank](docs/yc-application.md)

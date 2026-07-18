@@ -6,6 +6,7 @@ import {
 } from "../app/infrastructure/openzeppelin-channels";
 import { normalizeMppRouterCatalog } from "../app/infrastructure/mpp-router";
 import { stellar8004Draft } from "../app/infrastructure/stellar-8004";
+import { getLangGraphReadiness } from "../app/orchestration/readiness";
 
 test("OpenZeppelin Channels is pinned to Testnet and does not expose its key", () => {
   const previous = process.env.OPENZEPPELIN_CHANNELS_TESTNET_API_KEY;
@@ -43,4 +44,13 @@ test("MPP Router catalog exposes bounded live prices without payment execution",
 test("Stellar 8004 material never claims registration before an on-chain proof", () => {
   assert.equal(stellar8004Draft.status, "draft-not-registered");
   assert.equal(stellar8004Draft.payments.mpp, "discovery-only");
+});
+
+test("LangGraph readiness exposes the shadow kernel without claiming production routing", () => {
+  const readiness = getLangGraphReadiness();
+  assert.equal(readiness.implemented, true);
+  assert.equal(readiness.productionRouting, false);
+  assert.equal(readiness.boundaries.modelCanSign, false);
+  assert.equal(readiness.nodes.includes("approval_gate"), true);
+  assert.equal(readiness.nodes.includes("execute_once"), true);
 });
