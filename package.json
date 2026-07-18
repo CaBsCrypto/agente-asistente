@@ -27,7 +27,8 @@
         "db:generate": "drizzle-kit generate",
         "test:build": "npm run test && npm run build",
         "db:migrate": "drizzle-kit migrate",
-        "build:sites": "vinext build"
+        "build:sites": "vinext build",
+        "bridge:doctor": "tsx scripts/browser-bridge-doctor.ts"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.26.0",

@@ -54,7 +54,7 @@ This document separates deployed proof from product vision. Status definitions l
 | Notion | Ready to validate | Official remote MCP + OAuth | Acceptance test pending |
 | Travala | Live, read-only | Public Travel MCP | No booking or payment |
 | DeFindex | Ready to validate | Direct public Soroban contracts, no API key | Confirm XLM proof; USDC deposit awaits exact-issuer funding |
-| UNBLCK | Planned partner pilot | Direct contact | Reservation contract needed |
+| UNBLCK | Browser verification ready, read-only | Exact-host Chrome bridge reads authenticated member-hub credits, calendar and enabled dates | Install and validate the unpacked extension; reservation execution remains disabled |
 | ArcusX | Planned partner pilot | Direct contact | Task lifecycle contract needed |
 | Gmail, Drive, Calendar | Planned | Future OAuth connectors | Catalog only |
 | Trello | Planned | Future OAuth/API connector | Catalog only |

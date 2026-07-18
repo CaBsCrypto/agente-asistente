@@ -4,6 +4,13 @@ import { useSignRawHash } from "@privy-io/react-auth/extended-chains";
 import { useEffect, useRef, useState } from "react";
 import { summarizeX402Resource } from "../x402/resource-preview";
 import { useLocale } from "../language-toggle";
+import {
+  browserBridgePing,
+  browserBridgeRequest,
+  parseBrowserBridgeEvent,
+  type UnblckBrowserEvidence,
+} from "../browser-bridge";
+
 
 const chatUi = {
   en: { agent: "Your agent", controlled: "Stellar Testnet · policy-controlled", memory: "NEON MEMORY ON", loading: "Loading your conversation...", thinking: "Checking capabilities and safety boundaries", placeholder: "Ask your agent to search Notion, check a connection or prepare an action...", send: "Send", boundary: "The agent can prepare actions. Payments and irreversible operations always require scoped authorization.", context: "LIVE CONTEXT", contextTitle: "Ready to act, within your rules.", identity: "Identity", balance: "Balance", network: "Network", verify: "Verify wallet on-chain", capabilities: "LIVE CAPABILITIES", readOnly: "read only", help: "PERSONAL HELP", notionConnect: "Connect Notion", notionSearch: "Search Notion", firstSearch: "Run first search", price: "XLM price", watchlist: "Watchlist", proof: "Testnet proof", connections: "Connections", notionConnectPrompt: "Connect me to Notion", notionSearchPrompt: "Search my Notion workspace for pending project tasks", pricePrompt: "What is the current XLM price on CoinMarketCap?", watchlistPrompt: "Show my crypto watchlist", proofPrompt: "Start my DeFindex Testnet proof", travalaPrompt: "Connect me to Travala", connectionsPrompt: "What can I connect to?" },
@@ -139,12 +146,6 @@ type DefindexStatus = {
   positions: {
     XLM: { shares: string } | null;
     USDC: { shares: string } | null;
-  popup?: {
-    provider: string;
-    url: string;
-    completionMessage: string;
-    permissions: string[];
-  };
   };
   recent: DefindexApproval[];
 };
@@ -220,9 +221,16 @@ export default function AgentChat({
     url: string;
     completionMessage: string;
     permissions: string[];
-    status: "review" | "waiting" | "returned";
+    status: "review" | "waiting" | "returned" | "verified";
   } | null>(null);
   const popupWindowRef = useRef<Window | null>(null);
+  const [bridgeAvailable, setBridgeAvailable] = useState(false);
+  const [bridgeBusy, setBridgeBusy] = useState(false);
+  const [bridgeError, setBridgeError] = useState<string | null>(null);
+  const [bridgeEvidence, setBridgeEvidence] = useState<UnblckBrowserEvidence | null>(null);
+  const bridgeRequestRef = useRef<string | null>(null);
+  const bridgeTimeoutRef = useRef<number | null>(null);
+
 
 
   const [defindexOpen, setDefindexOpen] = useState(false);
@@ -376,17 +384,57 @@ export default function AgentChat({
 
   useEffect(() => {
     function acceptConnectionCallback(event: MessageEvent) {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type !== "agent-assistant:connection-complete") return;
+      if (event.source !== window || event.origin !== window.location.origin) return;
+      if (event.data?.type === "agent-assistant:connection-complete") {
+        setConnectionPopup((current) =>
+          current && current.provider === event.data.provider
+            ? { ...current, status: "returned" }
+            : current,
+        );
+        return;
+      }
+      const bridgeEvent = parseBrowserBridgeEvent(event.data);
+      if (!bridgeEvent) return;
+      if (bridgeEvent.type === "BRIDGE_HELLO") {
+        setBridgeAvailable(true);
+        return;
+      }
+      if (bridgeEvent.requestId !== bridgeRequestRef.current) return;
+      bridgeRequestRef.current = null;
+      if (bridgeTimeoutRef.current !== null) {
+        window.clearTimeout(bridgeTimeoutRef.current);
+        bridgeTimeoutRef.current = null;
+      }
+      setBridgeBusy(false);
+      if (!bridgeEvent.ok || !bridgeEvent.data?.authenticated) {
+        const message = locale === "es"
+          ? "No se encontr\u00f3 una pesta\u00f1a UNBLCK autenticada en este perfil."
+          : locale === "pt"
+            ? "Nenhuma aba autenticada da UNBLCK foi encontrada neste perfil."
+            : "No authenticated UNBLCK tab was found in this browser profile.";
+        setBridgeError(message);
+        return;
+      }
+      setBridgeError(null);
+      setBridgeEvidence(bridgeEvent.data);
       setConnectionPopup((current) =>
-        current && current.provider === event.data.provider
-          ? { ...current, status: "returned" }
-          : current,
+        current?.provider === "unblck" ? { ...current, status: "verified" } : current,
+      );
+      setConnectionNotice(
+        locale === "es"
+          ? "Sesi\u00f3n UNBLCK verificada por el Browser Bridge. No se cre\u00f3 ninguna reserva."
+          : locale === "pt"
+            ? "Sess\u00e3o UNBLCK verificada pelo Browser Bridge. Nenhuma reserva foi criada."
+            : "UNBLCK session verified by the Browser Bridge. No reservation was created.",
       );
     }
     window.addEventListener("message", acceptConnectionCallback);
-    return () => window.removeEventListener("message", acceptConnectionCallback);
-  }, []);
+    window.postMessage(browserBridgePing(), window.location.origin);
+    return () => {
+      window.removeEventListener("message", acceptConnectionCallback);
+      if (bridgeTimeoutRef.current !== null) window.clearTimeout(bridgeTimeoutRef.current);
+    };
+  }, [locale]);
 
   function handleThreadScroll() {
     const thread = threadRef.current;
@@ -511,6 +559,29 @@ export default function AgentChat({
 
   function reviewPopupConnection(action: NonNullable<ChatAction["popup"]>) {
     setConnectionPopup({ ...action, status: "review" });
+    setBridgeError(null);
+    setBridgeEvidence(null);
+  }
+
+  function verifyBrowserConnection() {
+    if (!connectionPopup || connectionPopup.provider !== "unblck" || bridgeBusy) return;
+    const requestId = crypto.randomUUID();
+    bridgeRequestRef.current = requestId;
+    setBridgeBusy(true);
+    setBridgeError(null);
+    window.postMessage(browserBridgeRequest(requestId), window.location.origin);
+    bridgeTimeoutRef.current = window.setTimeout(() => {
+      if (bridgeRequestRef.current !== requestId) return;
+      bridgeRequestRef.current = null;
+      setBridgeBusy(false);
+      setBridgeError(
+        locale === "es"
+          ? "El Browser Bridge no respondi\u00f3. Confirma que la extensi\u00f3n est\u00e9 activa."
+          : locale === "pt"
+            ? "O Browser Bridge n\u00e3o respondeu. Confirme que a extens\u00e3o est\u00e1 ativa."
+            : "The Browser Bridge did not respond. Confirm that the extension is enabled.",
+      );
+    }, 8000);
   }
 
   function openPopupConnection() {
@@ -535,7 +606,7 @@ export default function AgentChat({
     if (!popup) {
       setError(
         locale === "es"
-          ? "El navegador bloque? la ventana. Permite popups para este sitio e int?ntalo otra vez."
+          ? "El navegador bloque\u00f3 la ventana. Permite popups para este sitio e int\u00e9ntalo otra vez."
           : locale === "pt"
             ? "O navegador bloqueou a janela. Permita popups para este site e tente novamente."
             : "The browser blocked the window. Allow popups for this site and try again.",
@@ -549,12 +620,6 @@ export default function AgentChat({
     );
   }
 
-  function finishPopupConnection() {
-    if (!connectionPopup) return;
-    const completionMessage = connectionPopup.completionMessage;
-    setConnectionPopup(null);
-    void sendMessage(completionMessage);
-  }
 
   async function x402Fetch(body?: Record<string, unknown>) {
     const token = await getAccessToken();
@@ -1036,7 +1101,7 @@ export default function AgentChat({
             <section className="connection-center-card" role="dialog" aria-modal="true" aria-labelledby="connection-center-title">
               <header>
                 <div>
-                  <span>{locale === "es" ? "CENTRO DE CONEXIONES" : locale === "pt" ? "CENTRO DE CONEX?ES" : "CONNECTION CENTER"}</span>
+                  <span>{locale === "es" ? "CENTRO DE CONEXIONES" : locale === "pt" ? "CENTRO DE CONEX\u00d5ES" : "CONNECTION CENTER"}</span>
                   <h3 id="connection-center-title">
                     {locale === "es" ? "Conectar con " : locale === "pt" ? "Conectar com " : "Connect to "}
                     {connectionPopup.provider.toUpperCase()}
@@ -1046,45 +1111,90 @@ export default function AgentChat({
               </header>
               <p>
                 {locale === "es"
-                  ? "Permaneces en agent-assistant. La autenticaci?n y la sesi?n se mantienen en el sitio oficial del proveedor."
+                  ? "Permaneces en agent-assistant. La autenticaci\u00f3n y la sesi\u00f3n se mantienen en el sitio oficial del proveedor."
                   : locale === "pt"
-                    ? "Voc? permanece no agent-assistant. A autentica??o e a sess?o ficam no site oficial do provedor."
+                    ? "Voc\u00ea permanece no agent-assistant. A autentica\u00e7\u00e3o e a sess\u00e3o ficam no site oficial do provedor."
                     : "You stay in agent-assistant. Authentication and the session remain on the provider's official site."}
               </p>
+              <div className={"connection-bridge-presence " + (bridgeAvailable ? "detected" : "missing")}>
+                <i />
+                <span>
+                  {bridgeAvailable
+                    ? locale === "es" ? "Browser Bridge detectado" : locale === "pt" ? "Browser Bridge detectado" : "Browser Bridge detected"
+                    : locale === "es" ? "Browser Bridge no detectado" : locale === "pt" ? "Browser Bridge n\u00e3o detectado" : "Browser Bridge not detected"}
+                </span>
+                {!bridgeAvailable && (
+                  <a href="/agent-assistant-browser-bridge.zip" download>
+                    {locale === "es" ? "Gu\u00eda de instalaci\u00f3n" : locale === "pt" ? "Guia de instala\u00e7\u00e3o" : "Installation guide"}
+                  </a>
+                )}
+              </div>
               <ul>
                 {connectionPopup.permissions.map((permission) => <li key={permission}>{permission}</li>)}
               </ul>
+              {bridgeEvidence && (
+                <article className="connection-bridge-evidence">
+                  <header>
+                    <strong>{locale === "es" ? "Sesi\u00f3n verificada" : locale === "pt" ? "Sess\u00e3o verificada" : "Session verified"}</strong>
+                    <span>{new Date(bridgeEvidence.observedAt).toLocaleTimeString(locale)}</span>
+                  </header>
+                  <dl>
+                    <div>
+                      <dt>{locale === "es" ? "Cr\u00e9ditos" : locale === "pt" ? "Cr\u00e9ditos" : "Credits"}</dt>
+                      <dd>{bridgeEvidence.hub.creditsRemaining ?? "\u2014"}/{bridgeEvidence.hub.creditsTotal ?? "\u2014"}</dd>
+                    </div>
+                    <div>
+                      <dt>{locale === "es" ? "Calendario" : locale === "pt" ? "Calend\u00e1rio" : "Calendar"}</dt>
+                      <dd>{bridgeEvidence.hub.month ?? "\u2014"}</dd>
+                    </div>
+                    <div>
+                      <dt>{locale === "es" ? "Fechas habilitadas" : locale === "pt" ? "Datas habilitadas" : "Enabled dates"}</dt>
+                      <dd>{bridgeEvidence.hub.enabledDates.length ? bridgeEvidence.hub.enabledDates.join(", ") : "\u2014"}</dd>
+                    </div>
+                  </dl>
+                  {bridgeEvidence.hub.bookingPolicy && <p>{bridgeEvidence.hub.bookingPolicy}</p>}
+                </article>
+              )}
+              {bridgeError && <p className="connection-bridge-error">{bridgeError}</p>}
               <div className={"connection-center-status " + connectionPopup.status}>
                 <i />
                 <span>
-                  {connectionPopup.status === "review"
-                    ? locale === "es" ? "Revisa antes de abrir la ventana" : locale === "pt" ? "Revise antes de abrir a janela" : "Review before opening the window"
-                    : connectionPopup.status === "waiting"
-                      ? locale === "es" ? "Ventana abierta. Completa el magic link all?." : locale === "pt" ? "Janela aberta. Conclua o magic link nela." : "Window open. Complete the magic link there."
-                      : locale === "es" ? "La ventana se cerr?. Confirma solo si viste el portal." : locale === "pt" ? "A janela foi fechada. Confirme apenas se viu o portal." : "The window closed. Confirm only if you saw the portal."}
+                  {connectionPopup.status === "verified"
+                    ? locale === "es" ? "Portal autenticado y evidencia de solo lectura recibida." : locale === "pt" ? "Portal autenticado e evid\u00eancia somente leitura recebida." : "Authenticated portal and read-only evidence received."
+                    : connectionPopup.status === "review"
+                      ? locale === "es" ? "Revisa antes de abrir o verificar" : locale === "pt" ? "Revise antes de abrir ou verificar" : "Review before opening or verifying"
+                      : connectionPopup.status === "waiting"
+                        ? locale === "es" ? "Ventana abierta. Completa el magic link all\u00ed." : locale === "pt" ? "Janela aberta. Conclua o magic link nela." : "Window open. Complete the magic link there."
+                        : locale === "es" ? "La ventana se cerr\u00f3. Verifica la sesi\u00f3n con el bridge." : locale === "pt" ? "A janela foi fechada. Verifique a sess\u00e3o com a ponte." : "The window closed. Verify the session with the bridge."}
                 </span>
               </div>
               <footer>
                 <button type="button" className="secondary" onClick={() => setConnectionPopup(null)}>
-                  {locale === "es" ? "Cancelar" : locale === "pt" ? "Cancelar" : "Cancel"}
+                  {connectionPopup.status === "verified"
+                    ? locale === "es" ? "Cerrar" : locale === "pt" ? "Fechar" : "Close"
+                    : locale === "es" ? "Cancelar" : locale === "pt" ? "Cancelar" : "Cancel"}
                 </button>
+                {connectionPopup.provider === "unblck" && connectionPopup.status !== "verified" && (
+                  <button type="button" className="primary" disabled={!bridgeAvailable || bridgeBusy} onClick={verifyBrowserConnection}>
+                    {bridgeBusy
+                      ? locale === "es" ? "Verificando..." : locale === "pt" ? "Verificando..." : "Verifying..."
+                      : locale === "es" ? "Verificar sesi\u00f3n" : locale === "pt" ? "Verificar sess\u00e3o" : "Verify browser session"}
+                  </button>
+                )}
                 {connectionPopup.status === "review" ? (
-                  <button type="button" className="primary" onClick={openPopupConnection}>
+                  <button type="button" className="secondary" onClick={openPopupConnection}>
                     {locale === "es" ? "Abrir login oficial" : locale === "pt" ? "Abrir login oficial" : "Open official login"}
                   </button>
-                ) : (
-                  <>
-                    <button type="button" className="secondary" onClick={openPopupConnection}>
-                      {locale === "es" ? "Abrir otra vez" : locale === "pt" ? "Abrir novamente" : "Open again"}
-                    </button>
-                    <button type="button" className="primary" onClick={finishPopupConnection}>
-                      {locale === "es" ? "Ya vi el portal de miembro" : locale === "pt" ? "J? vi o portal de membro" : "I saw the member portal"}
-                    </button>
-                  </>
-                )}
+                ) : connectionPopup.status !== "verified" ? (
+                  <button type="button" className="secondary" onClick={openPopupConnection}>
+                    {locale === "es" ? "Abrir otra vez" : locale === "pt" ? "Abrir novamente" : "Open again"}
+                  </button>
+                ) : null}
               </footer>
               <small>
-                {locale === "es" ? "Esto no verifica la sesi?n ni crea una reserva." : locale === "pt" ? "Isto n?o verifica a sess?o nem cria uma reserva." : "This does not verify the session or create a reservation."}
+                {connectionPopup.status === "verified"
+                  ? locale === "es" ? "Evidencia local de solo lectura. No se cre\u00f3 ninguna reserva." : locale === "pt" ? "Evid\u00eancia local somente leitura. Nenhuma reserva foi criada." : "Local read-only evidence. No reservation was created."
+                  : locale === "es" ? "Abrir el login no verifica la sesi\u00f3n ni crea una reserva." : locale === "pt" ? "Abrir o login n\u00e3o verifica a sess\u00e3o nem cria uma reserva." : "Opening login does not verify the session or create a reservation."}
               </small>
             </section>
           </div>
