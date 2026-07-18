@@ -42,7 +42,7 @@ const FINANCIAL_INTENTS = new Set<AgentPlan["intent"]>([
 ]);
 
 export function getAgentPlannerReadiness() {
-  const enabled = process.env.AGENT_LANGCHAIN_ENABLED === "true";
+  const enabled = process.env.AGENT_LANGCHAIN_ENABLED?.trim() === "true";
   const provider =
     process.env.AGENT_LANGCHAIN_PROVIDER?.trim().toLowerCase() === "openai"
       ? "openai"
