@@ -29,7 +29,7 @@ This directory is the source of truth for operating, demonstrating and extending
 
 1. Read the [developer guide](developer-guide.md).
 2. Review the [architecture diagrams](architecture.md).
-3. Review the [LangChain orchestration boundary](langchain-orchestration.md).
+3. Review the [Lang ecosystem map](lang-ecosystem.md) and [LangChain orchestration boundary](langchain-orchestration.md).
 4. Review the [Soroswap Testnet quote and swap flow](soroswap-testnet.md).
 5. Read the [bidirectional MCP gateway](mcp-gateway.md).
 6. Read the [MCP integration guide](mcp-integration.md).

@@ -39,7 +39,20 @@ const copy = {
       ["05", "Execute", "Submit one authorized action with replay protection."],
       ["06", "Verify", "Store settlement and fulfillment as separate evidence."],
     ],
+    langEyebrow: "AGENT INTELLIGENCE",
+    langTitle: "The Lang ecosystem turns conversations into controlled actions.",
+    langText: "Each layer has one responsibility. The model interprets; our deterministic controls still govern every real-world effect.",
+    langStack: [
+      ["LIVE", "LangChain", "Interprets English, Spanish and Portuguese requests into schema-validated plans.", "OpenRouter + Zod"],
+      ["NEXT", "LangGraph", "Will persist steps, pause for approval and resume without replaying operations.", "Checkpoints + interrupts"],
+      ["LATER", "LangSmith", "Will measure tool selection, failures and quality without receiving financial authority.", "Tracing + evaluations"],
+      ["LOCAL", "Graphify", "Maps source code and dependencies for development; it is not user memory.", "Code graph + MCP"],
+    ],
+    langFlow: ["Request", "Plan", "Policy", "Privy", "Receipt"],
+    langCta: "Read the technical architecture",
+
     pilotsEyebrow: "INITIAL ACTION NETWORK",
+    langBoundary: "LLM = interpretation. Policy + Privy = authority.",
     pilotsTitle: "Four pilots. One reusable architecture.",
     pilots: [
       ["READY TO VALIDATE", "DeFindex", "Prepare XLM and USDC vault actions, sign through Privy and verify on Stellar Testnet."],
@@ -93,6 +106,19 @@ const copy = {
       ["05", "Ejecutar", "Enviar una sola acción autorizada y resistente a duplicados."],
       ["06", "Verificar", "Guardar liquidación y entrega como evidencias separadas."],
     ],
+    langEyebrow: "INTELIGENCIA DEL AGENTE",
+    langTitle: "El ecosistema Lang convierte conversaciones en acciones controladas.",
+    langText: "Cada capa tiene una responsabilidad clara. El modelo interpreta; nuestras reglas siguen controlando cualquier efecto real.",
+    langStack: [
+      ["ACTIVO", "LangChain", "Interpreta solicitudes en espa\u00f1ol, ingl\u00e9s y portugu\u00e9s y produce planes estructurados.", "OpenRouter + Zod"],
+      ["SIGUIENTE", "LangGraph", "Persistir\u00e1 pasos, pausar\u00e1 para aprobaci\u00f3n y reanudar\u00e1 sin repetir operaciones.", "Checkpoints + interrupts"],
+      ["DESPU\u00c9S", "LangSmith", "Medir\u00e1 selecci\u00f3n de herramientas, errores y calidad sin recibir autoridad financiera.", "Tracing + evaluations"],
+      ["LOCAL", "Graphify", "Mapea el c\u00f3digo y sus dependencias para desarrollo; no es memoria del usuario.", "Code graph + MCP"],
+    ],
+    langFlow: ["Solicitud", "Plan", "Pol\u00edtica", "Privy", "Recibo"],
+    langCta: "Ver arquitectura t\u00e9cnica",
+
+    langBoundary: "LLM = interpretaci\u00f3n. Pol\u00edtica + Privy = autoridad.",
     pilotsEyebrow: "RED INICIAL DE ACCIONES",
     pilotsTitle: "Cuatro pilotos. Una arquitectura reutilizable.",
     pilots: [
@@ -147,6 +173,19 @@ const copy = {
       ["05", "Executar", "Enviar uma única ação autorizada com proteção contra repetição."],
       ["06", "Verificar", "Guardar liquidação e entrega como evidências separadas."],
     ],
+    langEyebrow: "INTELIG\u00caNCIA DO AGENTE",
+    langTitle: "O ecossistema Lang transforma conversas em a\u00e7\u00f5es controladas.",
+    langText: "Cada camada tem uma responsabilidade clara. O modelo interpreta; nossas regras continuam controlando qualquer efeito real.",
+    langStack: [
+      ["ATIVO", "LangChain", "Interpreta pedidos em portugu\u00eas, espanhol e ingl\u00eas e produz planos estruturados.", "OpenRouter + Zod"],
+      ["PR\u00d3XIMO", "LangGraph", "Vai persistir etapas, pausar para aprova\u00e7\u00e3o e retomar sem repetir opera\u00e7\u00f5es.", "Checkpoints + interrupts"],
+      ["DEPOIS", "LangSmith", "Vai medir sele\u00e7\u00e3o de ferramentas, erros e qualidade sem receber autoridade financeira.", "Tracing + evaluations"],
+      ["LOCAL", "Graphify", "Mapeia o c\u00f3digo e suas depend\u00eancias para desenvolvimento; n\u00e3o \u00e9 mem\u00f3ria do usu\u00e1rio.", "Code graph + MCP"],
+    ],
+    langFlow: ["Pedido", "Plano", "Pol\u00edtica", "Privy", "Recibo"],
+    langCta: "Ver arquitetura t\u00e9cnica",
+    langBoundary: "LLM = interpreta\u00e7\u00e3o. Pol\u00edtica + Privy = autoridade.",
+
     pilotsEyebrow: "REDE INICIAL DE AÇÕES",
     pilotsTitle: "Quatro pilotos. Uma arquitetura reutilizável.",
     pilots: [
@@ -193,6 +232,16 @@ export default function Home() {
       <section className="section shell" id="product"><p className="eyebrow">{t.controlEyebrow}</p><h2>{t.controlTitle}</h2><div className="cards">{t.paths.map((path) => <article key={path[0]}><span>{path[0]}</span><h3>{path[1]}</h3><p>{path[2]}</p></article>)}</div><a className="section-link" href="/developers">{t.pathCta} →</a></section>
 
       <section className="dark" id="lifecycle"><div className="shell"><p className="eyebrow">{t.lifecycleEyebrow}</p><h2>{t.lifecycleTitle}</h2><div className="flow">{t.lifecycle.map((step) => <div key={step[0]}><b>{step[0]}</b><strong>{step[1]}</strong><small>{step[2]}</small></div>)}</div></div></section>
+
+      <section className="lang-ecosystem section shell" id="intelligence">
+        <div className="lang-heading"><p className="eyebrow">{t.langEyebrow}</p><h2>{t.langTitle}</h2><p>{t.langText}</p></div>
+        <div className="lang-stack">{t.langStack.map((layer, index) => <article key={layer[1]} className={`lang-layer layer-${index}`}>
+          <header><span>{layer[0]}</span><code>{layer[3]}</code></header><h3>{layer[1]}</h3><p>{layer[2]}</p>
+        </article>)}</div>
+        <div className="lang-runtime" aria-label={t.langFlow.join(" to ")}>{t.langFlow.map((step) => <span key={step}>{step}</span>)}</div>
+        <p className="lang-boundary">{t.langBoundary}</p>
+        <a className="section-link" href="https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/lang-ecosystem.md">{t.langCta} {"\u2192"}</a>
+      </section>
 
       <section className="section shell" id="pilots"><p className="eyebrow">{t.pilotsEyebrow}</p><h2>{t.pilotsTitle}</h2><div className="pilots">{t.pilots.map((pilot, index) => <article className={index === 0 ? "hot" : ""} key={pilot[1]}><span>{pilot[0]}</span><h3>{pilot[1]}</h3><p>{pilot[2]}</p></article>)}</div></section>
 

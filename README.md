@@ -312,6 +312,7 @@ Start at the [documentation index](docs/README.md).
 - [Personal Execution Vault](docs/personal-execution-vault.md)
 - [Graph memory and visual project map](docs/graph-memory.md)
 - [LangChain orchestration and security boundary](docs/langchain-orchestration.md)
+- [Lang ecosystem product map](docs/lang-ecosystem.md)
 - [90-second demo](docs/live-demo.md)
 - [Soroswap Testnet quote and swap flow](docs/soroswap-testnet.md)
 - [YC application answer bank](docs/yc-application.md)
