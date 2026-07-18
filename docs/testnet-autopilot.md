@@ -80,3 +80,20 @@ Official references:
 - A separate always-require-approval user rule overrides Autopilot.
 - Existing x402 and DeFindex idempotency protections remain mandatory.
 - Login alone never activates Autopilot.
+
+## OpenZeppelin Channels submission layer
+
+OpenZeppelin Channels is now the preferred Testnet fee-sponsorship and
+submission layer. It does not replace the Privy delegated-signer milestone.
+
+The safe order is:
+
+1. Build the exact transaction and evaluate policy.
+2. Obtain the transaction-scoped user or delegated Privy signature.
+3. Verify the signature against the expected user wallet.
+4. Send only the signed XDR to OpenZeppelin Channels.
+5. Persist the returned hash and reuse it on an idempotent retry.
+
+The managed endpoint is pinned to Stellar Testnet and its server key is never
+returned by the readiness API. Mainnet remains unavailable. See
+[OpenZeppelin Stellar Channels](openzeppelin-stellar-channels.md).

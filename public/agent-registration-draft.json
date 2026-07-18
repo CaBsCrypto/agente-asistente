@@ -1,0 +1,10 @@
+{
+  "status": "draft-not-registered",
+  "name": "agent-assistant",
+  "description": "A policy-controlled personal agent that discovers services, prepares actions and uses a user-owned Stellar wallet.",
+  "website": "https://agente-asistente.vercel.app",
+  "mcpDiscovery": "https://agente-asistente.vercel.app/.well-known/mcp.json",
+  "mcpEndpoint": "https://agente-asistente.vercel.app/api/mcp",
+  "capabilities": ["personal-context", "service-discovery", "policy-evaluation", "stellar-testnet-payments", "x402"],
+  "payments": { "x402": "testnet-validated", "mpp": "discovery-only" }
+}

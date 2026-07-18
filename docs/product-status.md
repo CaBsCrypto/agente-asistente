@@ -37,6 +37,7 @@ This document separates deployed proof from product vision. Status definitions l
 | Explicit demo approval | Sandbox | Short-lived hashed capability | Transaction-scoped Privy approval |
 | Duplicate-resistant receipt | Sandbox | Unique receipt per intent | Reuse on-chain hash on retry |
 | Privy Stellar transaction signing | Ready to validate | User JWT authorization plus verified Ed25519 transaction signature | Complete authenticated acceptance test |
+| OpenZeppelin Stellar Channels | Configured, ready to validate | Official client pinned to Testnet; production key is server-side and user signature remains required | Submit one Privy-signed XDR and verify its explorer receipt |
 | Privy x402 auth-entry signing | Implemented, ready to validate | Custom ClientStellarSigner hashes SEP-43 auth entries and delegates Ed25519 raw signing to the user-owned Privy wallet | Complete one live 0.01 USDC Testnet payment |
 | Stellar x402 demo payment | Implemented, ready for acceptance | Live 402 challenge inspection, pinned asset/amount, automatic 0.50 USDC Testnet funding, atomic execution claim and durable replay receipt | Complete one live payment and record explorer hash |
 | DeFindex XLM deposit | Ready to validate, P0 | Conversational EN/ES/PT intent, public vault simulation, prepared XDR and explicit Privy review | Confirm with Privy and explorer receipt |
@@ -58,6 +59,8 @@ This document separates deployed proof from product vision. Status definitions l
 | ArcusX | Planned partner pilot | Direct contact | Task lifecycle contract needed |
 | Gmail, Drive, Calendar | Planned | Future OAuth connectors | Catalog only |
 | Trello | Planned | Future OAuth/API connector | Catalog only |
+| MPP Router | Live discovery, execution disabled | Public llms.txt catalog; no provider API key needed for discovery | Choose one capped Mainnet endpoint only after explicit product approval |
+| Stellar 8004 | Registration draft ready | Public machine-readable draft plus existing MCP endpoints | Choose owner wallet/network and register with on-chain proof |
 
 ## YC-ready proof versus remaining proof
 
