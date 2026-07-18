@@ -1,8 +1,9 @@
 # Reusable LangGraph workflow engine
 
 The reusable workflow engine coordinates every provider through one security
-contract. It is currently a tested shadow kernel: it runs independently of the
-production chat routes while connectors are migrated one at a time.
+contract. It started as a tested shadow kernel and now routes the first
+production connector, Notion Search. Other connectors are migrated one at a
+time after their own acceptance tests.
 
 ## Universal lifecycle
 
@@ -54,7 +55,7 @@ must retain their existing transaction-specific protections.
 
 | Connector | First capability | Operation | Cutover condition |
 | --- | --- | --- | --- |
-| Notion | Search workspace | Read | Same output and OAuth isolation as the current route |
+| Notion | Search workspace | Read | Routed through LangGraph; authenticated production acceptance pending |
 | DeFindex | Prepare Testnet deposit | Financial | Privy approval, one submission and verified Stellar receipt |
 | Soroswap | Testnet quote | Read | Live protocol route becomes available |
 | UNBLCK | Search availability | Read | Partner API and per-user authorization exist |
@@ -69,8 +70,9 @@ must retain their existing transaction-specific protections.
 5. Turn on production routing per connector, never globally.
 
 `GET /api/agent/infrastructure` reports `langgraph.mode` and
-`langgraph.productionRouting`. Until a connector passes its cutover condition,
-the existing route remains authoritative.
+`langgraph.productionRouting`. Notion Search is the first production-routed
+connector. Until another connector passes its cutover condition, its existing
+route remains authoritative.
 
 ## Validation
 

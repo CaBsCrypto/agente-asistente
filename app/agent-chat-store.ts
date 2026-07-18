@@ -25,7 +25,6 @@ import {
   getStellarTestnetAccount,
 } from "@/app/privy-stellar";
 import { DEFINDEX_TESTNET } from "@/app/connectors/defindex";
-import { searchNotion } from "@/app/connectors/notion-mcp";
 import { parseVaultCommand } from "@/app/agent-memory";
 import {
   evaluateUserAction,
@@ -47,6 +46,10 @@ import {
   type AgentPlan,
 } from "@/app/agent-planner";
 import { getSoroswapQuote } from "@/app/connectors/soroswap";
+import { createNotionWorkflowConnector } from "@/app/orchestration/connectors/notion";
+import { createConnectorRegistry } from "@/app/orchestration/connector";
+import { createPersistedWorkflowRuntime } from "@/app/orchestration/runtime";
+import { createWorkflowState } from "@/app/orchestration/types";
 
 export type StoredAgentMessage = {
   id: string;
@@ -69,6 +72,7 @@ export type StoredAgentMessage = {
   defindexIntent?: AgentDefindexIntent & { requestId: string };
   x402Intent?: AgentX402Intent & { requestId: string };
   soroswapIntent?: AgentSoroswapIntent & { requestId: string };
+  workflow?: AgentChatReply["workflow"];
   memoryUpdated?: boolean;
   memoryContext?: AgentChatReply["memoryContext"];
   decision?: {
@@ -200,6 +204,10 @@ function publicMessage(row: {
     decision:
       metadata.decision && typeof metadata.decision === "object"
         ? (metadata.decision as StoredAgentMessage["decision"])
+        : undefined,
+    workflow:
+      metadata.workflow && typeof metadata.workflow === "object"
+        ? (metadata.workflow as StoredAgentMessage["workflow"])
         : undefined,
 
   };
@@ -523,7 +531,34 @@ export async function sendAgentMessage(userId: string, content: string) {
     reply = await buildTestnetSetupReply(userId, setupIntent, wallet, language);
   } else if (requestsNotionSearch) {
     try {
-      const result = await searchNotion(userId, content);
+      const workflowId = "wf_notion_" + createHash("sha256")
+        .update(userId + ":" + userMessage.id)
+        .digest("hex")
+        .slice(0, 32);
+      const runtime = createPersistedWorkflowRuntime(
+        createConnectorRegistry([createNotionWorkflowConnector()]),
+      );
+      const workflow = await runtime.start(createWorkflowState({
+        workflowId,
+        userId,
+        conversationId: id,
+        request: content,
+        connectorId: "notion",
+        capability: "workspace.search",
+        operation: "read",
+        risk: "low",
+        parameters: { query: content },
+      }));
+      if (workflow.status === "awaiting_connection") {
+        throw new Error("notion_not_connected");
+      }
+      if (workflow.status !== "completed" || !workflow.execution) {
+        throw new Error(workflow.error ?? "notion_workflow_failed");
+      }
+      const result = {
+        tool: String(workflow.execution.tool ?? "notion-search"),
+        text: String(workflow.execution.text ?? ""),
+      };
       reply = {
         content: [
           local("I searched your connected Notion workspace using **", "Pesquisei seu workspace conectado do Notion usando **") +
@@ -543,6 +578,12 @@ export async function sendAgentMessage(userId: string, content: string) {
           },
           { label: local("Open Notion", "Abrir Notion"), href: "https://www.notion.so/" },
         ],
+        workflow: {
+          id: workflow.workflowId,
+          status: workflow.status,
+          engine: "langgraph" as const,
+          version: workflow.version,
+        },
       };
     } catch (error) {
       const code =
@@ -866,6 +907,7 @@ export async function sendAgentMessage(userId: string, content: string) {
         : undefined,
       memoryContext: reply.memoryContext,
       decision: reply.decision,
+      workflow: reply.workflow,
       planner: plannerPlan
         ? {
             provider: `langchain-${getAgentPlannerReadiness().provider}`,

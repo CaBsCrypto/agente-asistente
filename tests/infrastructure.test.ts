@@ -46,10 +46,11 @@ test("Stellar 8004 material never claims registration before an on-chain proof",
   assert.equal(stellar8004Draft.payments.mpp, "discovery-only");
 });
 
-test("LangGraph readiness exposes the shadow kernel without claiming production routing", () => {
+test("LangGraph readiness exposes the first production-routed capability", () => {
   const readiness = getLangGraphReadiness();
   assert.equal(readiness.implemented, true);
-  assert.equal(readiness.productionRouting, false);
+  assert.equal(readiness.productionRouting, true);
+  assert.deepEqual(readiness.productionCapabilities, ["notion.workspace.search"]);
   assert.equal(readiness.boundaries.modelCanSign, false);
   assert.equal(readiness.nodes.includes("approval_gate"), true);
   assert.equal(readiness.nodes.includes("execute_once"), true);

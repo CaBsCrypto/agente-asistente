@@ -9,7 +9,7 @@ on-chain receipt verification.
 | Component | Current state | Responsibility | Explicit boundary |
 | --- | --- | --- | --- |
 | LangChain | Live in production | Convert natural-language requests into schema-validated plans | Cannot sign, submit or authorize transactions |
-| LangGraph | Tested shadow kernel; connector cutover pending | Persist multi-step workflows, pause for approval and resume safely | Does not bypass policy or approval nodes |
+| LangGraph | Live for Notion Search; tested kernel for remaining connectors | Persist multi-step workflows, pause for approval and resume safely | Does not bypass policy or approval nodes |
 | LangSmith | Not enabled | Future tracing, datasets and offline/online evaluation | Must redact wallet and personal-memory data before export |
 | Graphify | Active locally | Visual source-code graph and read-only MCP for development | Not a runtime agent memory and not an authority system |
 
@@ -37,9 +37,10 @@ if the model incorrectly marks them as safe.
 
 ## LangGraph migration
 
-LangGraph is now implemented as a reusable shadow kernel, not a rewrite of
-business logic. Production connectors remain on their current routes until
-each passes its cutover tests. The graph contains these nodes:
+LangGraph is implemented as a reusable kernel, not a rewrite of business
+logic. Notion Search is the first connector routed through it in production;
+the remaining connectors stay on their current routes until each passes its
+cutover tests. The graph contains these nodes:
 
 1. `validate_request`;
 2. `check_connection`;

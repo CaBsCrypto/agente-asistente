@@ -114,6 +114,12 @@ export type AgentChatReply = {
   defindexIntent?: AgentDefindexIntent;
   x402Intent?: AgentX402Intent;
   soroswapIntent?: AgentSoroswapIntent;
+  workflow?: {
+    id: string;
+    status: string;
+    engine: "langgraph";
+    version: number;
+  };
   memoryUpdated?: boolean;
   memoryContext?: {
     provider: "neon-topic-router";

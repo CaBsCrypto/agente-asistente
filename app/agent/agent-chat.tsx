@@ -189,6 +189,12 @@ type ChatMessage = {
   content: string;
   createdAt: string;
   actions?: ChatAction[];
+  workflow?: {
+    id: string;
+    status: string;
+    engine: "langgraph";
+    version: number;
+  };
   connection?: {
     name: string;
     stage: string;
@@ -1166,6 +1172,11 @@ export default function AgentChat({
                 {message.connection && (
                   <span className="agent-connection-state">
                     {message.connection.name} · {message.connection.stage}
+                  </span>
+                )}
+                {message.workflow && (
+                  <span className="agent-workflow-state" title={message.workflow.id}>
+                    LangGraph / {message.workflow.status} / v{message.workflow.version}
                   </span>
                 )}
                 <div className="agent-message-copy">

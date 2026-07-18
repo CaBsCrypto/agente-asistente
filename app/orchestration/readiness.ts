@@ -14,8 +14,9 @@ export function getLangGraphReadiness() {
   return {
     implemented: true,
     runtime: "@langchain/langgraph",
-    mode: "shadow-kernel",
-    productionRouting: false,
+    mode: "incremental-production",
+    productionRouting: true,
+    productionCapabilities: ["notion.workspace.search"],
     durablePersistenceConfigured: hasDatabase(),
     approvalBinding: "sha256-frozen-action",
     idempotencyKey: "workflow-id",

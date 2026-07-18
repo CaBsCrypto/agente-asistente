@@ -1,6 +1,6 @@
 # Product status
 
-Last reviewed: **July 17, 2026**
+Last reviewed: **July 18, 2026**
 
 This document separates deployed proof from product vision. Status definitions live in the [documentation index](README.md).
 
@@ -22,7 +22,7 @@ This document separates deployed proof from product vision. Status definitions l
 | Connection list | Live | Per-user Neon records | Add scopes and last-used metadata |
 | CoinMarketCap quote | Live, read-only | Official Trial Pro API response | Partner key, MCP or production plan |
 | CoinMarketCap watchlist | Live, read-only | Persistent symbols per user | Add scheduled alerts |
-| Notion search | Ready to validate, read-only | OAuth PKCE, encrypted tokens and MCP call | Complete real-user consent and search |
+| Notion search | Implemented through LangGraph, ready to validate | OAuth PKCE, encrypted tokens, official MCP call and durable workflow trail | Complete one authenticated production search |
 | Travala hotel search | Live, read-only | Public Travel MCP response | Validate errors and UX |
 | General language planning | Partial | Deterministic command routing | Add model-backed planning with evals |
 
@@ -52,7 +52,7 @@ This document separates deployed proof from product vision. Status definitions l
 | Integration | Status | Access path | Limitation |
 | --- | --- | --- | --- |
 | CoinMarketCap | Live, read-only | Official Trial Pro API | No alerts, trade or x402 yet |
-| Notion | Ready to validate | Official remote MCP + OAuth | Acceptance test pending |
+| Notion | LangGraph-routed, ready to validate | Official remote MCP + per-user OAuth | Authenticated production acceptance test pending |
 | Travala | Live, read-only | Public Travel MCP | No booking or payment |
 | DeFindex | Ready to validate | Direct public Soroban contracts, no API key | Confirm XLM proof; USDC deposit awaits exact-issuer funding |
 | UNBLCK | Browser verification ready, read-only | Exact-host Chrome bridge reads authenticated member-hub credits, calendar and enabled dates | Install and validate the unpacked extension; reservation execution remains disabled |

@@ -31,7 +31,7 @@ Status meanings are shared across all project documentation:
 | Persistent chat and user state | Live | Neon Postgres |
 | CoinMarketCap quotes | Live, read-only | Official Trial Pro API |
 | CoinMarketCap watchlist | Live, read-only | Per-user persistent watchlist |
-| Notion OAuth and search | Ready to validate, read-only | OAuth PKCE, encrypted tokens and official Notion MCP |
+| Notion OAuth and search | LangGraph-routed, ready to validate | OAuth PKCE, encrypted tokens, official Notion MCP and durable workflow trail |
 | Travala hotel discovery | Live, read-only | Public Travala Travel MCP |
 | Intent, policy and replay protection | Sandbox | Durable intent and one receipt per execution |
 | Public inbound MCP | Sandbox | Seven tools at /api/mcp |
@@ -314,6 +314,7 @@ Start at the [documentation index](docs/README.md).
 - [LangChain orchestration and security boundary](docs/langchain-orchestration.md)
 - [Lang ecosystem product map](docs/lang-ecosystem.md)
 - [Reusable LangGraph workflow engine](docs/reusable-workflow-engine.md)
+- [Gemini notebook integration options](docs/gemini-notebook-integration.md)
 - [90-second demo](docs/live-demo.md)
 - [Soroswap Testnet quote and swap flow](docs/soroswap-testnet.md)
 - [YC application answer bank](docs/yc-application.md)

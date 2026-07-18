@@ -32,14 +32,15 @@ This directory is the source of truth for operating, demonstrating and extending
 3. Review the [Lang ecosystem map](lang-ecosystem.md), [reusable LangGraph engine](reusable-workflow-engine.md) and [LangChain orchestration boundary](langchain-orchestration.md).
 4. Review the [Soroswap Testnet quote and swap flow](soroswap-testnet.md).
 5. Read the [bidirectional MCP gateway](mcp-gateway.md).
-6. Read the [MCP integration guide](mcp-integration.md).
-7. Review the [OpenZeppelin Stellar Channels boundary](openzeppelin-stellar-channels.md).
-8. Review the [MPP Router discovery and payment gate](mpp-router.md).
-9. Review the [Stellar 8004 registration plan](stellar-8004.md).
-10. Read the [browser-assisted Connection Center](connection-center.md).
-11. Read the [Privy + Stellar architecture](privy-stellar-testnet.md).
-12. Run the [acceptance testing workflow](acceptance-testing.md) before and after deployment.
-13. Send the [new product integration prompt](NEW_PRODUCT_INTEGRATION_AGENT_PROMPT.md) to an implementation agent or partner engineer.
+6. Review the [Gemini notebook integration](gemini-notebook-integration.md) before adding personal knowledge sources.
+7. Read the [MCP integration guide](mcp-integration.md).
+8. Review the [OpenZeppelin Stellar Channels boundary](openzeppelin-stellar-channels.md).
+9. Review the [MPP Router discovery and payment gate](mpp-router.md).
+10. Review the [Stellar 8004 registration plan](stellar-8004.md).
+11. Read the [browser-assisted Connection Center](connection-center.md).
+12. Read the [Privy + Stellar architecture](privy-stellar-testnet.md).
+13. Run the [acceptance testing workflow](acceptance-testing.md) before and after deployment.
+14. Send the [new product integration prompt](NEW_PRODUCT_INTEGRATION_AGENT_PROMPT.md) to an implementation agent or partner engineer.
 
 ### Founder operations
 
