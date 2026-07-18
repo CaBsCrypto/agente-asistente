@@ -39,7 +39,18 @@ export type StoredAgentMessage = {
   role: "user" | "assistant";
   content: string;
   createdAt: string;
-  actions?: { label: string; message?: string; href?: string; connect?: string }[];
+  actions?: {
+    label: string;
+    message?: string;
+    href?: string;
+    connect?: string;
+    popup?: {
+      provider: string;
+      url: string;
+      completionMessage: string;
+      permissions: string[];
+    };
+  }[];
   connection?: { name: string; stage: string; priority: string };
   defindexIntent?: AgentDefindexIntent & { requestId: string };
   x402Intent?: AgentX402Intent & { requestId: string };

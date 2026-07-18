@@ -90,6 +90,12 @@ type ChatAction = {
   message?: string;
   href?: string;
   connect?: string;
+  popup?: {
+    provider: string;
+    url: string;
+    completionMessage: string;
+    permissions: string[];
+  };
 };
 
 type ExternalConnection = {
@@ -133,6 +139,12 @@ type DefindexStatus = {
   positions: {
     XLM: { shares: string } | null;
     USDC: { shares: string } | null;
+  popup?: {
+    provider: string;
+    url: string;
+    completionMessage: string;
+    permissions: string[];
+  };
   };
   recent: DefindexApproval[];
 };
@@ -203,6 +215,15 @@ export default function AgentChat({
   const [draft, setDraft] = useState("");
   const [connections, setConnections] = useState<ExternalConnection[]>([]);
   const [connectionNotice, setConnectionNotice] = useState<string | null>(null);
+  const [connectionPopup, setConnectionPopup] = useState<{
+    provider: string;
+    url: string;
+    completionMessage: string;
+    permissions: string[];
+    status: "review" | "waiting" | "returned";
+  } | null>(null);
+  const popupWindowRef = useRef<Window | null>(null);
+
 
   const [defindexOpen, setDefindexOpen] = useState(false);
   const [defindexStatus, setDefindexStatus] = useState<DefindexStatus | null>(null);
@@ -328,16 +349,44 @@ export default function AgentChat({
   }, [messages, status]);
 
   useEffect(() => {
-    if (!defindexOpen && !x402Open) return;
+    if (!defindexOpen && !x402Open && !connectionPopup) return;
     function closeActionPanel(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       setDefindexOpen(false);
       setX402Open(false);
+      setConnectionPopup(null);
       composerRef.current?.focus();
     }
     window.addEventListener("keydown", closeActionPanel);
     return () => window.removeEventListener("keydown", closeActionPanel);
-  }, [defindexOpen, x402Open]);
+  }, [defindexOpen, x402Open, connectionPopup]);
+
+  useEffect(() => {
+    if (connectionPopup?.status !== "waiting") return;
+    const timer = window.setInterval(() => {
+      if (popupWindowRef.current?.closed) {
+        popupWindowRef.current = null;
+        setConnectionPopup((current) =>
+          current ? { ...current, status: "returned" } : current,
+        );
+      }
+    }, 600);
+    return () => window.clearInterval(timer);
+  }, [connectionPopup?.status]);
+
+  useEffect(() => {
+    function acceptConnectionCallback(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "agent-assistant:connection-complete") return;
+      setConnectionPopup((current) =>
+        current && current.provider === event.data.provider
+          ? { ...current, status: "returned" }
+          : current,
+      );
+    }
+    window.addEventListener("message", acceptConnectionCallback);
+    return () => window.removeEventListener("message", acceptConnectionCallback);
+  }, []);
 
   function handleThreadScroll() {
     const thread = threadRef.current;
@@ -458,6 +507,54 @@ export default function AgentChat({
     }
   }
 
+
+
+  function reviewPopupConnection(action: NonNullable<ChatAction["popup"]>) {
+    setConnectionPopup({ ...action, status: "review" });
+  }
+
+  function openPopupConnection() {
+    if (!connectionPopup) return;
+    const width = Math.min(560, window.screen.availWidth - 32);
+    const height = Math.min(740, window.screen.availHeight - 48);
+    const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
+    const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
+    const popup = window.open(
+      connectionPopup.url,
+      "agent-assistant-" + connectionPopup.provider,
+      [
+        "popup=yes",
+        "width=" + Math.round(width),
+        "height=" + Math.round(height),
+        "left=" + Math.round(left),
+        "top=" + Math.round(top),
+        "resizable=yes",
+        "scrollbars=yes",
+      ].join(","),
+    );
+    if (!popup) {
+      setError(
+        locale === "es"
+          ? "El navegador bloque? la ventana. Permite popups para este sitio e int?ntalo otra vez."
+          : locale === "pt"
+            ? "O navegador bloqueou a janela. Permita popups para este site e tente novamente."
+            : "The browser blocked the window. Allow popups for this site and try again.",
+      );
+      return;
+    }
+    popupWindowRef.current = popup;
+    popup.focus();
+    setConnectionPopup((current) =>
+      current ? { ...current, status: "waiting" } : current,
+    );
+  }
+
+  function finishPopupConnection() {
+    if (!connectionPopup) return;
+    const completionMessage = connectionPopup.completionMessage;
+    setConnectionPopup(null);
+    void sendMessage(completionMessage);
+  }
 
   async function x402Fetch(body?: Record<string, unknown>) {
     const token = await getAccessToken();
@@ -881,7 +978,17 @@ export default function AgentChat({
                 {message.actions?.length ? (
                   <div className="agent-message-actions">
                     {message.actions.map((action) =>
-                      action.connect ? (
+                      action.popup ? (
+                        <button
+                          key={action.label}
+                          type="button"
+                          className="primary"
+                          disabled={status === "sending"}
+                          onClick={() => reviewPopupConnection(action.popup!)}
+                        >
+                          {action.label}
+                        </button>
+                      ) : action.connect ? (
                         <button
                           key={action.label}
                           type="button"
@@ -924,7 +1031,66 @@ export default function AgentChat({
           )}
         </div>
 
-        {!isAtLatest && !defindexOpen && !x402Open && (
+        {connectionPopup && (
+          <div className="connection-center-backdrop">
+            <section className="connection-center-card" role="dialog" aria-modal="true" aria-labelledby="connection-center-title">
+              <header>
+                <div>
+                  <span>{locale === "es" ? "CENTRO DE CONEXIONES" : locale === "pt" ? "CENTRO DE CONEX?ES" : "CONNECTION CENTER"}</span>
+                  <h3 id="connection-center-title">
+                    {locale === "es" ? "Conectar con " : locale === "pt" ? "Conectar com " : "Connect to "}
+                    {connectionPopup.provider.toUpperCase()}
+                  </h3>
+                </div>
+                <button type="button" aria-label="Close" onClick={() => setConnectionPopup(null)}>X</button>
+              </header>
+              <p>
+                {locale === "es"
+                  ? "Permaneces en agent-assistant. La autenticaci?n y la sesi?n se mantienen en el sitio oficial del proveedor."
+                  : locale === "pt"
+                    ? "Voc? permanece no agent-assistant. A autentica??o e a sess?o ficam no site oficial do provedor."
+                    : "You stay in agent-assistant. Authentication and the session remain on the provider's official site."}
+              </p>
+              <ul>
+                {connectionPopup.permissions.map((permission) => <li key={permission}>{permission}</li>)}
+              </ul>
+              <div className={"connection-center-status " + connectionPopup.status}>
+                <i />
+                <span>
+                  {connectionPopup.status === "review"
+                    ? locale === "es" ? "Revisa antes de abrir la ventana" : locale === "pt" ? "Revise antes de abrir a janela" : "Review before opening the window"
+                    : connectionPopup.status === "waiting"
+                      ? locale === "es" ? "Ventana abierta. Completa el magic link all?." : locale === "pt" ? "Janela aberta. Conclua o magic link nela." : "Window open. Complete the magic link there."
+                      : locale === "es" ? "La ventana se cerr?. Confirma solo si viste el portal." : locale === "pt" ? "A janela foi fechada. Confirme apenas se viu o portal." : "The window closed. Confirm only if you saw the portal."}
+                </span>
+              </div>
+              <footer>
+                <button type="button" className="secondary" onClick={() => setConnectionPopup(null)}>
+                  {locale === "es" ? "Cancelar" : locale === "pt" ? "Cancelar" : "Cancel"}
+                </button>
+                {connectionPopup.status === "review" ? (
+                  <button type="button" className="primary" onClick={openPopupConnection}>
+                    {locale === "es" ? "Abrir login oficial" : locale === "pt" ? "Abrir login oficial" : "Open official login"}
+                  </button>
+                ) : (
+                  <>
+                    <button type="button" className="secondary" onClick={openPopupConnection}>
+                      {locale === "es" ? "Abrir otra vez" : locale === "pt" ? "Abrir novamente" : "Open again"}
+                    </button>
+                    <button type="button" className="primary" onClick={finishPopupConnection}>
+                      {locale === "es" ? "Ya vi el portal de miembro" : locale === "pt" ? "J? vi o portal de membro" : "I saw the member portal"}
+                    </button>
+                  </>
+                )}
+              </footer>
+              <small>
+                {locale === "es" ? "Esto no verifica la sesi?n ni crea una reserva." : locale === "pt" ? "Isto n?o verifica a sess?o nem cria uma reserva." : "This does not verify the session or create a reservation."}
+              </small>
+            </section>
+          </div>
+        )}
+
+        {!isAtLatest && !defindexOpen && !x402Open && !connectionPopup && (
           <button className="agent-chat-jump" type="button" onClick={scrollToLatest}>
             <span aria-hidden="true">{"\u2193"}</span>
             {hasNewMessages

@@ -7,8 +7,14 @@ export type AgentChatAction = {
   message?: string;
   href?: string;
   connect?: string;
-};
+  popup?: {
+    provider: string;
+    url: string;
+    completionMessage: string;
+    permissions: string[];
+  };
 
+};
 export type AgentTestnetSetupIntent =
   | "wallet_status"
   | "fund_xlm"
@@ -171,8 +177,8 @@ export function parseDefindexIntent(message: string): AgentDefindexIntent | null
 }
 
 const languageSignals: Record<"es" | "pt", string[]> = {
-  es: ["quiero", "recarga", "activa", "siguiente", "deposita", "invierte", "conectame", "muestrame", "billetera", "prueba", "puedes", "busquemos", "archivo", "correo", "viaje", "mi cuenta"],
-  pt: ["quero", "recarregue", "ative", "proximo", "deposite", "invista", "investir", "conecte", "conectar ao", "mostre", "minha", "meu", "carteira", "teste", "voce", "nao", "pesquise", "arquivo", "viagem", "cotacao", "preco"],
+  es: ["quiero", "recarga", "activa", "siguiente", "deposita", "invierte", "conectame", "muestrame", "billetera", "prueba", "puedes", "busquemos", "archivo", "correo", "viaje", "mi cuenta", "inicie sesion", "ya entre", "sesion"],
+  pt: ["quero", "recarregue", "ative", "proximo", "deposite", "invista", "investir", "conecte", "conectar ao", "mostre", "minha", "meu", "carteira", "teste", "voce", "nao", "pesquise", "arquivo", "viagem", "cotacao", "preco", "ja entrei", "sessao"],
 };
 
 export function detectAgentLanguage(message: string): AgentLanguage {
@@ -257,7 +263,7 @@ export function findRequestedConnection(message: string) {
   return null;
 }
 
-function connectionReply(connection: Connection, context: AgentChatContext, language: AgentLanguage): AgentChatReply {
+function connectionReply(connection: Connection, context: AgentChatContext, language: AgentLanguage, query: string): AgentChatReply {
   const t = text[language];
   const isConnected = connection.name === "Notion MCP" && context.connectedProviders?.includes("notion");
   const effectiveStage: Connection["stage"] = isConnected ? "Connected" : connection.stage;
@@ -269,6 +275,54 @@ function connectionReply(connection: Connection, context: AgentChatContext, lang
     es: { notionSearch: "Busca en mi Notion las tareas pendientes", xlm: "¿Cuál es el precio actual de XLM en CoinMarketCap?", watchlist: "Muéstrame mi watchlist de criptomonedas", plan: `Prepara la primera prueba segura para ${connection.name}`, missing: `¿Qué credenciales, permisos y evidencias faltan para ${connection.name}?` },
     pt: { notionSearch: "Pesquise no meu Notion as tarefas pendentes", xlm: "Qual é o preço atual do XLM no CoinMarketCap?", watchlist: "Mostre minha watchlist de criptomoedas", plan: `Prepare o primeiro teste seguro para ${connection.name}`, missing: `Quais credenciais, permissões e evidências faltam para ${connection.name}?` },
   }[language];
+
+  if (connection.name === "UNBLCK / Tellus Hub") {
+    const sessionClaimed = [
+      "ya inicie sesion",
+      "ya entre",
+      "already signed in",
+      "i signed in",
+      "ja entrei",
+      "sessao iniciada",
+    ].some((term) => query.includes(term));
+    const copy = {
+      en: {
+        start: "Connect from this chat through a temporary UNBLCK window. Your approved email, magic link and member session remain on unblck.cl. Return here when the member portal opens.",
+        claimed: "Your UNBLCK member window should now be authenticated. The session remains browser-assisted and unverified until the browser bridge can inspect the member portal. No reservation has been created.",
+        open: "Connect UNBLCK",
+        done: "I signed in to UNBLCK",
+        member: "Open member portal",
+        permissions: ["Open the official member login", "Keep the UNBLCK session in your browser", "Prepare a reservation only after review"],
+      },
+      es: {
+        start: "Conecta desde este chat mediante una ventana temporal de UNBLCK. Tu email aceptado, magic link y sesi\u00f3n de miembro permanecen en unblck.cl. Regresa aqu\u00ed cuando se abra el portal de miembro.",
+        claimed: "Tu ventana de miembro de UNBLCK deber\u00eda estar autenticada. La sesi\u00f3n sigue asistida por navegador y sin verificar hasta que el puente pueda inspeccionar el portal. No se cre\u00f3 ninguna reserva.",
+        open: "Conectar UNBLCK",
+        done: "Ya inici\u00e9 sesi\u00f3n en UNBLCK",
+        member: "Abrir portal de miembro",
+        permissions: ["Abrir el login oficial de miembros", "Mantener la sesi\u00f3n de UNBLCK en tu navegador", "Preparar una reserva solo despu\u00e9s de revisarla"],
+      },
+      pt: {
+        start: "Conecte-se neste chat por uma janela tempor\u00e1ria da UNBLCK. Seu email aceito, magic link e sess\u00e3o de membro permanecem em unblck.cl. Volte aqui quando o portal de membro abrir.",
+        claimed: "Sua janela de membro da UNBLCK deve estar autenticada. A sess\u00e3o continua assistida pelo navegador e n\u00e3o verificada at\u00e9 que a ponte inspecione o portal. Nenhuma reserva foi criada.",
+        open: "Conectar UNBLCK",
+        done: "J\u00e1 entrei na UNBLCK",
+        member: "Abrir portal de membro",
+        permissions: ["Abrir o login oficial de membros", "Manter a sess\u00e3o da UNBLCK no navegador", "Preparar uma reserva somente ap\u00f3s revis\u00e3o"],
+      },
+    }[language];
+
+    return {
+      content: sessionClaimed ? copy.claimed : copy.start,
+      connection: { name: connection.name, stage: "Ready to test", priority: connection.priority },
+      actions: sessionClaimed
+        ? [{ label: copy.member, href: "https://www.unblck.cl/member" }, { label: t.missing, message: messages.missing }]
+        : [{
+            label: copy.open,
+            popup: { provider: "unblck", url: "https://www.unblck.cl/login", completionMessage: copy.done, permissions: copy.permissions },
+          }, { label: t.source, href: connection.href }],
+    };
+  }
 
   return {
     content: `${connection.name} ${t.current} **${visibleStage}** (${connection.priority}).\n\n${details}\n\n${safeBoundary}`,
@@ -336,7 +390,7 @@ export function buildAgentReply(message: string, context: AgentChatContext = {})
     return { content: t.wallet(context.wallet.network, context.wallet.address, balance), actions: [{ label: t.explore, message: language === "pt" ? "Conecte-me à DeFindex" : language === "es" ? "Conéctame con DeFindex" : "Connect me to DeFindex" }, { label: t.preparePayment, message: language === "pt" ? "Prepare um pagamento de teste de 1 XLM" : language === "es" ? "Prepara un pago de prueba de 1 XLM" : "Prepare a 1 XLM Testnet payment" }] };
   }
 
-  if (connection) return connectionReply(connection, context, language);
+  if (connection) return connectionReply(connection, context, language, query);
 
   if (["connect", "conecta", "conecte", "conectar", "integrat", "integrar"].some((term) => query.includes(term))) {
     const languageMessages = language === "pt" ? ["Conecte-me ao Notion", "Conecte-me ao Trello", "Conecte-me ao Google Calendar", "Conecte-me à DeFindex"] : language === "es" ? ["Conéctame con Notion", "Conéctame con Trello", "Conéctame con Google Calendar", "Conéctame con DeFindex"] : ["Connect me to Notion", "Connect me to Trello", "Connect me to Google Calendar", "Connect me to DeFindex"];
