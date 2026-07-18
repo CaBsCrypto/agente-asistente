@@ -106,6 +106,17 @@ export type AgentChatReply = {
   defindexIntent?: AgentDefindexIntent;
   x402Intent?: AgentX402Intent;
   memoryUpdated?: boolean;
+  memoryContext?: {
+    provider: "neon-topic-router";
+    domains: string[];
+    items: Array<{
+      id: string;
+      kind: string;
+      label: string;
+      source: string;
+      score: number;
+    }>;
+  };
   decision?: {
     outcome: "allowed" | "blocked";
     summary: string;

@@ -25,7 +25,12 @@ import {
 import { DEFINDEX_TESTNET } from "@/app/connectors/defindex";
 import { searchNotion } from "@/app/connectors/notion-mcp";
 import { parseVaultCommand } from "@/app/agent-memory";
-import { evaluateUserAction, listAgentVault, saveAgentVaultCommand } from "@/app/agent-memory-store";
+import {
+  evaluateUserAction,
+  listAgentVault,
+  retrieveRelevantAgentMemory,
+  saveAgentVaultCommand,
+} from "@/app/agent-memory-store";
 import {
   addToMarketWatchlist,
   extractMarketSymbol,
@@ -55,6 +60,7 @@ export type StoredAgentMessage = {
   defindexIntent?: AgentDefindexIntent & { requestId: string };
   x402Intent?: AgentX402Intent & { requestId: string };
   memoryUpdated?: boolean;
+  memoryContext?: AgentChatReply["memoryContext"];
   decision?: {
     outcome: "allowed" | "blocked";
     summary: string;
@@ -173,6 +179,10 @@ function publicMessage(row: {
         ? (metadata.x402Intent as StoredAgentMessage["x402Intent"])
         : undefined,
     memoryUpdated: metadata.memoryUpdated === true,
+    memoryContext:
+      metadata.memoryContext && typeof metadata.memoryContext === "object"
+        ? (metadata.memoryContext as StoredAgentMessage["memoryContext"])
+        : undefined,
     decision:
       metadata.decision && typeof metadata.decision === "object"
         ? (metadata.decision as StoredAgentMessage["decision"])
@@ -345,7 +355,7 @@ export async function sendAgentMessage(userId: string, content: string) {
   };
 
   await db.insert(agentMessages).values(userMessage);
-  const [wallet, activeConnections] = await Promise.all([
+  const [wallet, activeConnections, relevantMemory] = await Promise.all([
     walletContext(userId),
     db
       .select({ provider: agentExternalConnections.provider })
@@ -356,6 +366,7 @@ export async function sendAgentMessage(userId: string, content: string) {
           eq(agentExternalConnections.status, "active"),
         ),
       ),
+    retrieveRelevantAgentMemory(userId, content),
   ]);
   const connectedProviders = activeConnections.map((item) => item.provider);
   const normalizedContent = content
@@ -708,6 +719,10 @@ export async function sendAgentMessage(userId: string, content: string) {
     }
   }
 
+  if (!vaultCommand && relevantMemory.items.length > 0) {
+    reply.memoryContext = relevantMemory;
+  }
+
   const assistantMessage = {
     id: randomUUID(),
     conversationId: id,
@@ -724,6 +739,7 @@ export async function sendAgentMessage(userId: string, content: string) {
         ? { ...reply.x402Intent, requestId: userMessage.id }
         : undefined,
       memoryUpdated: reply.memoryUpdated,
+      memoryContext: reply.memoryContext,
       decision: reply.decision,
     },
     createdAt: new Date(),

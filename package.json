@@ -28,7 +28,9 @@
         "test:build": "npm run test && npm run build",
         "db:migrate": "drizzle-kit migrate",
         "build:sites": "vinext build",
-        "bridge:doctor": "tsx scripts/browser-bridge-doctor.ts"
+        "bridge:doctor": "tsx scripts/browser-bridge-doctor.ts",
+        "graph:extract": "graphify . --code-only",
+        "graph:report": "graphify cluster-only ."
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.26.0",

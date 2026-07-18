@@ -16,6 +16,7 @@ import {
   DEFAULT_AUTOPILOT_CONFIG,
   normalizeAutopilotConfig,
 } from "@/app/agent-autopilot";
+import { buildRelevantMemoryContext } from "@/app/agent-memory-retrieval";
 
 
 let schemaPromise: Promise<void> | null = null;
@@ -140,6 +141,29 @@ export async function listAgentVault(userId: string) {
       createdAt: row.createdAt.toISOString(),
     })),
   };
+}
+
+export async function retrieveRelevantAgentMemory(userId: string, query: string) {
+  await ensureAgentVaultSchema();
+  const db = getDb();
+  const knowledge = await db
+    .select({
+      id: agentKnowledgeItems.id,
+      kind: agentKnowledgeItems.kind,
+      label: agentKnowledgeItems.title,
+      content: agentKnowledgeItems.content,
+      source: agentKnowledgeItems.source,
+      updatedAt: agentKnowledgeItems.updatedAt,
+    })
+    .from(agentKnowledgeItems)
+    .where(and(
+      eq(agentKnowledgeItems.userId, userId),
+      eq(agentKnowledgeItems.status, "active"),
+    ))
+    .orderBy(desc(agentKnowledgeItems.updatedAt))
+    .limit(100);
+
+  return buildRelevantMemoryContext(knowledge, query);
 }
 
 export async function saveAgentVaultCommand(

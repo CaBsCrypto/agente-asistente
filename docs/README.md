@@ -21,6 +21,7 @@ This directory is the source of truth for operating, demonstrating and extending
 6. Use the [CoinMarketCap pilot brief](coinmarketcap-partner-pilot.md) for outreach.
 7. Read the [Personal Execution Vault guide](personal-execution-vault.md) for user memory, policies and decision evidence.
 8. Use the [acceptance testing guide](acceptance-testing.md) before claiming an integration works.
+9. Review the [graph memory and project map](graph-memory.md) to validate topic-scoped memory.
 
 ### Developers and integrations
 

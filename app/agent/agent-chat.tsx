@@ -164,6 +164,17 @@ type ChatMessage = {
   defindexIntent?: DefindexChatIntent;
   x402Intent?: X402ChatIntent;
   memoryUpdated?: boolean;
+  memoryContext?: {
+    provider: "neon-topic-router";
+    domains: string[];
+    items: Array<{
+      id: string;
+      kind: string;
+      label: string;
+      source: string;
+      score: number;
+    }>;
+  };
   decision?: {
     outcome: "allowed" | "blocked";
     summary: string;
@@ -1024,6 +1035,21 @@ export default function AgentChat({
                 <div className="agent-message-copy">
                   <MessageText content={message.content} />
                 </div>
+                {message.memoryContext?.items.length ? (
+                  <details className="agent-memory-context">
+                    <summary>
+                      {locale === "es" ? "Memoria relevante" : locale === "pt" ? "Memoria relevante" : "Relevant memory"}
+                    </summary>
+                    <p>{message.memoryContext.domains.join(" / ")}</p>
+                    <ul>
+                      {message.memoryContext.items.map((item) => (
+                        <li key={item.id}>
+                          <strong>{item.label}</strong> / {item.kind} / {item.source}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
                 {message.decision && (
                   <details className={"agent-decision-explanation " + message.decision.outcome}>
                     <summary>

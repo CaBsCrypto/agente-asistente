@@ -294,6 +294,7 @@ Start at the [documentation index](docs/README.md).
 - [Developer guide](docs/developer-guide.md)
 - [Product status](docs/product-status.md)
 - [Personal Execution Vault](docs/personal-execution-vault.md)
+- [Graph memory and visual project map](docs/graph-memory.md)
 - [90-second demo](docs/live-demo.md)
 - [YC application answer bank](docs/yc-application.md)
 - [YC closeout roadmap](docs/yc-closeout-roadmap.md)
