@@ -47,11 +47,11 @@ Automated routing tests live in tests/agent-memory-retrieval.test.ts.
 
 Graphify maps the application code into an interactive knowledge graph. The current local run used code-only mode, which parses code locally and does not require an LLM key.
 
-Current snapshot:
+Current validated snapshot (it changes automatically as the code evolves):
 
-- 949 nodes
-- 1,838 edges
-- 63 detected communities
+- 960 nodes
+- 1,848 edges
+- 59 detected communities
 - 99% extracted relations
 - 0 LLM tokens
 
