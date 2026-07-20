@@ -12,6 +12,8 @@ The product combines a simple chat for end users with MCP, WebMCP and API surfac
 
 [Live product](https://agente-asistente.vercel.app) · [New user guide](https://agente-asistente.vercel.app/guide) · [Developer portal](https://agente-asistente.vercel.app/developers) · [Open the agent](https://agente-asistente.vercel.app/agent) · [Safety demo](https://agente-asistente.vercel.app/demo) · [Integration Lab](https://agente-asistente.vercel.app/connections) · [Waitlist](https://agente-asistente.vercel.app/waitlist)
 
+> **Visual overview:** a single-page product &amp; architecture showcase — 16:9 cover, layered architecture, the safe-action lifecycle, end-to-end sequence flows and the bidirectional MCP gateway — lives at [`docs/overview.html`](docs/overview.html). Open it in a browser for the full illustrated tour; the sections below are the canonical text.
+
 ## What works now
 
 Status meanings are shared across all project documentation:
@@ -154,20 +156,82 @@ flowchart LR
 
 ### Safe action lifecycle
 
+Every write or payment runs through one reusable LangGraph `StateGraph` of seven bounded nodes. A connector plugs in `prepare`, `execute` and `verify`, and inherits approval, idempotency and evidence for free.
+
 ~~~mermaid
 flowchart LR
-    D["Discover"] --> I["Freeze intent"]
-    I --> R["Evaluate rules"]
-    R --> A["Ask for approval"]
-    A --> E["Execute once"]
-    E --> V["Verify settlement"]
-    V --> F["Verify fulfillment"]
-    F --> X["Durable receipt"]
+    A["validate_request"] --> B["check_connection"]
+    B -->|missing| B1(["awaiting_connection"])
+    B --> C["prepare_action<br/>+ sha256 digest"]
+    C --> D{"evaluate_policy"}
+    D -->|deny| D1(["blocked"])
+    D --> E["approval_gate"]
+    E -->|approval required| E1(["awaiting_approval"])
+    E1 -.->|"confirm: userId + digest match"| E
+    E --> F["execute_once<br/>idempotency = workflowId"]
+    F --> G["verify_evidence"]
+    G -->|not verified| G1(["failed"])
+    G --> H(["completed"])
 ~~~
+
+The prepared action is canonicalized and SHA-256 hashed into a frozen digest; changing any parameter invalidates a prior approval. The `workflowId` is the idempotency key, so a duplicate confirmation returns the same result instead of executing twice. Production routing covers Notion search and the three UNBLCK hub capabilities today; DeFindex, Soroswap and x402 run equivalent guards through their own routes (`app/orchestration/`).
 
 Payment and fulfillment are separate. A transaction hash proves network settlement; it does not prove that a hotel, task or physical product was delivered.
 
-## MCP and WebMCP
+## Bidirectional MCP gateway
+
+The Model Context Protocol runs in **both directions**. Other agents and apps use us (inbound); we use other apps (outbound). Every inbound mutation and every outbound call flows through the same freeze → policy → execute-once → evidence path. Discovery is public at [`/.well-known/mcp`](https://agente-asistente.vercel.app/.well-known/mcp).
+
+~~~mermaid
+flowchart LR
+    subgraph IN["Inbound · others use us"]
+        EA["External AI agent"]
+        PRO["Service provider"]
+        WEB["Chrome WebMCP"]
+    end
+    subgraph CORE["agent-assistant"]
+        P1["/api/mcp<br/>public sandbox"]
+        P2["/api/mcp/agent<br/>Privy bearer"]
+        P3["/api/mcp/provider<br/>scoped key"]
+        ENG["Router + policy + evidence"]
+    end
+    subgraph OUT["Outbound · we use apps"]
+        NO["Notion · MCP + OAuth"]
+        TV["Travala · public MCP"]
+        CM["CoinMarketCap · API"]
+    end
+    EA --> P1
+    WEB --> P1
+    PRO --> P3
+    EA --> P2
+    P1 --> ENG
+    P2 --> ENG
+    P3 --> ENG
+    ENG --> NO
+    ENG --> TV
+    ENG --> CM
+~~~
+
+### Inbound — how other agents use us
+
+| Surface | Auth | For | Highlights |
+| --- | --- | --- | --- |
+| `POST /api/mcp` | None (public sandbox) | Any external agent | Seven commerce tools (see below) |
+| `POST /api/mcp/agent` | Privy bearer (`agent:read`, `agent:chat`) | A user's own agent | `get_agent_context`, `get_agent_conversation`, `send_agent_message`; read-only tools only, payment signing never exposed |
+| `POST /api/mcp/provider` | Scoped provider key (`aap_provider_…`) | Merchants / providers | `get_service_provider`, `list_service_offers`, `upsert_service_offer`, `set_service_offer_status`; keys issued at `/admin/providers`, stored only as SHA-256 hashes |
+
+Chrome **WebMCP** registers `search_agent_offers` and `prepare_commerce_intent`; wallet authorization and execution are intentionally excluded from the page context.
+
+### Outbound — how we use other apps
+
+| App | Protocol | Auth | Capability |
+| --- | --- | --- | --- |
+| Notion | Hosted remote MCP (`mcp.notion.com/mcp`) | OAuth 2.1 PKCE, AES-256-GCM tokens | Workspace search (read-only), routed through the engine |
+| Travala | Public Travel MCP (JSON-RPC) | None | Hotel discovery (read-only) |
+| CoinMarketCap | REST API | Trial Pro key | Live quotes + watchlist (read-only) |
+| UNBLCK | Agent Hub Check-in API | Partner key + channel identity | Read state, book &amp; cancel — approval-gated |
+
+## MCP tools and clients
 
 Public sandbox endpoint:
 
@@ -305,6 +369,7 @@ For YC, the strongest claim is: **a user can sign in, receive a Stellar wallet t
 
 Start at the [documentation index](docs/README.md).
 
+- [Visual product &amp; architecture overview](docs/overview.html) — illustrated single-page tour (open in a browser)
 - [New user guide](docs/user-guide.md)
 - [Architecture and flows](docs/architecture.md)
 - [Developer guide](docs/developer-guide.md)

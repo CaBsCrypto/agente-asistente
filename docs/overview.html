@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agent-assistant — Product &amp; Architecture</title>
+<meta name="description" content="Product and architecture documentation for agent-assistant: a permissioned AI agent with a user-owned Stellar wallet, a LangGraph safe-action engine, and a bidirectional MCP gateway.">
+</head>
+<body>
+<style>
+  /* ============================================================
+     agent-assistant — documentation showcase
+     Grounded in the product's own design system (app/globals.css):
+     warm cream ground, forest green, coral, amber hard-shadows.
+     ============================================================ */
+
+  :root {
+    /* Light — the product's native world */
+    --ink: #20211e;
+    --muted: #66685f;
+    --paper: #f4efe4;
+    --surface: #fffdf8;
+    --surface-2: #f7f2e8;
+    --line: #ddd7ca;
+    --coral: #ff5b3a;
+    --coral-dark: #db3f22;
+    --forest: #153f32;
+    --forest-2: #214d40;
+    --forest-soft: #dceadf;
+    --amber: #f2b544;
+    --cream: #fff4d8;
+    --shadow: #ded6c6;
+    --on-forest: #eaf3ee;
+    --on-forest-muted: #a9c1b6;
+
+    --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "SF Mono", SFMono-Regular, ui-monospace, Consolas, "Liberation Mono", monospace;
+
+    --figure-bg: #fffdf8;
+    --figure-line: #e4dccb;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #ede7d9;
+      --muted: #9aa79d;
+      --paper: #0e1613;
+      --surface: #16231d;
+      --surface-2: #132019;
+      --line: #294036;
+      --coral: #ff6f52;
+      --coral-dark: #ff8267;
+      --forest: #0c2019;
+      --forest-2: #16302620;
+      --forest-soft: #1c352b;
+      --amber: #f2b544;
+      --cream: #223026;
+      --shadow: #00000055;
+      --on-forest: #eaf3ee;
+      --on-forest-muted: #a9c1b6;
+      --figure-bg: #f6f1e6;
+      --figure-line: #d8cfbd;
+    }
+  }
+
+  :root[data-theme="light"] {
+    --ink: #20211e; --muted: #66685f; --paper: #f4efe4; --surface: #fffdf8;
+    --surface-2: #f7f2e8; --line: #ddd7ca; --coral: #ff5b3a; --coral-dark: #db3f22;
+    --forest: #153f32; --forest-2: #214d40; --forest-soft: #dceadf; --amber: #f2b544;
+    --cream: #fff4d8; --shadow: #ded6c6; --on-forest: #eaf3ee; --on-forest-muted: #a9c1b6;
+    --figure-bg: #fffdf8; --figure-line: #e4dccb;
+  }
+  :root[data-theme="dark"] {
+    --ink: #ede7d9; --muted: #9aa79d; --paper: #0e1613; --surface: #16231d;
+    --surface-2: #132019; --line: #294036; --coral: #ff6f52; --coral-dark: #ff8267;
+    --forest: #0c2019; --forest-2: #16302620; --forest-soft: #1c352b; --amber: #f2b544;
+    --cream: #223026; --shadow: #00000055; --on-forest: #eaf3ee; --on-forest-muted: #a9c1b6;
+    --figure-bg: #f6f1e6; --figure-line: #d8cfbd;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .shell { width: min(1180px, calc(100% - 44px)); margin-inline: auto; }
+
+  a { color: var(--coral-dark); }
+  h1, h2, h3, h4 { text-wrap: balance; }
+
+  /* ---- eyebrow / mono labels ---- */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--coral-dark);
+    margin: 0 0 14px;
+  }
+
+  /* ---- top nav ---- */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    height: 66px; display: flex; align-items: center; justify-content: space-between;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: var(--ink); font-weight: 850; letter-spacing: -0.01em; }
+  .brand b {
+    display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--coral); color: #fff; font: 800 12px var(--font-mono);
+    box-shadow: 0 5px 0 var(--coral-dark);
+  }
+  .nav-links { display: flex; gap: 22px; align-items: center; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 13.5px; font-weight: 650; }
+  .nav-links a:hover { color: var(--coral); }
+  @media (max-width: 940px) { .nav-links a:not(.nav-cta) { display: none; } }
+  .nav-cta {
+    padding: 9px 15px; border-radius: 999px; background: var(--forest); color: #fff !important;
+    box-shadow: 0 4px 0 #0a2019; font-weight: 800 !important; font-size: 12.5px !important;
+  }
+  :root[data-theme="dark"] .nav-cta, .nav-cta { }
+
+  /* ---- HERO / 16:9 cover ---- */
+  .cover-wrap { padding: 34px 0 12px; }
+  .cover {
+    position: relative; overflow: hidden;
+    aspect-ratio: 16 / 9;
+    min-height: 460px;
+    border-radius: 26px;
+    border: 1px solid #0a2019;
+    background:
+      radial-gradient(120% 130% at 88% 12%, #1d5041 0, transparent 55%),
+      radial-gradient(90% 120% at 6% 96%, #10362a 0, transparent 50%),
+      var(--forest);
+    box-shadow: 16px 16px 0 var(--amber);
+    color: var(--on-forest);
+    display: grid; grid-template-columns: 1.25fr 0.75fr;
+  }
+  .cover-body { padding: clamp(28px, 4.5vw, 60px); display: flex; flex-direction: column; justify-content: center; }
+  .cover .eyebrow { color: var(--amber); }
+  .cover h1 {
+    font-family: var(--font-display);
+    font-weight: 850;
+    font-size: clamp(38px, 6.2vw, 82px);
+    line-height: 0.95; letter-spacing: -0.055em;
+    margin: 6px 0 22px; color: #fff;
+  }
+  .cover h1 em { font-style: normal; color: var(--coral); }
+  .cover-lede { font-size: clamp(15px, 1.5vw, 20px); line-height: 1.5; color: #cdddd4; max-width: 46ch; margin: 0; }
+  .cover-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+  .cover-tags span {
+    font: 750 10.5px var(--font-mono); letter-spacing: 0.04em;
+    padding: 7px 11px; border-radius: 999px;
+    background: #ffffff12; border: 1px solid #ffffff28; color: #dfeae4;
+  }
+  .cover-tags span.hot { background: var(--amber); color: #173b30; border-color: var(--amber); }
+
+  /* right-side "control card" motif — a prepared action awaiting approval */
+  .cover-aside { padding: clamp(20px, 2.5vw, 34px) clamp(20px, 2.5vw, 34px) clamp(20px, 2.5vw, 34px) 0; display: flex; align-items: center; }
+  .control-card {
+    width: 100%;
+    background: #fffdf8; color: var(--forest);
+    border-radius: 18px; padding: 20px;
+    box-shadow: 0 20px 44px #00000040;
+    border: 1px solid #0a2019;
+  }
+  .control-card header { display: flex; justify-content: space-between; align-items: center; font: 700 10px var(--font-mono); color: #5b7268; text-transform: uppercase; letter-spacing: 0.08em; }
+  .control-card header b { background: var(--amber); color: #173b30; padding: 4px 8px; border-radius: 999px; font-size: 9px; }
+  .control-card h4 { font-size: 17px; line-height: 1.25; margin: 14px 0 16px; letter-spacing: -0.02em; color: #16332a; }
+  .control-card dl { margin: 0; display: grid; gap: 0; }
+  .control-card dl > div { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid #eae3d4; font-size: 12.5px; }
+  .control-card dt { color: #6c7d74; }
+  .control-card dd { margin: 0; font-weight: 750; font-family: var(--font-mono); font-size: 12px; }
+  .control-card .ok { display: block; text-align: center; margin-top: 14px; padding: 9px; border-radius: 10px; background: #d7ebdd; color: #12392d; font: 800 11px var(--font-mono); letter-spacing: 0.04em; }
+  .control-card .cta { display: block; text-align: center; margin-top: 9px; padding: 12px; border-radius: 999px; background: var(--coral); color: #fff; font-weight: 850; font-size: 13px; box-shadow: 0 5px 0 #9e2d19; }
+
+  @media (max-width: 860px) {
+    .cover { grid-template-columns: 1fr; aspect-ratio: auto; min-height: 0; }
+    .cover-aside { padding: 0 clamp(24px,5vw,40px) clamp(28px,6vw,44px); }
+    .cover-body { padding-bottom: 18px; }
+    .cover { box-shadow: 10px 10px 0 var(--amber); }
+  }
+
+  /* ---- sections ---- */
+  section { padding: 76px 0; }
+  section.tight { padding: 56px 0; }
+  .sec-head { max-width: 760px; }
+  h2.title {
+    font-family: var(--font-display); font-weight: 850;
+    font-size: clamp(30px, 4vw, 52px); line-height: 1.0; letter-spacing: -0.045em;
+    margin: 0 0 16px;
+  }
+  .sec-lede { font-size: 18px; line-height: 1.55; color: var(--muted); margin: 0; max-width: 68ch; }
+
+  .band { background: var(--forest); color: var(--on-forest); }
+  .band .eyebrow { color: var(--amber); }
+  .band h2.title { color: #fff; }
+  .band .sec-lede { color: var(--on-forest-muted); }
+
+  /* ---- honest-boundary callout ---- */
+  .callout {
+    margin-top: 30px; display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: start;
+    background: var(--cream); border: 1px solid var(--figure-line);
+    border-left: 6px solid var(--amber);
+    border-radius: 16px; padding: 22px 24px; box-shadow: 8px 8px 0 var(--shadow);
+  }
+  .callout .mark { font: 800 12px var(--font-mono); color: var(--coral-dark); letter-spacing: 0.06em; padding-top: 2px; }
+  .callout p { margin: 0; line-height: 1.6; }
+
+  /* ---- audience cards ---- */
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 42px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 42px; }
+  @media (max-width: 860px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+    padding: 26px; box-shadow: 7px 7px 0 var(--shadow);
+  }
+  .card.t-coral { border-top: 6px solid var(--coral); }
+  .card.t-amber { border-top: 6px solid var(--amber); }
+  .card.t-forest { border-top: 6px solid var(--forest); }
+  .card .k { font: 750 11px var(--font-mono); color: var(--coral-dark); letter-spacing: 0.05em; text-transform: uppercase; }
+  .card h3 { font-size: 21px; letter-spacing: -0.02em; margin: 12px 0 8px; }
+  .card p { color: var(--muted); margin: 0; line-height: 1.58; font-size: 14.5px; }
+
+  /* ---- figure / mermaid ---- */
+  .figure {
+    margin: 40px 0 0; padding: 26px; border-radius: 20px;
+    background: var(--figure-bg); border: 1px solid var(--figure-line);
+    box-shadow: 8px 8px 0 var(--shadow); overflow-x: auto;
+  }
+  .figure pre.mermaid { margin: 0; text-align: center; min-width: 520px; }
+  .band .figure { box-shadow: 10px 10px 0 #0a2019; }
+  figcaption { margin-top: 16px; font: 650 12.5px var(--font-body); color: #6a7169; text-align: center; }
+  :root[data-theme="dark"] figcaption, @media (prefers-color-scheme: dark) { }
+  .figure figcaption { color: #5f6b60; }
+
+  .flow-figs { display: grid; gap: 24px; margin-top: 42px; }
+  .flow-figs .figure { margin: 0; }
+  .flow-figs h3 { margin: 0 0 4px; font-size: 18px; letter-spacing: -0.02em; }
+  .flow-figs .fh { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+  .flow-figs .fh span { font: 750 10px var(--font-mono); text-transform: uppercase; letter-spacing: 0.07em; padding: 4px 9px; border-radius: 999px; }
+
+  /* ---- tables ---- */
+  .table-wrap { margin-top: 40px; overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; box-shadow: 7px 7px 0 var(--shadow); background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  thead th {
+    text-align: left; font: 750 10.5px var(--font-mono); letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--muted); padding: 15px 18px; background: var(--surface-2); border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  tbody td { padding: 15px 18px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 14px; line-height: 1.5; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: color-mix(in srgb, var(--amber) 7%, transparent); }
+  td .name { font-weight: 800; letter-spacing: -0.01em; }
+  td code, .mono { font-family: var(--font-mono); font-size: 12.5px; }
+  td code { background: color-mix(in srgb, var(--amber) 16%, transparent); padding: 2px 6px; border-radius: 6px; }
+  .band .table-wrap { background: var(--forest-2); border-color: #35594c; box-shadow: 10px 10px 0 #0a2019; }
+  .band thead th { background: #12342a; border-color: #35594c; color: #9dbaad; }
+  .band tbody td { border-color: #2c4c40; }
+  .band tbody tr:hover { background: #ffffff0a; }
+  .band td code { background: #ffffff14; }
+
+  /* ---- status pills ---- */
+  .pill { display: inline-block; white-space: nowrap; font: 750 10px var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; }
+  .pill.live { background: #d7eadc; color: #164634; }
+  .pill.validate { background: #fff0c8; color: #75520d; }
+  .pill.sandbox { background: #e3e8ff; color: #344b9c; }
+  .pill.planned { background: #ece7dd; color: #595b55; }
+  .pill.read { background: #dfeaff; color: #2f4a86; }
+  :root[data-theme="dark"] .pill.live, @media (prefers-color-scheme: dark) { }
+
+  /* ---- lifecycle chips ---- */
+  .nodes { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 40px; }
+  @media (max-width: 980px) { .nodes { grid-template-columns: repeat(2, 1fr); } }
+  .node {
+    background: var(--forest-2); border: 1px solid #3a6053; border-radius: 14px; padding: 15px 14px;
+    display: grid; gap: 7px; align-content: start;
+  }
+  .node b { font: 800 10px var(--font-mono); color: var(--amber); }
+  .node strong { font-size: 13.5px; letter-spacing: -0.01em; color: #fff; }
+  .node small { color: #b7ccc2; font-size: 11.5px; line-height: 1.4; }
+
+  /* ---- security list ---- */
+  .sec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 42px; }
+  @media (max-width: 780px) { .sec-grid { grid-template-columns: 1fr; } }
+  .principle { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; box-shadow: 6px 6px 0 var(--shadow); }
+  .principle h4 { margin: 0 0 6px; font-size: 15.5px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 9px; }
+  .principle h4 i { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 4px color-mix(in srgb, var(--coral) 22%, transparent); flex: none; }
+  .principle p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+  .principle p .mono { color: var(--ink); }
+
+  /* ---- code block ---- */
+  .code {
+    margin-top: 22px; background: #0d2a21; color: #e7f4ed; border-radius: 14px; padding: 20px 22px;
+    overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.6;
+    border: 1px solid #0a2019; box-shadow: 8px 8px 0 var(--shadow);
+  }
+  .code .c { color: #7fae9c; }
+  .code .s { color: #f2c777; }
+  .code .p { color: #ff9d84; }
+
+  /* ---- stack chips ---- */
+  .stack { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 42px; }
+  @media (max-width: 860px) { .stack { grid-template-columns: 1fr; } }
+  .stack .col { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px; box-shadow: 6px 6px 0 var(--shadow); }
+  .stack .col h4 { margin: 0 0 14px; font: 750 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--coral-dark); }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chips span { font: 650 12px var(--font-mono); padding: 7px 10px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); }
+
+  /* ---- CTA band ---- */
+  .cta-band {
+    margin: 84px 0 0; background: var(--forest); color: var(--on-forest); border-radius: 26px;
+    padding: clamp(34px, 5vw, 60px); display: grid; grid-template-columns: 1.4fr auto; gap: 46px; align-items: center;
+    box-shadow: 14px 14px 0 var(--amber);
+  }
+  @media (max-width: 820px) { .cta-band { grid-template-columns: 1fr; box-shadow: 10px 10px 0 var(--amber); } }
+  .cta-band .eyebrow { color: var(--amber); }
+  .cta-band h2 { font-family: var(--font-display); font-weight: 850; font-size: clamp(28px, 4vw, 46px); letter-spacing: -0.04em; line-height: 1.0; margin: 0 0 12px; color: #fff; }
+  .cta-band p { margin: 0; color: var(--on-forest-muted); max-width: 54ch; }
+  .cta-actions { display: flex; flex-direction: column; gap: 10px; }
+  .cta-actions a { text-decoration: none; text-align: center; padding: 14px 22px; border-radius: 999px; font-weight: 800; font-size: 14px; white-space: nowrap; }
+  .cta-actions a.primary { background: var(--coral); color: #fff; box-shadow: 0 6px 0 #9e2d19; }
+  .cta-actions a.ghost { background: transparent; color: #fff; border: 1px solid #3f6355; }
+
+  footer.f { padding: 46px 0 70px; border-top: 1px solid var(--line); margin-top: 60px; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
+  footer.f a { color: var(--ink); font-weight: 700; text-decoration: none; }
+  footer.f .note { max-width: 46ch; line-height: 1.5; }
+
+  .lead-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+  .lead-links a { font-size: 13px; font-weight: 700; text-decoration: none; color: var(--forest); background: var(--surface); border: 1px solid var(--line); padding: 9px 13px; border-radius: 999px; box-shadow: 0 3px 0 var(--shadow); }
+  :root[data-theme="dark"] .lead-links a, @media (prefers-color-scheme: dark) {}
+  .band .lead-links a { color: #fff; background: #ffffff12; border-color: #ffffff26; box-shadow: none; }
+</style>
+
+<nav class="nav">
+  <div class="shell" style="display:flex;align-items:center;justify-content:space-between;width:min(1180px,calc(100% - 44px));">
+    <a class="brand" href="#top"><b>AA</b> agent-assistant</a>
+    <div class="nav-links">
+      <a href="#architecture">Architecture</a>
+      <a href="#lifecycle">Lifecycle</a>
+      <a href="#flows">Flows</a>
+      <a href="#mcp">MCP Gateway</a>
+      <a href="#security">Security</a>
+      <a href="#status">Status</a>
+      <a class="nav-cta" href="https://agente-asistente.vercel.app/agent" target="_blank" rel="noopener">Open the agent</a>
+    </div>
+  </div>
+</nav>
+
+<a id="top"></a>
+<div class="cover-wrap">
+  <div class="shell">
+    <div class="cover">
+      <div class="cover-body">
+        <p class="eyebrow">Commerce infrastructure for AI agents</p>
+        <h1>Agents act.<br><em>You stay in control.</em></h1>
+        <p class="cover-lede">A permissioned personal agent that connects to your apps, prepares commerce actions, and pays from a user-owned Stellar wallet — under identity, policy, explicit approval, idempotency and durable evidence.</p>
+        <div class="cover-tags">
+          <span class="hot">Live x402 Testnet payment</span>
+          <span>Non-custodial</span>
+          <span>LangGraph safe-action engine</span>
+          <span>Bidirectional MCP</span>
+          <span>EN · ES · PT</span>
+        </div>
+      </div>
+      <div class="cover-aside">
+        <div class="control-card" role="img" aria-label="A prepared action awaiting explicit approval">
+          <header><span>Prepared action · awaiting approval</span> <b>Testnet</b></header>
+          <h4>Deposit 1 XLM into a public DeFindex Testnet vault</h4>
+          <dl>
+            <div><dt>Network</dt><dd>Stellar</dd></div>
+            <div><dt>Amount</dt><dd>1.0000000 XLM</dd></div>
+            <div><dt>Policy</dt><dd>within limits</dd></div>
+            <div><dt>Digest</dt><dd>sha256 · frozen</dd></div>
+          </dl>
+          <span class="ok">Policy checks passed</span>
+          <span class="cta">Confirm &amp; sign with Privy</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERVIEW -->
+<section id="overview">
+  <div class="shell">
+    <div class="sec-head">
+      <p class="eyebrow">What it is</p>
+      <h2 class="title">A trusted layer between people, agents, apps and payments.</h2>
+      <p class="sec-lede">agent-assistant pairs a simple chat for end users with MCP, WebMCP and API surfaces for developers. Every sensitive action is constrained: identity is separated from consent, consent from payment; intents are frozen and hashed before approval; execution runs exactly once and leaves durable evidence. The same engine lets other agents use us, and lets us use other apps.</p>
+    </div>
+
+    <div class="callout">
+      <span class="mark">MVP&nbsp;BOUNDARY</span>
+      <p><strong>Honest status.</strong> Authentication, Stellar wallet creation, market data, persistent user state, the replay-safe commerce demo and a real Testnet x402 payment are live. Notion and DeFindex Testnet signing are implemented and awaiting complete user acceptance. Merchant fulfillment and mainnet settlement are not live. Research, sandbox behavior and production integrations are never conflated.</p>
+    </div>
+
+    <div class="grid-3">
+      <article class="card t-coral">
+        <span class="k">End user</span>
+        <h3>Sign in. Get a wallet. Chat.</h3>
+        <p>Google/email login through Privy provisions one user-owned Stellar wallet. Ask in plain language (EN/ES/PT) to check prices, connect apps, review actions and keep a durable history. No seed phrase, no password.</p>
+      </article>
+      <article class="card t-amber">
+        <span class="k">Developer</span>
+        <h3>Tools, intents &amp; receipts.</h3>
+        <p>Inbound MCP tools, structured offers, frozen intents, a policy engine and replay-safe receipts. Build an agent that discovers, prepares and (in sandbox) executes commerce against a documented contract.</p>
+      </article>
+      <article class="card t-forest">
+        <span class="k">Partner / merchant</span>
+        <h3>Be discoverable &amp; payable.</h3>
+        <p>Expose a scoped catalog through the provider MCP so agents can find and act on your services — with policy and evidence, and settlement kept separate from fulfillment.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture" class="band">
+  <div class="shell">
+    <div class="sec-head">
+      <p class="eyebrow">Architecture</p>
+      <h2 class="title">Layered, non-custodial, evidence-first.</h2>
+      <p class="sec-lede">A Next.js app and chat front the system. Privy owns identity and the wallet; the private key never reaches our server. A deterministic router dispatches to connectors and to a reusable LangGraph safe-action engine. State, intents, workflows and receipts persist in Neon Postgres.</p>
+    </div>
+
+    <figure class="figure">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'14px','primaryColor':'#fff4d8','primaryBorderColor':'#153f32','primaryTextColor':'#20211e','lineColor':'#db3f22','secondaryColor':'#dceadf','tertiaryColor':'#fffdf8','clusterBkg':'#f7f2e8','clusterBorder':'#c9c0ad'}}}%%
+flowchart TB
+  subgraph CLIENT["Browser (trust boundary)"]
+    U["End user · chat UI"]
+    PV["Privy session · signs raw hash"]
+  end
+  subgraph SERVER["Server (Next.js on Vercel)"]
+    R["Agent &amp; tool router"]
+    PL["Planner · LangChain (plan-only)"]
+    LG["LangGraph safe-action engine"]
+    CN["Connectors"]
+    MCPI["Inbound MCP servers"]
+  end
+  subgraph EXT["Providers &amp; network"]
+    NOTION["Notion MCP"]
+    CMC["CoinMarketCap API"]
+    TRV["Travala MCP"]
+    UNB["UNBLCK Agent API"]
+    STL["Stellar Testnet · Horizon / Soroban"]
+  end
+  DB[("Neon Postgres&lt;br/&gt;state · intents · workflows · receipts")]
+
+  U --> R
+  U -. "confirm &amp; sign" .- PV
+  R --> PL
+  R --> LG
+  R --> CN
+  LG --> CN
+  CN --> NOTION &amp; CMC &amp; TRV &amp; UNB
+  PV --> STL
+  CN --> STL
+  MCPI --> R
+  R <--> DB
+  LG <--> DB
+</pre>
+      <figcaption>Authentication identifies the user; it never authorizes a payment. Signing happens in the browser via Privy; the server only verifies signatures and records evidence.</figcaption>
+    </figure>
+
+    <div class="grid-3">
+      <article class="card t-amber" style="background:var(--forest-2);border-color:#3a6053;color:#fff;">
+        <span class="k" style="color:var(--amber)">Browser</span>
+        <h3 style="color:#fff">Consent &amp; signature</h3>
+        <p style="color:#b7ccc2">Privy session and the visible confirmation live here. A transaction-specific signature is produced in the browser and never leaves it as a raw key.</p>
+      </article>
+      <article class="card t-amber" style="background:var(--forest-2);border-color:#3a6053;color:#fff;">
+        <span class="k" style="color:var(--amber)">Server</span>
+        <h3 style="color:#fff">Route · verify · record</h3>
+        <p style="color:#b7ccc2">Verifies identity, routes tools, evaluates policy before any execution, encrypts OAuth tokens, and writes audit records and receipts.</p>
+      </article>
+      <article class="card t-amber" style="background:var(--forest-2);border-color:#3a6053;color:#fff;">
+        <span class="k" style="color:var(--amber)">Providers</span>
+        <h3 style="color:#fff">MCP · APIs · network</h3>
+        <p style="color:#b7ccc2">External MCP servers, the Privy wallet service and the Stellar network — reached through bounded connectors with verified evidence.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- LIFECYCLE -->
+<section id="lifecycle">
+  <div class="shell">
+    <div class="sec-head">
+      <p class="eyebrow">The safe-action lifecycle</p>
+      <h2 class="title">One universal path for any risky action.</h2>
+      <p class="sec-lede">Every write or payment runs through a reusable LangGraph <span class="mono">StateGraph</span> of seven bounded nodes. A connector plugs in three methods — <span class="mono">prepare</span>, <span class="mono">execute</span>, <span class="mono">verify</span> — and inherits approval, idempotency and evidence for free.</p>
+    </div>
+
+    <figure class="figure">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'13px','primaryColor':'#fff4d8','primaryBorderColor':'#153f32','primaryTextColor':'#20211e','lineColor':'#db3f22','secondaryColor':'#dceadf','tertiaryColor':'#ffe9c9'}}}%%
+flowchart LR
+  A["validate_request"] --> B["check_connection"]
+  B -->|missing| B1(["awaiting_connection"])
+  B --> C["prepare_action&lt;br/&gt;+ sha256 digest"]
+  C --> D{"evaluate_policy"}
+  D -->|deny| D1(["blocked"])
+  D --> E["approval_gate"]
+  E -->|approval required| E1(["awaiting_approval"])
+  E1 -.->|"confirm: userId + digest match"| E
+  E --> F["execute_once&lt;br/&gt;idempotency = workflowId"]
+  F --> G["verify_evidence"]
+  G -->|not verified| G1(["failed"])
+  G --> H(["completed"])
+</pre>
+      <figcaption>Production-routed today for Notion search and the three UNBLCK hub capabilities. DeFindex, Soroswap and x402 run equivalent guards through their own dedicated routes.</figcaption>
+    </figure>
+
+    <div class="nodes">
+      <div class="node"><b>01</b><strong>validate</strong><small>Resolve connector + capability; check the operation matches.</small></div>
+      <div class="node"><b>02</b><strong>connection</strong><small>Is the provider linked? If not, pause for connection.</small></div>
+      <div class="node"><b>03</b><strong>prepare</strong><small>Build an immutable action; hash it into a frozen digest.</small></div>
+      <div class="node"><b>04</b><strong>policy</strong><small>Financial or write → approval required; reads may pass.</small></div>
+      <div class="node"><b>05</b><strong>approve</strong><small>Resume only if approver + digest exactly match.</small></div>
+      <div class="node"><b>06</b><strong>execute once</strong><small>workflowId is the idempotency key; never twice.</small></div>
+      <div class="node"><b>07</b><strong>verify</strong><small>Complete only when the connector returns verified evidence.</small></div>
+    </div>
+
+    <div class="grid-3" style="margin-top:26px">
+      <article class="card t-coral"><span class="k">Frozen intent</span><h3>sha256 binding</h3><p>The prepared action is canonicalized (sorted keys) and SHA-256 hashed. Change any parameter and the digest changes — invalidating a prior approval.</p></article>
+      <article class="card t-amber"><span class="k">Replay safety</span><h3>Execute once</h3><p>The workflow id is the idempotency key. Inserts use conflict-do-nothing, completed workflows are immutable, and a duplicate confirm returns the same result.</p></article>
+      <article class="card t-forest"><span class="k">Durable trail</span><h3>Every step logged</h3><p>Each checkpoint appends a versioned event. Optimistic concurrency guards against races; the whole path is auditable in Neon.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- FLOWS -->
+<section id="flows" class="band">
+  <div class="shell">
+    <div class="sec-head">
+      <p class="eyebrow">Key end-to-end flows</p>
+      <h2 class="title">What actually happens, step by step.</h2>
+      <p class="sec-lede">Four representative journeys — login, a real Testnet payment, a connector booking behind approval, and a workspace read routed through the engine.</p>
+    </div>
+
+    <div class="flow-figs">
+      <div class="figure">
+        <div class="fh"><h3>Login + automatic Stellar wallet</h3><span class="pill live">Live</span></div>
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'13px','primaryColor':'#fff4d8','primaryBorderColor':'#153f32','lineColor':'#153f32','actorBkg':'#fff4d8','actorBorder':'#153f32','actorTextColor':'#20211e','signalColor':'#20211e','signalTextColor':'#20211e','noteBkgColor':'#dceadf','noteBorderColor':'#153f32'}}}%%
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant UI as Agent UI
+  participant PV as Privy
+  participant API as Bootstrap API
+  participant H as Horizon
+  participant DB as Neon
+  U->>UI: Continue with Google / email
+  UI->>PV: authenticate
+  PV-->>UI: access token
+  UI->>API: POST /bootstrap (Bearer, same-origin)
+  API->>PV: verify token + get/create wallet (owner = user)
+  API->>H: read on-chain account + balances
+  API->>DB: upsert user + wallet
+  API-->>UI: user, wallet, activation, readiness
+</pre>
+      </div>
+
+      <div class="figure">
+        <div class="fh"><h3>x402 Testnet payment · Privy-signed</h3><span class="pill live">Live Testnet proof</span></div>
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'13px','primaryColor':'#fff4d8','primaryBorderColor':'#153f32','lineColor':'#153f32','actorBkg':'#ffe9c9','actorBorder':'#153f32','actorTextColor':'#20211e','signalColor':'#20211e','signalTextColor':'#20211e','noteBkgColor':'#dceadf','noteBorderColor':'#153f32'}}}%%
+sequenceDiagram
+  autonumber
+  participant UI as Agent UI
+  participant API as x402 API
+  participant POL as Policy
+  participant RES as x402 resource
+  participant PV as Privy (browser)
+  participant DB as Neon
+  UI->>API: prepare (requestId)
+  API->>RES: read live HTTP 402 requirements
+  API->>POL: preflight (network, asset, ≤ demo limit)
+  API->>API: freeze requirement + authorizationHash
+  API->>DB: store "prepared"
+  API-->>UI: frozen amount / asset / payTo
+  UI->>PV: sign pinned hash
+  PV-->>UI: signature
+  UI->>API: execute (explicitConfirmation, signature)
+  API->>API: guard replay · re-verify signature + digest
+  API->>RES: pay → settlement hash
+  API->>DB: "confirmed" + settlement + delivery evidence
+</pre>
+      </div>
+
+      <div class="figure">
+        <div class="fh"><h3>Connector booking with approval · UNBLCK hub</h3><span class="pill validate">Approval-gated</span></div>
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'13px','primaryColor':'#fff4d8','primaryBorderColor':'#153f32','lineColor':'#153f32','actorBkg':'#fff4d8','actorBorder':'#153f32','actorTextColor':'#20211e','signalColor':'#20211e','signalTextColor':'#20211e','noteBkgColor':'#dceadf','noteBorderColor':'#153f32'}}}%%
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant R as Chat router
+  participant LG as LangGraph
+  participant C as UNBLCK connector
+  participant API as UNBLCK Agent API
+  U->>R: "Book UNBLCK for 2026-08-01"
+  R->>LG: start(hub.book, write, {date})
+  LG->>C: check connection
+  LG->>C: prepare → immutable action + digest
+  LG-->>U: review + Confirm (workflowId, digest)
+  U->>R: Confirm (digest)
+  R->>LG: resumeApproval(userId, digest)
+  LG->>C: execute_once (idempotency = workflowId)
+  C->>API: POST /hub-checkins
+  API-->>C: booking_id
+  LG->>C: verify_evidence
+  LG-->>U: completed · repeat confirm = same result
+</pre>
+      </div>
+
+      <div class="figure">
+        <div class="fh"><h3>Workspace read routed through LangGraph · Notion</h3><span class="pill validate">Ready to validate</span></div>
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'13px','primaryColor':'#fff4d8','primaryBorderColor':'#153f32','lineColor':'#153f32','actorBkg':'#fff4d8','actorBorder':'#153f32','actorTextColor':'#20211e','signalColor':'#20211e','signalTextColor':'#20211e','noteBkgColor':'#dceadf','noteBorderColor':'#153f32'}}}%%
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant R as Chat router
+  participant LG as LangGraph
+  participant N as Notion MCP
+  U->>R: "Search my Notion for agent payments"
+  R->>LG: start(workspace.search, read, {query})
+  LG->>LG: prepare · policy = allow (read) · approved
+  LG->>N: decrypt token → call notion-search
+  N-->>LG: results
+  LG-->>U: text + workflow{status, version}
+</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MCP GATEWAY -->
+<section id="mcp">
+  <div class="shell">
+    <div class="sec-head">
+      <p class="eyebrow">Bidirectional MCP gateway</p>
+      <h2 class="title">Other agents use us. We use other apps.</h2>
+      <p class="sec-lede">The Model Context Protocol runs in both directions. <strong>Inbound</strong>, three servers let external agents and providers discover offers, freeze intents and (in sandbox) execute. <strong>Outbound</strong>, we act as an MCP/OAuth client into Notion, Travala and market data — all governed by the same policy and evidence layer.</p>
+    </div>
+
+    <figure class="figure">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'13px','primaryColor':'#fff4d8','primaryBorderColor':'#153f32','primaryTextColor':'#20211e','lineColor':'#db3f22','secondaryColor':'#dceadf','tertiaryColor':'#fffdf8','clusterBkg':'#f7f2e8','clusterBorder':'#c9c0ad'}}}%%
+flowchart LR
+  subgraph IN["Inbound · others use us"]
+    EA["External AI agent"]
+    PRO["Service provider"]
+    WEB["Chrome WebMCP"]
+  end
+  subgraph CORE["agent-assistant"]
+    P1["/api/mcp&lt;br/&gt;public sandbox"]
+    P2["/api/mcp/agent&lt;br/&gt;Privy bearer"]
+    P3["/api/mcp/provider&lt;br/&gt;scoped key"]
+    ENG["Router + policy + evidence"]
+  end
+  subgraph OUT["Outbound · we use apps"]
+    NO["Notion · MCP + OAuth"]
+    TV["Travala · public MCP"]
+    CM["CoinMarketCap · API"]
+  end
+  EA --> P1
+  WEB --> P1
+  PRO --> P3
+  EA --> P2
+  P1 --> ENG
+  P2 --> ENG
+  P3 --> ENG
+  ENG --> NO
+  ENG --> TV
+  ENG --> CM
+</pre>
+      <figcaption>Discovery is public at <span class="mono">/.well-known/mcp</span>. Every inbound mutation and every outbound call flows through the same freeze → policy → execute-once → evidence path.</figcaption>
+    </figure>
+
+    <h3 style="margin:48px 0 0;font-size:20px;letter-spacing:-0.02em">Inbound — how another agent uses us</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Surface</th><th>Auth</th><th>For</th><th>Tools</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="name">/api/mcp</span><br><span class="pill sandbox">Public sandbox</span></td>
+            <td>None (public)</td>
+            <td>Any external agent</td>
+            <td><code>search_offers</code> · <code>get_offer</code> · <code>create_intent</code> · <code>evaluate_policy</code> · <code>demo_authorize_intent</code> · <code>execute_authorized_intent</code> · <code>get_receipt</code></td>
+          </tr>
+          <tr>
+            <td><span class="name">/api/mcp/agent</span><br><span class="pill validate">Personal</span></td>
+            <td>Privy bearer (<span class="mono">agent:read, agent:chat</span>)</td>
+            <td>A user's own agent</td>
+            <td><code>get_agent_context</code> · <code>get_agent_conversation</code> · <code>send_agent_message</code> — read-only tools only; payment signing is never exposed</td>
+          </tr>
+          <tr>
+            <td><span class="name">/api/mcp/provider</span><br><span class="pill validate">Provider</span></td>
+            <td>Hashed scoped provider key</td>
+            <td>Merchants / service providers</td>
+            <td><code>get_service_provider</code> · <code>list_service_offers</code> · <code>upsert_service_offer</code> · <code>set_service_offer_status</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin:26px 0 0;color:var(--muted);max-width:70ch">Point any MCP client at the public server — no key required for the sandbox:</p>
+    <div class="code"><span class="c">// mcp client config — discovery at /.well-known/mcp</span>
+{
+  <span class="p">"mcpServers"</span>: {
+    <span class="p">"agent-assistant"</span>: {
+      <span class="p">"url"</span>: <span class="s">"https://agente-asistente.vercel.app/api/mcp"</span>
+    }
+  }
+}</div>
+    <p style="margin:16px 0 0;color:var(--muted);font-size:14px">Providers receive a scoped key from the founder console at <span class="mono">/admin/providers</span>; the personal surface authenticates with a user's Privy token.</p>
+
+    <h3 style="margin:52px 0 0;font-size:20px;letter-spacing:-0.02em">Outbound — how we use other apps</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>App</th><th>Protocol</th><th>Auth</th><th>Capability</th></tr></thead>
+        <tbody>
+          <tr><td><span class="name">Notion</span></td><td>Hosted MCP client → <code>mcp.notion.com/mcp</code></td><td>OAuth 2.1 PKCE · AES-256-GCM tokens</td><td>Search the user's workspace (read-only), routed through the engine</td></tr>
+          <tr><td><span class="name">Travala</span></td><td>Public Travel MCP (JSON-RPC)</td><td>None</td><td>Hotel discovery (read-only); no booking or payment</td></tr>
+          <tr><td><span class="name">CoinMarketCap</span></td><td>REST API</td><td>Trial Pro key</td><td>Live quotes + per-user watchlist (read-only)</td></tr>
+          <tr><td><span class="name">UNBLCK</span></td><td>Agent Hub Check-in API</td><td>Partner key + channel identity</td><td>Read state, book &amp; cancel hub check-ins — approval-gated</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin:20px 0 0;color:var(--muted);font-size:14px"><strong>WebMCP</strong> (in-browser) exposes <span class="mono">search_agent_offers</span> and <span class="mono">prepare_commerce_intent</span> only — wallet authorization and execution are intentionally excluded from the page context.</p>
+  </div>
+</section>
+
+<!-- CONNECTORS -->
+<section id="connectors" class="band">
+  <div class="shell">
+    <div class="sec-head">
+      <p class="eyebrow">Connectors</p>
+      <h2 class="title">Bounded adapters, honest status.</h2>
+      <p class="sec-lede">Each connector declares its capabilities and operation class (read / write / financial) and must return verified evidence. Status uses the project's own vocabulary.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Connector</th><th>What it does</th><th>Class</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><span class="name">x402</span></td><td>Testnet USDC micropayment against the official Stellar demo, Privy-signed</td><td>Financial</td><td><span class="pill live">Live Testnet proof</span></td></tr>
+          <tr><td><span class="name">CoinMarketCap</span></td><td>Crypto quotes + per-user watchlist</td><td>Read</td><td><span class="pill live">Live</span></td></tr>
+          <tr><td><span class="name">Travala</span></td><td>Hotel discovery via public Travel MCP</td><td>Read</td><td><span class="pill live">Live</span></td></tr>
+          <tr><td><span class="name">Notion</span></td><td>Workspace search via official remote MCP, LangGraph-routed</td><td>Read</td><td><span class="pill validate">Ready to validate</span></td></tr>
+          <tr><td><span class="name">DeFindex</span></td><td>Exact Testnet XDR for vault deposits &amp; the USDC trustline</td><td>Financial</td><td><span class="pill validate">XLM ready · USDC blocked on funding</span></td></tr>
+          <tr><td><span class="name">UNBLCK</span></td><td>Member hub: read state, book &amp; cancel check-ins via Agent API</td><td>Read / write</td><td><span class="pill validate">Ready for acceptance</span></td></tr>
+          <tr><td><span class="name">Soroswap</span></td><td>Testnet XLM/USDC quote + unsigned-XDR swap</td><td>Read / financial</td><td><span class="pill sandbox">Integration ready · external Testnet unavailable</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY -->
+<section id="security">
+  <div class="shell">
+    <div class="sec-head">
+      <p class="eyebrow">Security model</p>
+      <h2 class="title">Eight principles, enforced in code.</h2>
+      <p class="sec-lede">Not slogans — each maps to a concrete guard in the codebase.</p>
+    </div>
+    <div class="sec-grid">
+      <div class="principle"><h4><i></i>Non-custodial</h4><p>The orchestration layer never holds a private key. Signing happens in the browser via Privy; the server only verifies the Ed25519 signature. The wallet is owned by the user.</p></div>
+      <div class="principle"><h4><i></i>Least privilege</h4><p>OAuth requests the minimum scopes; MCP tokens carry an explicit scope set enforced per subject; provider keys are scoped to one catalog.</p></div>
+      <div class="principle"><h4><i></i>Explicit authority</h4><p>Identity, connection consent and payment approval are three separate acts. The approval gate requires an exact <span class="mono">userId + digest</span> match; payments require <span class="mono">explicitConfirmation: true</span>.</p></div>
+      <div class="principle"><h4><i></i>Frozen intent</h4><p>Merchant, amount, network and expiry are pinned into an immutable action and SHA-256 hashed before approval. The signing hash is re-checked at signing time.</p></div>
+      <div class="principle"><h4><i></i>Replay safety</h4><p>Idempotency keys, unique DB indexes and status guards mean a duplicate request returns the previous result — never a second debit.</p></div>
+      <div class="principle"><h4><i></i>Encrypted credentials</h4><p>External OAuth tokens, PKCE verifiers and client secrets are encrypted at rest with AES-256-GCM and never returned to the browser.</p></div>
+      <div class="principle"><h4><i></i>Independent evidence</h4><p>A connector must return verified evidence to complete. Settlement (a transaction hash) and fulfillment (delivery) are separate states.</p></div>
+      <div class="principle"><h4><i></i>Honest failure</h4><p>Ambiguous external results are not blindly retried. A timeout or unclear response sets a reconciliation state and stops automatic mutation.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATUS -->
+<section id="status" class="band">
+  <div class="shell">
+    <div class="sec-head">
+      <p class="eyebrow">Capability status</p>
+      <h2 class="title">What works now.</h2>
+      <p class="sec-lede">Live = verified against a real external system · Ready to validate = implemented, acceptance pending · Sandbox = simulated execution · Planned = designed, not built.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Capability</th><th>Status</th><th>Proof</th></tr></thead>
+        <tbody>
+          <tr><td>Google / email login</td><td><span class="pill live">Live</span></td><td>Privy authentication on /agent</td></tr>
+          <tr><td>Automatic Stellar wallet</td><td><span class="pill live">Live</span></td><td>One user-owned wallet created at login</td></tr>
+          <tr><td>EN / ES / PT experience</td><td><span class="pill live">Live</span></td><td>Persistent locale, multilingual core commands</td></tr>
+          <tr><td>Persistent chat &amp; user state</td><td><span class="pill live">Live</span></td><td>Neon Postgres</td></tr>
+          <tr><td>CoinMarketCap quotes &amp; watchlist</td><td><span class="pill read">Live · read-only</span></td><td>Official Trial Pro API, per-user watchlist</td></tr>
+          <tr><td>Travala hotel discovery</td><td><span class="pill read">Live · read-only</span></td><td>Public Travala Travel MCP</td></tr>
+          <tr><td>Stellar x402 payment</td><td><span class="pill live">Live Testnet proof</span></td><td>0.01 USDC flow completed with durable, replay-safe receipt</td></tr>
+          <tr><td>Public inbound MCP (7 tools)</td><td><span class="pill sandbox">Sandbox</span></td><td>Intent → policy → execute → receipt at /api/mcp</td></tr>
+          <tr><td>Notion OAuth &amp; search</td><td><span class="pill validate">Ready to validate</span></td><td>PKCE, encrypted tokens, official MCP, LangGraph trail</td></tr>
+          <tr><td>Wallet-signed Stellar transaction</td><td><span class="pill validate">Ready to validate</span></td><td>Browser Privy confirmation, server-verified signature</td></tr>
+          <tr><td>DeFindex XLM deposit</td><td><span class="pill validate">Ready to validate</span></td><td>Exact XDR review against a public Soroban vault</td></tr>
+          <tr><td>UNBLCK hub link / book / cancel</td><td><span class="pill validate">Ready for acceptance</span></td><td>Agent API with digest-bound approval</td></tr>
+          <tr><td>Gmail · Drive · Calendar · Trello</td><td><span class="pill planned">Planned</span></td><td>Catalog entries only</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- STACK -->
+<section id="stack">
+  <div class="shell">
+    <div class="sec-head">
+      <p class="eyebrow">Tech stack</p>
+      <h2 class="title">Modern, typed, edge-deployed.</h2>
+    </div>
+    <div class="stack">
+      <div class="col"><h4>App &amp; runtime</h4><div class="chips"><span>Next.js 16</span><span>React 19</span><span>TypeScript 5.9</span><span>Node ≥ 22</span><span>Tailwind 4</span><span>Vercel</span></div></div>
+      <div class="col"><h4>Agent &amp; protocol</h4><div class="chips"><span>@langchain/langgraph</span><span>langchain</span><span>@langchain/openrouter</span><span>@modelcontextprotocol/sdk</span><span>mcp-handler</span><span>zod</span></div></div>
+      <div class="col"><h4>Identity, chain &amp; data</h4><div class="chips"><span>@privy-io/node</span><span>@privy-io/react-auth</span><span>@stellar/stellar-sdk</span><span>@x402/stellar</span><span>drizzle-orm</span><span>Neon Postgres</span></div></div>
+    </div>
+
+    <div class="cta-band">
+      <div>
+        <p class="eyebrow">Get started</p>
+        <h2>Open the agent, or build against it.</h2>
+        <p>Sign in, receive a Stellar wallet, and try the real product — or point an MCP client at the public sandbox and read the developer guide.</p>
+        <div class="lead-links">
+          <a href="https://agente-asistente.vercel.app/guide" target="_blank" rel="noopener">New user guide</a>
+          <a href="https://agente-asistente.vercel.app/developers" target="_blank" rel="noopener">Developer portal</a>
+          <a href="https://agente-asistente.vercel.app/demo" target="_blank" rel="noopener">Safety demo</a>
+          <a href="https://agente-asistente.vercel.app/connections" target="_blank" rel="noopener">Integration Lab</a>
+          <a href="https://github.com/CaBsCrypto/agente-asistente" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </div>
+      <div class="cta-actions">
+        <a class="primary" href="https://agente-asistente.vercel.app/agent" target="_blank" rel="noopener">Open the agent</a>
+        <a class="ghost" href="https://agente-asistente.vercel.app/waitlist" target="_blank" rel="noopener">Join the waitlist</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="f">
+  <div class="shell" style="display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;width:min(1180px,calc(100% - 44px));">
+    <div>
+      <a class="brand" href="#top" style="margin-bottom:10px;display:inline-flex;"><b>AA</b> agent-assistant</a>
+      <p class="note">A permissioned personal agent with a user-owned Stellar wallet, built in Latin America for a global agent economy.</p>
+    </div>
+    <div class="note">Testnet only · no real funds · settlement and fulfillment verified separately. Status labels are shared across all project documentation.</div>
+  </div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, securityLevel: 'loose', theme: 'base', flowchart: { htmlLabels: true } });
+</script>
+</body>
+</html>
