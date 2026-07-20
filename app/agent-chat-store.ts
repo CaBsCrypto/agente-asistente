@@ -50,6 +50,8 @@ import { createNotionWorkflowConnector } from "@/app/orchestration/connectors/no
 import { createConnectorRegistry } from "@/app/orchestration/connector";
 import { createPersistedWorkflowRuntime } from "@/app/orchestration/runtime";
 import { createWorkflowState } from "@/app/orchestration/types";
+import { parseUnblckChatIntent } from "@/app/unblck-chat";
+import { handleUnblckChatIntent } from "@/app/unblck-chat-runtime";
 
 export type StoredAgentMessage = {
   id: string;
@@ -400,6 +402,7 @@ export async function sendAgentMessage(userId: string, content: string) {
     language === "pt" ? portuguese : english;
   const setupIntent = parseTestnetSetupIntent(content);
   const vaultCommand = parseVaultCommand(content);
+  const unblckIntent = parseUnblckChatIntent(content);
 
   const marketSymbol = extractMarketSymbol(content);
   const requestsWatchlistAdd =
@@ -457,6 +460,7 @@ export async function sendAgentMessage(userId: string, content: string) {
   const deterministicConnection = findRequestedConnection(content);
   const hasDeterministicIntent = Boolean(
     vaultCommand ||
+      unblckIntent ||
       setupIntent ||
       requestsNotionSearch ||
       requestsWatchlistAdd ||
@@ -527,7 +531,15 @@ export async function sendAgentMessage(userId: string, content: string) {
       memoryUpdated: true,
     };
   } else
-  if (setupIntent) {
+  if (unblckIntent) {
+    reply = await handleUnblckChatIntent({
+      intent: unblckIntent,
+      userId,
+      conversationId: id,
+      userMessageId: userMessage.id,
+      language,
+    });
+  } else if (setupIntent) {
     reply = await buildTestnetSetupReply(userId, setupIntent, wallet, language);
   } else if (requestsNotionSearch) {
     try {

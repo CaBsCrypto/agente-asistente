@@ -5,6 +5,7 @@ import { stellar8004Draft } from "@/app/infrastructure/stellar-8004";
 import { getAgentPlannerReadiness } from "@/app/agent-planner";
 import { getSoroswapHealth } from "@/app/connectors/soroswap";
 import { getLangGraphReadiness } from "@/app/orchestration/readiness";
+import { getUnblckReadiness } from "@/app/connectors/unblck";
 
 export async function GET() {
   const [catalog, soroswapHealth] = await Promise.all([
@@ -26,6 +27,7 @@ export async function GET() {
     langchain: getAgentPlannerReadiness(),
     openzeppelin: getChannelsReadiness(),
     langgraph: getLangGraphReadiness(),
+    unblck: getUnblckReadiness(),
     mppRouter: {
       network: "mainnet",
       catalogAccess: "free",

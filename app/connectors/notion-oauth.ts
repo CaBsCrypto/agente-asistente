@@ -44,7 +44,7 @@ function encryptionKey() {
   return decoded;
 }
 
-function encrypt(value: string) {
+export function encryptConnectorSecret(value: string) {
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", encryptionKey(), iv);
   const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
@@ -151,10 +151,10 @@ export async function startNotionOAuth(userId: string, appOrigin: string) {
     id: stateId(state),
     userId,
     provider: PROVIDER,
-    codeVerifierEncrypted: encrypt(verifier),
+    codeVerifierEncrypted: encryptConnectorSecret(verifier),
     clientId: client.client_id,
     clientSecretEncrypted: client.client_secret
-      ? encrypt(client.client_secret)
+      ? encryptConnectorSecret(client.client_secret)
       : null,
     authorizationEndpoint: metadata.authorization_endpoint,
     tokenEndpoint: metadata.token_endpoint,
@@ -237,9 +237,9 @@ export async function completeNotionOAuth(code: string, state: string) {
       userId: pending.userId,
       provider: PROVIDER,
       status: "active",
-      accessTokenEncrypted: encrypt(tokens.access_token),
+      accessTokenEncrypted: encryptConnectorSecret(tokens.access_token),
       refreshTokenEncrypted: tokens.refresh_token
-        ? encrypt(tokens.refresh_token)
+        ? encryptConnectorSecret(tokens.refresh_token)
         : null,
       tokenExpiresAt,
       scopes: tokens.scope ? tokens.scope.split(" ").filter(Boolean) : [],
@@ -260,9 +260,9 @@ export async function completeNotionOAuth(code: string, state: string) {
       ],
       set: {
         status: "active",
-        accessTokenEncrypted: encrypt(tokens.access_token),
+        accessTokenEncrypted: encryptConnectorSecret(tokens.access_token),
         refreshTokenEncrypted: tokens.refresh_token
-          ? encrypt(tokens.refresh_token)
+          ? encryptConnectorSecret(tokens.refresh_token)
           : null,
         tokenExpiresAt,
         scopes: tokens.scope ? tokens.scope.split(" ").filter(Boolean) : [],
@@ -375,9 +375,9 @@ export async function getNotionAccessToken(userId: string) {
     .update(agentExternalConnections)
     .set({
       status: "active",
-      accessTokenEncrypted: encrypt(refreshed.access_token),
+      accessTokenEncrypted: encryptConnectorSecret(refreshed.access_token),
       refreshTokenEncrypted: refreshed.refresh_token
-        ? encrypt(refreshed.refresh_token)
+        ? encryptConnectorSecret(refreshed.refresh_token)
         : connection.refreshTokenEncrypted,
       tokenExpiresAt,
       scopes: refreshed.scope

@@ -50,7 +50,12 @@ test("LangGraph readiness exposes the first production-routed capability", () =>
   const readiness = getLangGraphReadiness();
   assert.equal(readiness.implemented, true);
   assert.equal(readiness.productionRouting, true);
-  assert.deepEqual(readiness.productionCapabilities, ["notion.workspace.search"]);
+  assert.deepEqual(readiness.productionCapabilities, [
+    "notion.workspace.search",
+    "unblck.hub.state",
+    "unblck.hub.book",
+    "unblck.hub.cancel",
+  ]);
   assert.equal(readiness.boundaries.modelCanSign, false);
   assert.equal(readiness.nodes.includes("approval_gate"), true);
   assert.equal(readiness.nodes.includes("execute_once"), true);

@@ -178,19 +178,13 @@ test("prepares the official x402 demo through the Privy review flow", () => {
   assert.match(reply.content, /Privy/);
 });
 
-test("starts the UNBLCK popup without falling back to partner planning", () => {
+test("guides UNBLCK through its official Agent API instead of browser automation", () => {
   const reply = buildAgentReply("Con?ctame con UNBLCK");
-  const popupAction = reply.actions.find((action) => action.popup);
   assert.equal(reply.connection?.stage, "Ready to test");
-  assert.equal(popupAction?.popup?.url, "https://www.unblck.cl/login");
-  assert.equal(popupAction?.popup?.provider, "unblck");
-  assert.ok(!reply.actions.some((action) => action.message?.includes("primera prueba segura")));
-});
-
-test("keeps a claimed UNBLCK browser session explicitly unverified", () => {
-  const reply = buildAgentReply("Ya inicie sesion en UNBLCK");
-  assert.match(reply.content, /asistida por navegador/i);
-  assert.match(reply.content, /sin verificar/i);
-  assert.match(reply.content, /ninguna reserva/i);
-  assert.ok(reply.actions.some((action) => action.href === "https://www.unblck.cl/member"));
+  assert.match(reply.content, /Agent API/i);
+  assert.match(reply.content, /Connect code/i);
+  assert.ok(reply.actions.some(
+    (action) => action.href === "https://www.unblck.cl/member/hub/connect",
+  ));
+  assert.ok(!reply.actions.some((action) => action.popup));
 });

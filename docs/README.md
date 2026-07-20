@@ -30,7 +30,7 @@ This directory is the source of truth for operating, demonstrating and extending
 1. Read the [developer guide](developer-guide.md).
 2. Review the [architecture diagrams](architecture.md).
 3. Review the [Lang ecosystem map](lang-ecosystem.md), [reusable LangGraph engine](reusable-workflow-engine.md) and [LangChain orchestration boundary](langchain-orchestration.md).
-4. Review the [Soroswap Testnet quote and swap flow](soroswap-testnet.md).
+4. Review the [Soroswap Testnet flow](soroswap-testnet.md) and [UNBLCK Agent API integration](unblck-agent-api.md).
 5. Read the [bidirectional MCP gateway](mcp-gateway.md).
 6. Review the [Gemini notebook integration](gemini-notebook-integration.md) before adding personal knowledge sources.
 7. Read the [MCP integration guide](mcp-integration.md).

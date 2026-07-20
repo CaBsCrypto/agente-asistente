@@ -1,5 +1,12 @@
 # Connection Center and Browser Bridge
 
+> **Update ? July 20, 2026:** UNBLCK now exposes an official Agent Hub API.
+> The preferred route is Connect code plus Telegram/WhatsApp identity, followed
+> by LangGraph-governed reads and approved mutations. See
+> [UNBLCK Agent API integration](unblck-agent-api.md). The Browser Bridge below
+> remains a read-only fallback and is no longer the primary integration path.
+
+
 The Connection Center keeps the agent chat open while a user authenticates with an external provider. OAuth, a public API, or MCP remain preferred; the Browser Bridge is the fallback for providers such as UNBLCK that currently expose only a signed-in web experience.
 
 ## Current UNBLCK flow
