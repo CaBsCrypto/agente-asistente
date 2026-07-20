@@ -191,16 +191,21 @@ export async function handleUnblckChatIntent(input: Input): Promise<AgentChatRep
         tier: string;
         open_days: number[];
       };
-      const total = state.credits.total ?? "unlimited";
-      const remaining = state.credits.remaining ?? "unlimited";
-      const bookings = state.bookings.length ? state.bookings.join(", ") : "none";
+      const labels = {
+        en: { unlimited: "unlimited", none: "none", credits: "Credits", used: "used", openDays: "Open days", bookings: "Bookings" },
+        es: { unlimited: "ilimitado", none: "ninguna", credits: "Créditos", used: "usados", openDays: "Días disponibles", bookings: "Reservas" },
+        pt: { unlimited: "ilimitado", none: "nenhuma", credits: "Créditos", used: "usados", openDays: "Dias disponíveis", bookings: "Reservas" },
+      }[input.language];
+      const total = state.credits.total ?? labels.unlimited;
+      const remaining = state.credits.remaining ?? labels.unlimited;
+      const bookings = state.bookings.length ? state.bookings.join(", ") : labels.none;
       const openDays = state.open_days.map((day) => dayNames[input.language][day]).join(", ");
       return {
         ...connectedReply([
           `**UNBLCK** · ${state.tier}`,
-          `Credits: **${remaining}/${total}** (${state.credits.used} used)`,
-          `Open days: **${openDays}**`,
-          `Bookings: **${bookings}**`,
+          `${labels.credits}: **${remaining}/${total}** (${state.credits.used} ${labels.used})`,
+          `${labels.openDays}: **${openDays}**`,
+          `${labels.bookings}: **${bookings}**`,
         ].join("\n\n")),
         workflow: { id: initial.workflowId, status: initial.status, engine: "langgraph", version: initial.version },
       };
