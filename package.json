@@ -17,6 +17,8 @@
         "acceptance:travala": "tsx scripts/acceptance.ts travala",
         "acceptance:authenticated": "tsx scripts/acceptance.ts authenticated",
         "acceptance:execute": "tsx scripts/acceptance.ts execute",
+        "acceptance:unblck": "tsx --env-file=.env.production.local --env-file=.env.local scripts/unblck-acceptance.ts",
+        "unblck:fix-check": "tsx --env-file=.env.local scripts/unblck-fix-check.ts",
         "acceptance:second-user:start": "tsx scripts/second-user-acceptance.ts start",
         "acceptance:second-user:fund-usdc": "tsx scripts/second-user-acceptance.ts fund-usdc",
         "acceptance:second-user:verify": "tsx scripts/second-user-acceptance.ts verify",

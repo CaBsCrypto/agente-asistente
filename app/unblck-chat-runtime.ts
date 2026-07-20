@@ -51,13 +51,26 @@ function connectedReply(content: string, actions: AgentChatReply["actions"] = []
 
 function linkInstructions(language: AgentLanguage): AgentChatReply {
   const copy = {
-    en: "Generate a Connect code at **UNBLCK > Member Hub > Connect**. Then send: `Connect UNBLCK code ABC123XY telegram 123456789`. Use your real Telegram ID, or replace Telegram and the ID with your WhatsApp identity.",
-    es: "Genera un Connect code en **UNBLCK > Member Hub > Connect**. Luego env\u00eda: `Conecta UNBLCK c\u00f3digo ABC123XY telegram 123456789`. Usa tu Telegram ID real, o reemplaza Telegram y el ID por tu identidad de WhatsApp.",
-    pt: "Gere um Connect code em **UNBLCK > Member Hub > Connect**. Depois envie: `Conecta UNBLCK c\u00f3digo ABC123XY telegram 123456789`. Use seu Telegram ID real ou substitua pelo WhatsApp.",
+    en: "To reserve a full pass I first need to link your UNBLCK member account. Tap **Connect UNBLCK**: open your Member Hub to generate a one-time Connect code, then enter that code with your WhatsApp or Telegram identity. Linking happens once \u2014 after that you book from here.",
+    es: "Para reservar un full pass primero necesito vincular tu cuenta de miembro UNBLCK. Toca **Conectar UNBLCK**: abre tu Member Hub para generar un Connect code de un solo uso, y luego ingresa ese c\u00f3digo con tu identidad de WhatsApp o Telegram. La vinculaci\u00f3n es una sola vez \u2014 despu\u00e9s reservas desde aqu\u00ed.",
+    pt: "Para reservar um full pass preciso primeiro vincular sua conta de membro UNBLCK. Toque em **Conectar UNBLCK**: abra seu Member Hub para gerar um Connect code de uso \u00fanico e depois insira esse c\u00f3digo com sua identidade de WhatsApp ou Telegram. A vincula\u00e7\u00e3o \u00e9 feita uma \u00fanica vez \u2014 depois voc\u00ea reserva por aqui.",
   }[language];
   return {
     content: copy,
-    actions: [{ label: "Open UNBLCK Connect", href: "https://www.unblck.cl/member/hub/connect" }],
+    actions: [{
+      label: language === "es" ? "Conectar UNBLCK" : language === "pt" ? "Conectar UNBLCK" : "Connect UNBLCK",
+      popup: {
+        provider: "unblck",
+        url: "https://www.unblck.cl/member/hub/connect",
+        completionMessage:
+          language === "es"
+            ? "Mu\u00e9strame mi estado UNBLCK"
+            : language === "pt"
+              ? "Mostre meu estado UNBLCK"
+              : "Show my UNBLCK status",
+        permissions: ["hub:read", "hub:book", "hub:cancel"],
+      },
+    }],
     connection: { name: "UNBLCK / Tellus Hub", stage: "Credentials needed", priority: "P0" },
   };
 }

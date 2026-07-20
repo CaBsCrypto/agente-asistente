@@ -281,6 +281,11 @@ export default function AgentChat({
   const [bridgeEvidence, setBridgeEvidence] = useState<UnblckBrowserEvidence | null>(null);
   const bridgeRequestRef = useRef<string | null>(null);
   const bridgeTimeoutRef = useRef<number | null>(null);
+  const [linkChannel, setLinkChannel] = useState<"whatsapp" | "telegram">("whatsapp");
+  const [linkChannelUserId, setLinkChannelUserId] = useState("");
+  const [linkCode, setLinkCode] = useState("");
+  const [linking, setLinking] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
 
 
@@ -619,6 +624,91 @@ export default function AgentChat({
     setConnectionPopup({ ...action, status: "review" });
     setBridgeError(null);
     setBridgeEvidence(null);
+    setLinkError(null);
+    setLinkCode("");
+  }
+
+  function unblckLinkErrorText(code: unknown): string {
+    const key = typeof code === "string" ? code : "unknown";
+    const messages: Record<string, { en: string; es: string; pt: string }> = {
+      invalid_request: {
+        en: "Check the channel, your ID and the code, then try again.",
+        es: "Revisa el canal, tu ID y el código, e inténtalo otra vez.",
+        pt: "Verifique o canal, seu ID e o código e tente novamente.",
+      },
+      unblck_400: {
+        en: "UNBLCK rejected the Connect code. It may be invalid, expired or already used — generate a new one in your Member Hub.",
+        es: "UNBLCK rechazó el Connect code. Puede ser inválido, estar vencido o ya usado — genera uno nuevo en tu Member Hub.",
+        pt: "A UNBLCK rejeitou o Connect code. Ele pode ser inválido, expirado ou já usado — gere um novo no seu Member Hub.",
+      },
+      unblck_link_required: {
+        en: "UNBLCK could not find that member link. Generate a fresh Connect code and confirm your identity.",
+        es: "UNBLCK no encontró ese vínculo de miembro. Genera un Connect code nuevo y confirma tu identidad.",
+        pt: "A UNBLCK não encontrou esse vínculo de membro. Gere um novo Connect code e confirme sua identidade.",
+      },
+      unblck_401: {
+        en: "UNBLCK rejected the partner credential. This is a server configuration issue, not your code.",
+        es: "UNBLCK rechazó la credencial del partner. Es un problema de configuración del servidor, no de tu código.",
+        pt: "A UNBLCK rejeitou a credencial do parceiro. É um problema de configuração do servidor, não do seu código.",
+      },
+      unblck_timeout: {
+        en: "UNBLCK did not respond in time. Nothing was linked — try again in a moment.",
+        es: "UNBLCK no respondió a tiempo. No se vinculó nada — inténtalo de nuevo en un momento.",
+        pt: "A UNBLCK não respondeu a tempo. Nada foi vinculado — tente novamente em instantes.",
+      },
+      unblck_api_disabled: {
+        en: "The UNBLCK integration is not enabled on this environment.",
+        es: "La integración de UNBLCK no está habilitada en este entorno.",
+        pt: "A integração da UNBLCK não está habilitada neste ambiente.",
+      },
+    };
+    const entry = messages[key] ?? {
+      en: "The link could not be completed. Please try again.",
+      es: "No se pudo completar la vinculación. Inténtalo de nuevo.",
+      pt: "Não foi possível concluir a vinculação. Tente novamente.",
+    };
+    return locale === "es" ? entry.es : locale === "pt" ? entry.pt : entry.en;
+  }
+
+  async function linkUnblck() {
+    if (linking) return;
+    const channelUserId = linkChannelUserId.trim();
+    const code = linkCode.trim();
+    if (channelUserId.length < 3 || code.length < 6) {
+      setLinkError(unblckLinkErrorText("invalid_request"));
+      return;
+    }
+    setLinking(true);
+    setLinkError(null);
+    try {
+      const token = await getAccessToken();
+      if (!token) throw new Error("auth_unavailable");
+      const response = await fetch("/api/connections/unblck/link", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ channel: linkChannel, channelUserId, code }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setLinkError(unblckLinkErrorText(body?.error));
+        return;
+      }
+      const completionMessage = connectionPopup?.completionMessage;
+      setConnections((previous) => [
+        ...previous.filter((connection) => connection.provider !== "unblck"),
+        { provider: "unblck", status: "active", updatedAt: new Date().toISOString() },
+      ]);
+      setConnectionPopup(null);
+      setLinkCode("");
+      if (completionMessage) await sendMessage(completionMessage);
+    } catch {
+      setLinkError(unblckLinkErrorText("unknown"));
+    } finally {
+      setLinking(false);
+    }
   }
 
   function verifyBrowserConnection() {
@@ -1305,6 +1395,82 @@ export default function AgentChat({
               <ul>
                 {connectionPopup.permissions.map((permission) => <li key={permission}>{permission}</li>)}
               </ul>
+              {connectionPopup.provider === "unblck" && connectionPopup.status !== "verified" && (
+                <form
+                  className="connection-center-link"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void linkUnblck();
+                  }}
+                >
+                  <p className="connection-center-link-hint">
+                    {locale === "es"
+                      ? "Genera tu Connect code en el Member Hub (botón de abajo), luego ingrésalo con tu identidad de mensajería."
+                      : locale === "pt"
+                        ? "Gere seu Connect code no Member Hub (botão abaixo) e depois insira-o com sua identidade de mensageria."
+                        : "Generate your Connect code in the Member Hub (button below), then enter it with your messaging identity."}
+                  </p>
+                  <label>
+                    <span>{locale === "es" ? "Canal" : "Channel"}</span>
+                    <select
+                      value={linkChannel}
+                      onChange={(event) =>
+                        setLinkChannel(event.target.value === "telegram" ? "telegram" : "whatsapp")
+                      }
+                    >
+                      <option value="whatsapp">WhatsApp</option>
+                      <option value="telegram">Telegram</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>
+                      {linkChannel === "whatsapp"
+                        ? locale === "es"
+                          ? "Tu WhatsApp (con código de país)"
+                          : locale === "pt"
+                            ? "Seu WhatsApp (com código do país)"
+                            : "Your WhatsApp (with country code)"
+                        : locale === "es"
+                          ? "Tu Telegram ID"
+                          : "Your Telegram ID"}
+                    </span>
+                    <input
+                      type="text"
+                      inputMode={linkChannel === "whatsapp" ? "tel" : "text"}
+                      autoComplete="off"
+                      placeholder={linkChannel === "whatsapp" ? "+56961857682" : "123456789"}
+                      value={linkChannelUserId}
+                      onChange={(event) => setLinkChannelUserId(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>Connect code</span>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      spellCheck={false}
+                      placeholder="ABC123XY"
+                      value={linkCode}
+                      onChange={(event) => setLinkCode(event.target.value.toUpperCase())}
+                    />
+                  </label>
+                  {linkError && <p className="connection-bridge-error">{linkError}</p>}
+                  <button type="submit" className="primary" disabled={linking}>
+                    {linking
+                      ? locale === "es"
+                        ? "Vinculando..."
+                        : locale === "pt"
+                          ? "Vinculando..."
+                          : "Linking..."
+                      : locale === "es"
+                        ? "Vincular UNBLCK"
+                        : locale === "pt"
+                          ? "Vincular UNBLCK"
+                          : "Link UNBLCK"}
+                  </button>
+                </form>
+              )}
               {bridgeEvidence && (
                 <article className="connection-bridge-evidence">
                   <header>
