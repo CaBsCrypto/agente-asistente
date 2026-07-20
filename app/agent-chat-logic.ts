@@ -203,7 +203,7 @@ export function parseDefindexIntent(message: string): AgentDefindexIntent | null
 }
 
 const languageSignals: Record<"es" | "pt", string[]> = {
-  es: ["quiero", "recarga", "activa", "siguiente", "deposita", "invierte", "conectame", "muestrame", "billetera", "prueba", "puedes", "busquemos", "archivo", "correo", "viaje", "mi cuenta", "inicie sesion", "ya entre", "sesion"],
+  es: ["quiero", "recarga", "activa", "siguiente", "deposita", "invierte", "conectame", "conecta", "muestrame", "billetera", "prueba", "puedes", "busquemos", "archivo", "correo", "viaje", "mi cuenta", "inicie sesion", "ya entre", "sesion", "estado", "reserva", "reservar", "codigo", "credito", "creditos", "cancela", "cancelar", "disponibles"],
   pt: ["quero", "recarregue", "ative", "proximo", "deposite", "invista", "investir", "conecte", "conectar ao", "mostre", "minha", "meu", "carteira", "teste", "voce", "nao", "pesquise", "arquivo", "viagem", "cotacao", "preco", "ja entrei", "sessao"],
 };
 
