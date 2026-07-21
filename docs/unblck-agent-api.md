@@ -1,6 +1,6 @@
 # UNBLCK Agent Hub API integration
 
-Status: **implemented, production acceptance pending**.
+Status: **Live** — the agent books and cancels real hub day-passes against the Agent Hub API, confirmed on UNBLCK's own member portal (QR access pass), with LangGraph approval and replay protection. Replies localized EN/ES.
 
 Official contract: [Agent Hub Check-in API](https://github.com/blessedux/unblck_landing/blob/main/docs/agent-hub-checkin-api.md).
 

@@ -9,8 +9,8 @@ agent-assistant is a permissioned personal agent with:
 - Persistent conversation and user state.
 - A public MCP server.
 - Secure external OAuth connections.
-- CoinMarketCap Trial Pro API live quotes.
-- Persistent CoinMarketCap watchlists.
+- Live market quotes (CoinGecko is the current primary source; CoinMarketCap is the automatic fallback).
+- Persistent per-user watchlists over that market-data layer.
 - Explicit authorization boundaries for sensitive actions.
 
 Current demo prompts:
@@ -19,7 +19,7 @@ Current demo prompts:
 - Add XLM to my CoinMarketCap watchlist
 - Show my crypto watchlist
 
-The current CMC integration is read-only and uses the official keyless Trial Pro API. It does not trade, custody funds or represent trial data as production-grade access.
+Market data today defaults to CoinGecko (keyless) with CoinMarketCap as an automatic fallback; both are read-only, do not trade or custody funds, and trial data is never represented as production-grade access. This pilot proposes making an official CoinMarketCap plan the primary, production-grade source.
 
 ## Proposed partner pilot
 

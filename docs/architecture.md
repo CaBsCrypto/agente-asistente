@@ -16,7 +16,7 @@ flowchart TB
     ROUTER --> CONTROL
     ROUTER --> NOTION["Notion remote MCP"]
     ROUTER --> TRAVALA["Travala remote MCP"]
-    ROUTER --> CMC["CoinMarketCap API"]
+    ROUTER --> CMC["Market data (CoinGecko)"]
     CONTROL --> POLICY["Intent, policy and authorization"]
     POLICY --> RECEIPT["Receipt and audit service"]
     PRIVY --> STELLAR["Stellar Testnet"]
@@ -128,7 +128,7 @@ sequenceDiagram
     actor User
     participant Chat
     participant Router
-    participant Provider as CMC / Travala / Notion
+    participant Provider as CoinGecko / Travala / Notion
     participant Neon
     User->>Chat: Natural-language request
     Chat->>Router: Authenticated message

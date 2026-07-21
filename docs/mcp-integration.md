@@ -5,7 +5,7 @@
 agent-assistant participates in MCP in two directions:
 
 - **Inbound MCP:** other agents call agent-assistant commerce tools.
-- **Outbound connectors:** agent-assistant calls external MCP servers or APIs such as Notion, Travala and CoinMarketCap.
+- **Outbound connectors:** agent-assistant calls external MCP servers or APIs such as Notion, Travala, CoinGecko and CoinMarketCap.
 
 An external product does not automatically need MCP. OAuth plus an API can be sufficient; MCP is preferred when the provider offers a stable, scoped tool contract.
 
@@ -72,7 +72,7 @@ The endpoint is a public sandbox. Production mutation requires user-bound OAuth 
 | --- | --- | --- | --- |
 | Notion | Official remote MCP | OAuth 2.1 with PKCE and dynamic registration | Read-only search; acceptance pending |
 | Travala | Public remote MCP | Public access for current tool | Read-only hotel discovery |
-| CoinMarketCap | Official Trial Pro API | Keyless trial endpoint | Read-only quotes and watchlist |
+| CoinGecko (primary) + CoinMarketCap (fallback) | Public REST API | Keyless (optional demo key) | Read-only quotes and watchlist |
 
 Outbound OAuth tokens are encrypted with CONNECTOR_ENCRYPTION_KEY. Login to agent-assistant does not grant access to an external provider; the user must complete that provider consent flow.
 

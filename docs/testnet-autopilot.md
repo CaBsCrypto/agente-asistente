@@ -12,7 +12,7 @@ Personal Execution Vault. It is not an unlimited wallet permission.
 | USDC per action | 0.05 USDC |
 | Daily allowed decisions | 10 |
 | Duration | 24 hours |
-| Providers | DeFindex, Stellar x402, Travala, CoinMarketCap |
+| Providers | DeFindex, Stellar x402, Travala, CoinGecko |
 | Mainnet | Always blocked |
 | Revocation | Immediate pause |
 

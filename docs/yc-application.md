@@ -29,15 +29,15 @@ What else works today:
 - One automatically created, user-owned Stellar Testnet wallet per user.
 - On-chain wallet activation, balance lookup and explorer verification.
 - Persistent chat, connections and watchlists in Neon Postgres.
-- Live read-only CoinMarketCap quotes and watchlists.
-- Live read-only Travala hotel discovery.
+- Live read-only market data: CoinGecko primary (keyless), CoinMarketCap automatic fallback.
+- Live read-only Travala hotel discovery (hotels only; Travala's MCP exposes no flights upstream).
+- **DeFindex XLM — Live Testnet proof:** a user completed a Privy-signed 1 XLM deposit into the public DeFindex vault, confirmed on-chain (transaction hash), with intent freeze, exact review and a replay-safe receipt.
 - Public inbound MCP commerce sandbox with seven narrow tools; the same durable intent, policy, approval and duplicate-resistant receipt model governs every sensitive action.
 - A Telegram bot bridge that reaches the full agent (chat, UNBLCK, read-only tools) with account linking to the web identity; the scaffold for in-Telegram wallet signing (a Mini App) is in place.
-- Direct DeFindex Soroban integration implemented for XLM and USDC and ready for a user acceptance test.
 
 Not yet claimed as complete:
 
-- No confirmed DeFindex deposit receipt from the current user flow.
+- DeFindex USDC deposit is blocked on a compatible-issuer funding source; only XLM is proven.
 - Notion OAuth and search still require a complete real-user acceptance test.
 - The Telegram bot is built and merged but not yet switched on in production (pending bot credentials).
 - No mainnet payments, merchant fulfillment or production escrow.
@@ -88,12 +88,12 @@ I am currently the sole founder and have built the product directly. I am open t
 | --- | --- | --- |
 | Persistent identity | Privy login | Live |
 | User-owned wallet | Stellar address + explorer | Live |
-| External product access | CoinMarketCap or Travala response | Live, read-only |
+| External product access | CoinGecko price or Travala response | Live, read-only |
 | **Real-world agent action** | **UNBLCK booking + cancellation, confirmed on the partner portal with a QR access pass** | **Live** |
 | **Non-custodial payment** | **x402 0.01 USDC Testnet flow completed with a replay-safe receipt** | **Live Testnet proof** |
 | Controlled execution | Intent + policy + exact approval | Sandbox (real on the UNBLCK and x402 paths) |
 | Duplicate resistance | Same receipt / same workflow returned on retry | Live on UNBLCK and x402; sandbox elsewhere |
-| On-chain DeFindex action | Explorer transaction | Do not show until validated |
+| **On-chain DeFindex action** | **Privy-signed 1 XLM Testnet deposit, confirmed on-chain (transaction hash), replay-safe receipt** | **Live Testnet proof** |
 
 ## Metrics to insert before submission
 
@@ -118,8 +118,8 @@ I am currently the sole founder and have built the product directly. I am open t
 
 **What are you?** A permissioned commerce and action layer for AI agents.
 
-**What can I try?** Sign in, receive a Stellar Testnet wallet, use live external data, ask the agent to book and then cancel a real UNBLCK hub day-pass (confirmed on the partner's own portal), and complete the 0.01 USDC x402 Testnet payment whose receipt is reused on retry.
+**What can I try?** Sign in, receive a Stellar Testnet wallet, use live external data, ask the agent to book and then cancel a real UNBLCK hub day-pass (confirmed on the partner's own portal), deposit 1 XLM into DeFindex (a real on-chain, Privy-signed transaction), and complete the 0.01 USDC x402 Testnet payment whose receipt is reused on retry.
 
-**What is the next technical proof?** One Privy-signed DeFindex XLM Testnet deposit whose transaction hash is reused on retry, plus the first written merchant/partner commitment.
+**What is the next technical proof?** A second design-partner action and the first written merchant/partner commitment — the three core technical proofs (UNBLCK booking, x402 payment, DeFindex deposit) are already live.
 
 **Why could this become large?** Every agent that acts needs controlled authority, and every business that wants agent demand needs a machine-readable and payable interface.
