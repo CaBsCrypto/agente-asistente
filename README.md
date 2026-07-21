@@ -388,6 +388,7 @@ Start at the [documentation index](docs/README.md).
 - [YC evidence ledger](docs/yc-evidence-ledger.md)
 - [Bidirectional MCP gateway](docs/mcp-gateway.md)
 - [MCP integration](docs/mcp-integration.md)
+- [Telegram bot](docs/telegram-bot.md) — chat-first bridge + signing Mini App, with the go-live checklist
 - [Privy and Stellar Testnet](docs/privy-stellar-testnet.md)
 - [Acceptance testing](docs/acceptance-testing.md)
 - [CoinMarketCap partner pilot](docs/coinmarketcap-partner-pilot.md)
