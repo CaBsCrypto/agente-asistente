@@ -4,6 +4,8 @@ Last updated: July 14, 2026
 
 The objective is not to finish the entire vision. It is to submit a coherent company with one reliable product proof and a credible path to real commerce.
 
+> **Status note (July 21):** This is a historical plan. For the current verified state, the [YC evidence ledger](yc-evidence-ledger.md) is the source of truth — the three headline technical proofs (UNBLCK booking, x402 payment, DeFindex XLM deposit) are now **Live**. What remains is real-user acceptance breadth, partner commitments and the recording.
+
 ## Build freeze boundary
 
 Until the application and recording are complete:
@@ -12,7 +14,7 @@ Until the application and recording are complete:
 - Do not build production escrow.
 - Do not deploy a proprietary smart contract.
 - Do not add a second wallet provider.
-- Do not claim mainnet, merchant fulfillment or confirmed partner integrations.
+- Do not claim mainnet, merchant fulfillment, or a signed/paying partner customer. UNBLCK is a live technical integration (real bookings), not a signed commercial deal.
 - Fix only reliability, clarity, security or recording blockers.
 
 ## Phase 1 — Safe preparation without wallet actions
@@ -104,5 +106,5 @@ Stop adding features and record when all are true:
 1. Fill founder/application facts.
 2. Rehearse and record the existing product.
 3. Obtain three written pilot commitments.
-4. Complete one DeFindex Testnet transaction when ready.
+4. ~~Complete one DeFindex Testnet transaction.~~ Done — Privy-signed 1 XLM deposit confirmed on-chain (tx `71a45ae1…`).
 5. Only then start the proprietary Soroban contract.

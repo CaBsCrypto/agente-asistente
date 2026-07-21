@@ -51,7 +51,7 @@ Current validated snapshot (it changes automatically as the code evolves):
 
 - 957 nodes
 - 1,847 edges
-- 59 detected communities
+- 63 detected communities
 - 99% extracted relations
 - 0 LLM tokens
 
