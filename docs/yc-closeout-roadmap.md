@@ -41,7 +41,7 @@ Founder actions:
 Record separate clips instead of one fragile continuous take:
 
 1. Privy login and Stellar wallet.
-2. CoinMarketCap quote or Travala search.
+2. Market data quote (CoinGecko) or Travala search.
 3. Duplicate-resistant sandbox execution.
 4. Founder explanation and vision.
 
