@@ -287,6 +287,13 @@ export default function AgentChat({
   const [linking, setLinking] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
 
+  // Telegram account linking (self-contained; see /api/connections/telegram/link)
+  const [tgBusy, setTgBusy] = useState<null | "code" | "status" | "unlink">(null);
+  const [tgError, setTgError] = useState<string | null>(null);
+  const [tgCode, setTgCode] = useState<{ code: string; deepLink?: string; expiresAt: string } | null>(null);
+  const [tgLinked, setTgLinked] = useState<{ linked: boolean; username?: string } | null>(null);
+  const [tgCopied, setTgCopied] = useState(false);
+
 
 
   const [defindexOpen, setDefindexOpen] = useState(false);
@@ -708,6 +715,91 @@ export default function AgentChat({
       setLinkError(unblckLinkErrorText("unknown"));
     } finally {
       setLinking(false);
+    }
+  }
+
+  async function telegramAuthHeader() {
+    const token = await getAccessToken();
+    if (!token) throw new Error("auth_unavailable");
+    return "Bearer " + token;
+  }
+
+  async function connectTelegram() {
+    if (tgBusy) return;
+    setTgBusy("code");
+    setTgError(null);
+    setTgCopied(false);
+    try {
+      const response = await fetch("/api/connections/telegram/link", {
+        method: "POST",
+        headers: { Authorization: await telegramAuthHeader() },
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(String(body?.error ?? "telegram_link_failed"));
+      setTgCode({ code: body.code, deepLink: body.deepLink, expiresAt: body.expiresAt });
+    } catch {
+      setTgError(
+        locale === "es"
+          ? "No se pudo generar el código. Inténtalo de nuevo."
+          : locale === "pt"
+            ? "Não foi possível gerar o código. Tente novamente."
+            : "Could not generate the code. Please try again.",
+      );
+    } finally {
+      setTgBusy(null);
+    }
+  }
+
+  async function refreshTelegramStatus() {
+    if (tgBusy) return;
+    setTgBusy("status");
+    setTgError(null);
+    try {
+      const response = await fetch("/api/connections/telegram/link", {
+        headers: { Authorization: await telegramAuthHeader() },
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(String(body?.error ?? "telegram_status_failed"));
+      setTgLinked({ linked: Boolean(body.linked), username: body.username });
+      if (body.linked) setTgCode(null);
+    } catch {
+      setTgError(
+        locale === "es" ? "No se pudo consultar el estado." : locale === "pt" ? "Não foi possível consultar o status." : "Could not check status.",
+      );
+    } finally {
+      setTgBusy(null);
+    }
+  }
+
+  async function unlinkTelegram() {
+    if (tgBusy) return;
+    setTgBusy("unlink");
+    setTgError(null);
+    try {
+      const response = await fetch("/api/connections/telegram/link", {
+        method: "DELETE",
+        headers: { Authorization: await telegramAuthHeader() },
+      });
+      if (!response.ok) throw new Error("telegram_unlink_failed");
+      setTgLinked({ linked: false });
+      setTgCode(null);
+    } catch {
+      setTgError(
+        locale === "es" ? "No se pudo desvincular." : locale === "pt" ? "Não foi possível desvincular." : "Could not unlink.",
+      );
+    } finally {
+      setTgBusy(null);
+    }
+  }
+
+  async function copyTelegramCode() {
+    if (!tgCode) return;
+    try {
+      await navigator.clipboard.writeText(tgCode.code);
+      setTgCopied(true);
+      window.setTimeout(() => setTgCopied(false), 1500);
+    } catch {
+      setTgCopied(false);
     }
   }
 
@@ -1884,6 +1976,72 @@ export default function AgentChat({
           <button onClick={() => void sendMessage(ui.proofPrompt)}>{ui.proof}</button>
           <button onClick={() => void sendMessage(ui.travalaPrompt)}>Travala</button>
           <button onClick={() => void sendMessage(ui.connectionsPrompt)}>{ui.connections}</button>
+        </section>
+        <section className="agent-telegram">
+          <strong>Telegram</strong>
+          <p className="agent-telegram-hint">
+            {tgLinked?.linked
+              ? locale === "es"
+                ? "Tu Telegram está vinculado. Comparte wallet, memoria y conexiones con este agente."
+                : locale === "pt"
+                  ? "Seu Telegram está vinculado. Compartilha wallet, memória e conexões com este agente."
+                  : "Your Telegram is linked. It shares this agent's wallet, memory and connections."
+              : locale === "es"
+                ? "Usa el agente desde Telegram. Genera un código y envíalo al bot para compartir tu misma cuenta."
+                : locale === "pt"
+                  ? "Use o agente pelo Telegram. Gere um código e envie ao bot para compartilhar a mesma conta."
+                  : "Use the agent from Telegram. Generate a code and send it to the bot to share this same account."}
+          </p>
+          {tgCode ? (
+            <div className="agent-telegram-code">
+              <code>{tgCode.code}</code>
+              <span className="agent-telegram-instr">
+                {locale === "es"
+                  ? "Envía al bot: "
+                  : locale === "pt"
+                    ? "Envie ao bot: "
+                    : "Send the bot: "}
+                <b>/link {tgCode.code}</b>
+              </span>
+              <div className="agent-telegram-actions">
+                <button type="button" onClick={() => void copyTelegramCode()}>
+                  {tgCopied
+                    ? locale === "es" ? "¡Copiado!" : locale === "pt" ? "Copiado!" : "Copied!"
+                    : locale === "es" ? "Copiar código" : locale === "pt" ? "Copiar código" : "Copy code"}
+                </button>
+                {tgCode.deepLink && (
+                  <a href={tgCode.deepLink} target="_blank" rel="noreferrer">
+                    {locale === "es" ? "Abrir en Telegram" : locale === "pt" ? "Abrir no Telegram" : "Open in Telegram"}
+                  </a>
+                )}
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={() => void connectTelegram()} disabled={tgBusy === "code"}>
+              {tgBusy === "code"
+                ? locale === "es" ? "Generando..." : locale === "pt" ? "Gerando..." : "Generating..."
+                : locale === "es" ? "Conectar Telegram" : locale === "pt" ? "Conectar Telegram" : "Connect Telegram"}
+            </button>
+          )}
+          <div className="agent-telegram-actions">
+            <button type="button" onClick={() => void refreshTelegramStatus()} disabled={tgBusy === "status"}>
+              {locale === "es" ? "Ver estado" : locale === "pt" ? "Ver status" : "Check status"}
+            </button>
+            {tgLinked?.linked && (
+              <button type="button" onClick={() => void unlinkTelegram()} disabled={tgBusy === "unlink"}>
+                {locale === "es" ? "Desvincular" : locale === "pt" ? "Desvincular" : "Unlink"}
+              </button>
+            )}
+          </div>
+          {tgLinked && (
+            <p className="agent-telegram-status">
+              {tgLinked.linked
+                ? (locale === "es" ? "Vinculado" : locale === "pt" ? "Vinculado" : "Linked") +
+                  (tgLinked.username ? ` · @${tgLinked.username}` : "")
+                : locale === "es" ? "No vinculado" : locale === "pt" ? "Não vinculado" : "Not linked"}
+            </p>
+          )}
+          {tgError && <p className="connection-bridge-error">{tgError}</p>}
         </section>
       </aside>
     </section>
