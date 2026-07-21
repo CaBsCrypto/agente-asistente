@@ -9,6 +9,21 @@ import {
   toTelegramHtml,
 } from "../app/telegram/format";
 import { newLinkCode } from "../app/telegram/identity";
+import { validateTelegramInitData } from "../app/telegram/init-data";
+import { createHmac } from "node:crypto";
+
+// Build a validly-signed initData string the way Telegram would.
+function signInitData(botToken: string, fields: Record<string, string>): string {
+  const params = new URLSearchParams(fields);
+  const dcs = [...params.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n");
+  const secret = createHmac("sha256", "WebAppData").update(botToken).digest();
+  const hash = createHmac("sha256", secret).update(dcs).digest("hex");
+  params.set("hash", hash);
+  return params.toString();
+}
 
 test("escapes HTML-sensitive characters for Telegram", () => {
   assert.equal(escapeHtml("a < b & c > d"), "a &lt; b &amp; c &gt; d");
@@ -79,6 +94,47 @@ test("renderReplyMessages puts the keyboard only on the last message", () => {
   assert.equal(messages.length, 2);
   assert.equal(messages[0].reply_markup, undefined);
   assert.deepEqual(messages[1].reply_markup?.inline_keyboard, [[{ text: "Ver hub", url: "https://x.test" }]]);
+});
+
+test("renderReply maps a web_app action to a Mini App button", () => {
+  const payload = renderReply(
+    { content: "Firma el pago", actions: [{ label: "Firmar", webApp: { url: "https://x.test/telegram/sign" } }] },
+    () => "id",
+  );
+  assert.deepEqual(payload.reply_markup?.inline_keyboard, [
+    [{ text: "Firmar", web_app: { url: "https://x.test/telegram/sign" } }],
+  ]);
+});
+
+const BOT_TOKEN = "123456:TEST-token";
+
+test("validateTelegramInitData accepts a correctly signed payload", () => {
+  const authDate = Math.floor(Date.now() / 1000);
+  const initData = signInitData(BOT_TOKEN, {
+    auth_date: String(authDate),
+    user: JSON.stringify({ id: 42, username: "cabs" }),
+  });
+  const result = validateTelegramInitData(initData, BOT_TOKEN);
+  assert.equal(result.ok, true);
+  if (result.ok) assert.equal(result.user?.id, 42);
+});
+
+test("validateTelegramInitData rejects a tampered payload", () => {
+  const initData = signInitData(BOT_TOKEN, {
+    auth_date: String(Math.floor(Date.now() / 1000)),
+    user: JSON.stringify({ id: 42, username: "cabs" }),
+  });
+  const tampered = initData.replace("cabs", "evil");
+  assert.equal(validateTelegramInitData(tampered, BOT_TOKEN).ok, false);
+  // Wrong bot token must also fail.
+  assert.equal(validateTelegramInitData(initData, "999:other").ok, false);
+});
+
+test("validateTelegramInitData rejects a stale payload", () => {
+  const oldDate = Math.floor(Date.now() / 1000) - 7200; // 2h ago
+  const initData = signInitData(BOT_TOKEN, { auth_date: String(oldDate), user: "{}" });
+  const result = validateTelegramInitData(initData, BOT_TOKEN, { maxAgeSeconds: 3600 });
+  assert.equal(result.ok, false);
 });
 
 test("link codes are 8 chars from an unambiguous alphabet", () => {

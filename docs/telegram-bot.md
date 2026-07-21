@@ -101,17 +101,33 @@ same wallet/memory/connections as a web account, the user links once:
 The 64-byte `callback_data` limit is why button messages (e.g. a long `UNBLCK_CONFIRM`
 token) are stored in `telegram_pending_actions` and referenced by a short id.
 
-## Phase 3 — the signing Mini App (design)
+## Phase 3 — the signing Mini App
 
-When a chat action needs a signature, the bot sends a `web_app` inline button that
-opens a Telegram Mini App (a page we serve). Requirements to build and test it:
+When a chat action needs a signature, the bot sends a `web_app` inline button that opens
+a Telegram Mini App (a page we serve). The **scaffold is in place**; only the Privy
+signing itself remains (it needs live testing and cannot be built blind).
 
-- **Bot token** (to register/serve the Mini App and send `web_app` buttons).
+Already built and unit-tested:
+
+- **initData validation** (`app/telegram/init-data.ts`) — verifies the Mini App's signed
+  `initData` HMAC with the bot token server-side, so we can trust who opened it. This is
+  the security foundation; never trust `initData` without it.
+- **`web_app` button** — `format.ts` renders an action's `webApp: { url }` as a Mini App
+  launcher button.
+- **Mini App page** (`/telegram/sign`) — loads the Telegram WebApp runtime, posts
+  `initData` to the session endpoint, and shows the verified user + link status. Signing
+  is a disabled "coming soon" placeholder.
+- **Session endpoint** (`POST /api/telegram/mini/session`) — validates `initData` and
+  reports the verified Telegram user and whether their chat is linked.
+
+Remaining (needs config + live testing):
+
 - **Privy configured for Telegram** — enable Telegram login / Mini App context in the
   Privy dashboard so the SDK can authenticate inside the webview.
-- The Mini App page reuses the existing signing flow (Privy Stellar hook) and the same
-  server verification and durable receipts as the web app. It only signs; it prepares
-  nothing new.
+- Wire the Privy Stellar signing hook into `/telegram/sign`, reusing the same server
+  verification and durable receipts as the web app. It only signs; it prepares nothing new.
+- Have the chat send the `web_app` button (pointing at `/telegram/sign`) for x402 /
+  DeFindex actions.
 
 This phase is browser-signing inside Telegram and must be validated live, so it is not
 built blind.

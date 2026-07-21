@@ -6,6 +6,7 @@ export type AgentReplyAction = {
   message?: string;
   href?: string;
   popup?: { url?: string };
+  webApp?: { url: string };
 };
 
 export type AgentReplyLike = {
@@ -15,7 +16,8 @@ export type AgentReplyLike = {
 
 export type TelegramButton =
   | { text: string; url: string }
-  | { text: string; callback_data: string };
+  | { text: string; callback_data: string }
+  | { text: string; web_app: { url: string } };
 
 export type TelegramMessagePayload = {
   text: string;
@@ -88,6 +90,9 @@ export function renderReply(
         throw new Error("telegram_callback_id_too_long");
       }
       rows.push([{ text: action.label, callback_data }]);
+    } else if (action.webApp?.url) {
+      // Opens a Telegram Mini App (our page) — used for wallet signing.
+      rows.push([{ text: action.label, web_app: { url: action.webApp.url } }]);
     } else {
       const url = action.href ?? action.popup?.url;
       if (url) rows.push([{ text: action.label, url }]);
