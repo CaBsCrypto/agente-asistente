@@ -1,6 +1,6 @@
 # Product status
 
-Last reviewed: **July 20, 2026**
+Last reviewed: **July 21, 2026**
 
 This document separates deployed proof from product vision. Status definitions live in the [documentation index](README.md).
 
@@ -55,7 +55,7 @@ This document separates deployed proof from product vision. Status definitions l
 | Notion | LangGraph-routed, ready to validate | Official remote MCP + per-user OAuth | Authenticated production acceptance test pending |
 | Travala | Live, read-only | Public Travel MCP | No booking or payment |
 | DeFindex | Ready to validate | Direct public Soroban contracts, no API key | Confirm XLM proof; USDC deposit awaits exact-issuer funding |
-| UNBLCK | Agent API implemented, ready for acceptance | Connect code, encrypted channel binding, live state, LangGraph approval for book/cancel and durable replay protection | Link one real Telegram/WhatsApp identity; validate one booking and cancellation. Web-native channel is not supported upstream yet |
+| UNBLCK | Live | Connect code, encrypted channel binding, live state, LangGraph approval for book/cancel and durable replay protection; verified end-to-end against the real Agent Hub API on Jul 20–21 (WhatsApp identity linked, real bookings and a cancellation confirmed on UNBLCK's own member portal, replies localized EN/ES) | Web-native channel is not supported upstream yet |
 | ArcusX | Planned partner pilot | Direct contact | Task lifecycle contract needed |
 | Gmail, Drive, Calendar | Planned | Future OAuth connectors | Catalog only |
 | Trello | Planned | Future OAuth/API connector | Catalog only |
