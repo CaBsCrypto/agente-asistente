@@ -1,42 +1,53 @@
 # YC evidence ledger
 
-Last updated: July 17, 2026 (America/Santiago)
+Last updated: July 21, 2026 (America/Santiago)
 
-This ledger separates verified evidence from pending founder-assisted acceptance. A green readiness check does not replace an on-chain execution proof.
+The single source of truth for what is **verified** versus **pending**. A green
+readiness check is not an execution proof. Use only rows marked **Verified live**
+in external materials.
 
-| Evidence | Result | Verification | Status for YC | Next action |
-| --- | --- | --- | --- | --- |
-| Local code quality | 85/85 tests, lint and production build passed | npm run qa:local on July 17 | Verified locally | Repeat before final recording |
-| Graphify MCP | 10 read-only tools listed; graph_stats and query_graph executed successfully | npm run graph:mcp:smoke | Verified locally | Start a new trusted Codex task to load project MCP config |
-| Production health | Postgres active, Mainnet disabled | acceptance doctor, 6/6 | Verified live readiness | Preserve Testnet-only boundary |
-| Production agent page | HTTP 200 | acceptance doctor | Verified live | Use the selected demo account |
-| Public MCP discovery | Sandbox, personal-agent and provider surfaces advertised | acceptance doctor | Verified live discovery | Do not claim external OAuth clients yet |
-| Official Stellar x402 challenge | Exact 0.0100000 USDC challenge returned | acceptance doctor | Verified live challenge only | Still requires confirmed payment/replay proof |
-| Testnet distributor | 19.0000000 USDC and sufficient XLM | acceptance doctor | Verified readiness | Reserve balance for dedicated acceptance users |
-| Travala search | Five Santiago options returned for Sep 1-3, 2026 | acceptance Travala, 7/7 | Verified live read-only | Repeat once before recording |
-| Privy per-user wallet | Implemented and previously observed | Product evidence | Needs fresh two-user acceptance | Use a new second email |
-| Personal memory isolation | Unit routing tests pass | Automated tests | Needs real two-user acceptance | Save and query memories under two identities |
-| x402 duplicate resistance | Unit and sandbox replay tests pass | Automated tests | Needs confirmed on-chain replay audit | Run confirmed replay with temporary Privy token |
-| DeFindex 1 XLM deposit | Preparation and signing path implemented | Automated tests | Needs founder-approved Testnet transaction | Approve exactly one XLM deposit |
-| Notion search | OAuth and MCP code implemented | Automated tests | Optional real-user acceptance | Use only if it succeeds twice |
-| Design partners | Contacts identified | Founder context | Pending written commitments | Obtain three bounded pilot statements |
-| YC demo | Script and preflight exist | Documentation | Pending recording | Record only after stop conditions are green |
+## Verified live — real actions against real external systems
 
-## Evidence captured on July 17
+| Evidence | Result | Verification |
+| --- | --- | --- |
+| **UNBLCK real-world agent action** | The agent booked and cancelled real Tellus Hub day-passes (2026-07-21, 2026-07-24) from chat. Credits decremented 3/3 → 1/3, then a cancellation refunded one. | Confirmed on UNBLCK's own member portal (calendar + QR access pass per day); replies localized EN/ES |
+| **Stellar x402 non-custodial payment** | A Privy user completed the official 0.01 USDC Testnet flow; a repeated confirmation returned the same receipt without a second debit. | Durable settlement, delivery evidence and replay-safe receipt |
+| **DeFindex XLM DeFi deposit** | A Privy-signed 1 XLM deposit into the public DeFindex Testnet vault; wallet balance dropped ~1 XLM. | On-chain, explorer-verifiable transaction hash `71a45ae162a4b49419b8fcaa06d317eb08c2d588cd7c93c8e783c2dc8319b50a`; replay-safe receipt |
+| **Market data** | Live XLM/BTC quotes with 24h/7d change, market cap, rank. | CoinGecko (keyless, primary), CoinMarketCap automatic fallback; read-only |
+| **Travala hotel discovery** | Five Santiago options returned. | acceptance Travala 7/7 (hotels only; the MCP exposes no flights) |
+| **Privy identity + user-owned wallet** | Google/email login; one user-owned Stellar Testnet wallet auto-created. | Production `/agent` |
+| **Production health** | Postgres active, Mainnet disabled, MCP surfaces advertised, official x402 challenge returns exactly 0.0100000 USDC. | acceptance doctor 6/6 |
 
-- Production doctor generated at 2026-07-18T03:46:26.926Z: 6 passed, 0 failed.
-- Travala acceptance generated at 2026-07-18T03:46:29.693Z: 7 passed, 0 failed.
-- Travala result: Santiago, Chile; five options; first result DoubleTree by Hilton Hotel Santiago - Vitacura.
+The three headline actions — **book (UNBLCK), pay (x402), deposit (DeFindex)** — each run the same lifecycle: freeze intent → policy → exact approval → execute once → durable evidence.
+
+## Built, not yet switched on
+
+| Item | State | To go live |
+| --- | --- | --- |
+| Telegram bot | Chat + full UNBLCK flow + read-only tools + web↔Telegram account linking merged and hardened; audit-fixed; signing Mini App scaffolded | A bot token + DB migration; then wallet signing via the Mini App + Privy |
+
+## Pending (founder-assisted or acceptance)
+
+| Evidence | Status | Next action |
+| --- | --- | --- |
+| Second-user wallet + memory isolation | Needs a fresh two-user acceptance | Save/query memories under two identities |
+| Notion OAuth + search | Code implemented, ready to validate | One authenticated production search that succeeds twice |
+| Design partners | Contacts identified | Three written bounded-pilot commitments (UNBLCK is a live technical integration, not a signed customer) |
+| YC demo recording | Script + preflight exist | Record only after the stop conditions are green; include the UNBLCK booking |
+
+## Evidence snapshots
+
+- Production doctor: 6 passed, 0 failed.
+- Travala acceptance: 7 passed, 0 failed (Santiago; first result DoubleTree by Hilton Santiago - Vitacura).
+- DeFindex deposit: 2026-07-21, tx `71a45ae1…19b50a`, wallet 9998.97 → 9997.96 XLM.
 - Graphify MCP: 957 nodes, 1,847 edges, 63 communities; 99% extracted relations.
 
-## Founder-assisted gates
+## Founder-assisted gates (cannot be automated)
 
-The remaining strongest proofs cannot be completed by background automation because they intentionally require human identity or transaction approval:
+These intentionally require human identity or transaction approval:
 
-1. Fresh second Privy login.
-2. Temporary dedicated-user access token for acceptance.
-3. Exact DeFindex 1 XLM review and signature.
-4. Three written partner commitments.
-5. Final product recording and YC factual answers.
+1. A fresh second Privy login (two-user acceptance).
+2. Three written partner commitments.
+3. The final product recording and YC factual answers.
 
 Never put Privy tokens, signatures, OTP codes, private email content or admin credentials in this ledger.

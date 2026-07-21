@@ -2,6 +2,8 @@
 
 The goal is not to finish the full company vision. The goal is to submit a coherent company with reproducible product evidence, a founder who understands the problem and credible early partner demand.
 
+> **Status note (July 21):** This is a historical plan. The [YC evidence ledger](yc-evidence-ledger.md) is the current source of truth — the DeFi execution proof (Day 4), the x402 payment and the UNBLCK booking are now **Live**. Remaining: two-user acceptance, partner commitments and the recording.
+
 ## Non-negotiable scope
 
 - Stellar Testnet only.
@@ -19,7 +21,7 @@ The goal is not to finish the full company vision. The goal is to submit a coher
 | User isolation | Two Privy emails have different wallets and cannot retrieve each other's memory | Founder + Codex |
 | Personalized action | A saved preference is retrieved only for a relevant request and its provenance is visible | Codex |
 | Payment safety | A confirmed x402 receipt is replayed with the same hash and zero second debit | Founder approval + Codex verification |
-| DeFi execution | One 1 XLM DeFindex Testnet deposit is signed through Privy and verified in Stellar Expert | Founder approval + Codex preparation |
+| DeFi execution | Done — a Privy-signed 1 XLM DeFindex Testnet deposit was verified on-chain (tx `71a45ae1…`) | Completed 2026-07-21 |
 | External utility | One reproducible Travala search returns live normalized inventory | Codex |
 | Commercial pull | Three written design-partner commitments with action, owner, timing and success condition | Founder |
 | Demo | A truthful 60-90 second recording with no secrets and clear Live/Sandbox labels | Founder + Codex |
