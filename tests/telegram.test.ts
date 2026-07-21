@@ -6,6 +6,7 @@ import {
   renderReply,
   toTelegramHtml,
 } from "../app/telegram/format";
+import { newLinkCode } from "../app/telegram/identity";
 
 test("escapes HTML-sensitive characters for Telegram", () => {
   assert.equal(escapeHtml("a < b & c > d"), "a &lt; b &amp; c &gt; d");
@@ -47,4 +48,14 @@ test("a reply with no actions produces no keyboard", () => {
   const payload = renderReply({ content: "Precio XLM: **0.12 USD**" }, () => "x");
   assert.equal(payload.reply_markup, undefined);
   assert.equal(payload.text, "Precio XLM: <b>0.12 USD</b>");
+});
+
+test("link codes are 8 chars from an unambiguous alphabet", () => {
+  const code = newLinkCode(Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7]));
+  assert.equal(code, "ABCDEFGH");
+  assert.equal(code.length, 8);
+  // No ambiguous glyphs anywhere in the alphabet.
+  for (let i = 0; i < 256; i++) {
+    assert.doesNotMatch(newLinkCode(Uint8Array.from([i])), /[01OI]/);
+  }
 });
