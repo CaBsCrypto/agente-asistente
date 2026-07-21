@@ -92,6 +92,19 @@ export async function getTelegramLink(
   };
 }
 
+// Is THIS Telegram identity linked to a web account? (Queried by telegram_user_id.)
+export async function isTelegramLinked(telegramUserId: string): Promise<boolean> {
+  const rows = await getDb()
+    .select({ userId: telegramLinks.userId })
+    .from(telegramLinks)
+    .where(and(
+      eq(telegramLinks.telegramUserId, telegramUserId),
+      eq(telegramLinks.status, "active"),
+    ))
+    .limit(1);
+  return rows.length > 0;
+}
+
 // Web side: revoke all Telegram links for this account.
 export async function unlinkTelegramUser(userId: string): Promise<{ ok: true }> {
   await getDb()
