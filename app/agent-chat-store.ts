@@ -36,9 +36,9 @@ import {
   addToMarketWatchlist,
   extractMarketSymbol,
   formatMarketQuote,
-  getCoinMarketCapQuote,
   listMarketWatchlist,
 } from "@/app/connectors/coinmarketcap";
+import { getMarketQuote } from "@/app/connectors/coingecko";
 import {
   getAgentPlannerReadiness,
   planAgentRequest,
@@ -625,7 +625,7 @@ export async function sendAgentMessage(userId: string, content: string) {
     }
   } else if (requestsWatchlistAdd && marketSymbol) {
     try {
-      const quote = await getCoinMarketCapQuote(marketSymbol);
+      const quote = await getMarketQuote(marketSymbol);
       await addToMarketWatchlist(userId, quote.symbol);
       reply = {
         content: [
@@ -687,13 +687,13 @@ export async function sendAgentMessage(userId: string, content: string) {
     } else {
       const results = await Promise.allSettled(
         watchlist.slice(0, 8).map((item) =>
-          getCoinMarketCapQuote(item.symbol),
+          getMarketQuote(item.symbol),
         ),
       );
       const rows = results
         .filter(
           (result): result is PromiseFulfilledResult<
-            Awaited<ReturnType<typeof getCoinMarketCapQuote>>
+            Awaited<ReturnType<typeof getMarketQuote>>
           > => result.status === "fulfilled",
         )
         .map((result) => {
@@ -740,7 +740,7 @@ export async function sendAgentMessage(userId: string, content: string) {
     }
   } else if (requestsMarketQuote && marketSymbol) {
     try {
-      const quote = await getCoinMarketCapQuote(marketSymbol);
+      const quote = await getMarketQuote(marketSymbol);
       reply = {
         content: formatMarketQuote(quote, language),
         connection: {
