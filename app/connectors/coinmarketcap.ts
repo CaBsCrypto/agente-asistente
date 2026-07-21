@@ -58,7 +58,7 @@ type CmcResponse = {
 };
 
 export type MarketQuote = {
-  id: number;
+  id: number | string;
   name: string;
   symbol: string;
   currency: "USD";
@@ -69,8 +69,8 @@ export type MarketQuote = {
   marketCap: number | null;
   volume24h: number | null;
   updatedAt: string;
-  source: "CoinMarketCap";
-  access: "keyless-trial";
+  source: "CoinMarketCap" | "CoinGecko";
+  access: string;
 };
 
 export function extractMarketSymbol(message: string) {
@@ -187,9 +187,9 @@ export function formatMarketQuote(
 ) {
   const locale = language === "pt" ? "pt-BR" : language === "es" ? "es-CL" : "en-US";
   const labels = {
-    en: { price: "Price", marketCap: "Market cap", volume: "24h volume", rank: "CMC rank", updated: "Updated", source: "Source", access: "read-only" },
-    es: { price: "Precio", marketCap: "Capitalización", volume: "Volumen 24h", rank: "Ranking CMC", updated: "Actualizado", source: "Fuente", access: "solo lectura" },
-    pt: { price: "Preço", marketCap: "Capitalização", volume: "Volume 24h", rank: "Ranking CMC", updated: "Atualizado", source: "Fonte", access: "somente leitura" },
+    en: { price: "Price", marketCap: "Market cap", volume: "24h volume", rank: "Rank", updated: "Updated", source: "Source", access: "read-only" },
+    es: { price: "Precio", marketCap: "Capitalización", volume: "Volumen 24h", rank: "Ranking", updated: "Actualizado", source: "Fuente", access: "solo lectura" },
+    pt: { price: "Preço", marketCap: "Capitalização", volume: "Volume 24h", rank: "Ranking", updated: "Atualizado", source: "Fonte", access: "somente leitura" },
   }[language];
   const money = new Intl.NumberFormat(locale, {
     style: "currency",
@@ -213,6 +213,6 @@ export function formatMarketQuote(
       (quote.volume24h === null ? "n/a" : "$" + compact.format(quote.volume24h)),
     labels.rank + ": " + (quote.rank ?? "n/a"),
     labels.updated + ": " + quote.updatedAt,
-    labels.source + ": CoinMarketCap Trial Pro API (" + labels.access + ")",
+    labels.source + ": " + quote.source + " (" + labels.access + ")",
   ].join("\n\n");
 }
