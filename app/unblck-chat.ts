@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { AgentLanguage } from "@/app/agent-chat-logic";
 import { unblckChannelSchema } from "@/app/connectors/unblck";
 
 const workflowIdSchema = z.string().regex(/^wf_unblck_[a-f0-9]{32}$/);
@@ -13,7 +14,7 @@ export type UnblckChatIntent =
     }
   | { operation: "state" }
   | { operation: "book" | "cancel"; bookingDate: string }
-  | { operation: "confirm"; workflowId: string; actionDigest: string };
+  | { operation: "confirm"; workflowId: string; actionDigest: string; language?: AgentLanguage };
 
 function normalized(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -27,14 +28,16 @@ function validIsoDate(value: string) {
 
 export function parseUnblckChatIntent(message: string): UnblckChatIntent | null {
   const confirmation = message.trim().match(
-    /^UNBLCK_CONFIRM\s+(wf_unblck_[a-f0-9]{32})\s+([a-f0-9]{64})$/i,
+    /^UNBLCK_CONFIRM\s+(wf_unblck_[a-f0-9]{32})\s+([a-f0-9]{64})(?:\s+(en|es|pt))?$/i,
   );
   if (confirmation) {
-    return {
+    const intent: Extract<UnblckChatIntent, { operation: "confirm" }> = {
       operation: "confirm",
       workflowId: workflowIdSchema.parse(confirmation[1].toLowerCase()),
       actionDigest: digestSchema.parse(confirmation[2].toLowerCase()),
     };
+    if (confirmation[3]) intent.language = confirmation[3].toLowerCase() as AgentLanguage;
+    return intent;
   }
 
   const query = normalized(message);
@@ -79,6 +82,8 @@ export function parseUnblckChatIntent(message: string): UnblckChatIntent | null 
 export function unblckConfirmationMessage(
   workflowId: string,
   actionDigest: string,
+  language?: AgentLanguage,
 ) {
-  return `UNBLCK_CONFIRM ${workflowIdSchema.parse(workflowId)} ${digestSchema.parse(actionDigest)}`;
+  const base = `UNBLCK_CONFIRM ${workflowIdSchema.parse(workflowId)} ${digestSchema.parse(actionDigest)}`;
+  return language ? `${base} ${language}` : base;
 }

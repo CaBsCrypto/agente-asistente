@@ -138,6 +138,7 @@ export async function handleUnblckChatIntent(input: Input): Promise<AgentChatRep
             },
           });
       if (result.status !== "completed") throw new Error(result.error ?? "unblck_execution_failed");
+      const language = input.intent.language ?? input.language;
       const date = String(result.preparedAction?.immutable.bookingDate ?? "");
       const mutation = String(result.preparedAction?.immutable.mutation ?? "");
       const content = mutation === "book"
@@ -145,15 +146,15 @@ export async function handleUnblckChatIntent(input: Input): Promise<AgentChatRep
             en: `UNBLCK confirmed the booking for **${date}**. Repeating this confirmation returns the same completed workflow without creating another execution.`,
             es: `UNBLCK confirm\u00f3 la reserva para el **${date}**. Repetir esta confirmaci\u00f3n devuelve el mismo workflow completado sin crear otra ejecuci\u00f3n.`,
             pt: `A UNBLCK confirmou a reserva para **${date}**. Repetir esta confirma\u00e7\u00e3o retorna o mesmo workflow sem outra execu\u00e7\u00e3o.`,
-          }[input.language]
+          }[language]
         : {
             en: `UNBLCK confirmed the cancellation for **${date}**.`,
             es: `UNBLCK confirm\u00f3 la cancelaci\u00f3n para el **${date}**.`,
             pt: `A UNBLCK confirmou o cancelamento para **${date}**.`,
-          }[input.language];
+          }[language];
       return {
         ...connectedReply(content, [{
-          label: input.language === "es" ? "Actualizar estado" : input.language === "pt" ? "Atualizar estado" : "Refresh status",
+          label: language === "es" ? "Actualizar estado" : language === "pt" ? "Atualizar estado" : "Refresh status",
           message: "UNBLCK status: credits, open days and bookings",
         }]),
         workflow: { id: result.workflowId, status: result.status, engine: "langgraph", version: result.version },
@@ -225,7 +226,7 @@ export async function handleUnblckChatIntent(input: Input): Promise<AgentChatRep
         label: book
           ? input.language === "es" ? "Confirmar reserva" : input.language === "pt" ? "Confirmar reserva" : "Confirm booking"
           : input.language === "es" ? "Confirmar cancelaci\u00f3n" : input.language === "pt" ? "Confirmar cancelamento" : "Confirm cancellation",
-        message: unblckConfirmationMessage(initial.workflowId, initial.actionDigest),
+        message: unblckConfirmationMessage(initial.workflowId, initial.actionDigest, input.language),
       }]),
       workflow: { id: initial.workflowId, status: initial.status, engine: "langgraph", version: initial.version },
     };
