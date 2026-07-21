@@ -50,7 +50,7 @@ Status meanings are shared across all project documentation:
 | DeFindex XLM | Ready to validate | Conversational intent, exact transaction review and public Soroban vault integration |
 | DeFindex USDC | Trustline ready; deposit funding blocked | Exact trustline flow, but no controlled compatible-USDC distributor |
 | Soroswap XLM/USDC | Integration ready; external Testnet unavailable | Quote/build/send client, Privy review and durable receipts are implemented; live validation on Jul 18 found the Soroswap API reachable but reporting zero Testnet protocols |
-| UNBLCK / ArcusX | UNBLCK ready for Agent API acceptance; ArcusX planned | UNBLCK link/state/book/cancel implemented with approval; real linked-member proof pending |
+| UNBLCK / ArcusX | UNBLCK Live; ArcusX planned | UNBLCK link/state/book/cancel verified end-to-end against the real Agent Hub API: WhatsApp identity linked, real bookings and a cancellation confirmed on UNBLCK's own member portal, LangGraph approval and replay protection, replies localized EN/ES |
 | Gmail, Drive, Calendar and Trello | Planned | Catalog entries only |
 
 The dated source of truth is [docs/product-status.md](docs/product-status.md).
