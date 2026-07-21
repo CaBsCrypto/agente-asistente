@@ -35,6 +35,13 @@ export function sendMessage(
   return callTelegram("sendMessage", { chat_id: chatId, ...payload }, fetcher);
 }
 
+// Show a "typing…" indicator while the agent works. Best-effort; never throws.
+export function sendTyping(chatId: string | number, fetcher?: typeof fetch): Promise<void> {
+  return callTelegram("sendChatAction", { chat_id: chatId, action: "typing" }, fetcher)
+    .then(() => undefined)
+    .catch(() => undefined);
+}
+
 // Acknowledge a button tap so Telegram stops the loading spinner.
 export function answerCallbackQuery(
   callbackQueryId: string,
