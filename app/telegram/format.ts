@@ -47,6 +47,32 @@ export function callbackDataFitsLimit(data: string): boolean {
   return Buffer.byteLength(data, "utf8") <= CALLBACK_DATA_MAX_BYTES;
 }
 
+// Telegram rejects messages over 4096 chars. Split on paragraph boundaries so we never
+// cut a **bold** pair (our content keeps each bold span on a single line).
+const TELEGRAM_TEXT_MAX = 4096;
+
+export function splitForTelegram(text: string, max = TELEGRAM_TEXT_MAX): string[] {
+  if (text.length <= max) return [text];
+  const chunks: string[] = [];
+  let current = "";
+  for (const paragraph of text.split("\n\n")) {
+    const block = current ? `\n\n${paragraph}` : paragraph;
+    if (current && current.length + block.length > max) {
+      chunks.push(current);
+      current = "";
+    }
+    if (paragraph.length > max) {
+      // Pathologically long single paragraph: hard-split it.
+      if (current) { chunks.push(current); current = ""; }
+      for (let i = 0; i < paragraph.length; i += max) chunks.push(paragraph.slice(i, i + max));
+      continue;
+    }
+    current = current ? `${current}\n\n${paragraph}` : paragraph;
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
 // Build the Telegram payload. `makeCallbackId` persists a message-triggering action and
 // returns a SHORT opaque id to place in callback_data (the real message can exceed 64 bytes).
 export function renderReply(
@@ -74,4 +100,19 @@ export function renderReply(
   };
   if (rows.length > 0) payload.reply_markup = { inline_keyboard: rows };
   return payload;
+}
+
+// Render a reply as one or more Telegram messages (long text is split). Only the LAST
+// message carries the inline keyboard, so the buttons sit under the full reply.
+export function renderReplyMessages(
+  reply: AgentReplyLike,
+  makeCallbackId: (message: string) => string,
+): TelegramMessagePayload[] {
+  const chunks = splitForTelegram(reply.content || "…");
+  return chunks.map((chunk, index) =>
+    renderReply(
+      { content: chunk, actions: index === chunks.length - 1 ? reply.actions : [] },
+      makeCallbackId,
+    ),
+  );
 }

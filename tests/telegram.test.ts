@@ -4,6 +4,8 @@ import {
   callbackDataFitsLimit,
   escapeHtml,
   renderReply,
+  renderReplyMessages,
+  splitForTelegram,
   toTelegramHtml,
 } from "../app/telegram/format";
 import { newLinkCode } from "../app/telegram/identity";
@@ -48,6 +50,35 @@ test("a reply with no actions produces no keyboard", () => {
   const payload = renderReply({ content: "Precio XLM: **0.12 USD**" }, () => "x");
   assert.equal(payload.reply_markup, undefined);
   assert.equal(payload.text, "Precio XLM: <b>0.12 USD</b>");
+});
+
+test("short text is not split", () => {
+  assert.deepEqual(splitForTelegram("hello"), ["hello"]);
+});
+
+test("long text splits on paragraph boundaries and stays under the limit", () => {
+  const paragraph = "x".repeat(3000);
+  const chunks = splitForTelegram(`${paragraph}\n\n${paragraph}`, 4096);
+  assert.equal(chunks.length, 2);
+  for (const chunk of chunks) assert.ok(chunk.length <= 4096);
+  assert.equal(chunks[0], paragraph);
+});
+
+test("a single over-long paragraph is hard-split", () => {
+  const chunks = splitForTelegram("y".repeat(9000), 4096);
+  assert.equal(chunks.length, 3);
+  for (const chunk of chunks) assert.ok(chunk.length <= 4096);
+});
+
+test("renderReplyMessages puts the keyboard only on the last message", () => {
+  const long = "p".repeat(3000);
+  const messages = renderReplyMessages(
+    { content: `${long}\n\n${long}`, actions: [{ label: "Ver hub", href: "https://x.test" }] },
+    () => "id",
+  );
+  assert.equal(messages.length, 2);
+  assert.equal(messages[0].reply_markup, undefined);
+  assert.deepEqual(messages[1].reply_markup?.inline_keyboard, [[{ text: "Ver hub", url: "https://x.test" }]]);
 });
 
 test("link codes are 8 chars from an unambiguous alphabet", () => {

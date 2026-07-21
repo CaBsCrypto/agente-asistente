@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendAgentMessage } from "@/app/agent-chat-store";
-import { answerCallbackQuery, sendMessage } from "@/app/telegram/bot";
-import { renderReply, type AgentReplyLike } from "@/app/telegram/format";
+import { answerCallbackQuery, sendMessage, sendTyping } from "@/app/telegram/bot";
+import { renderReplyMessages, type AgentReplyLike } from "@/app/telegram/format";
 import {
   redeemLinkCode,
   resolveTelegramUser,
@@ -48,8 +48,17 @@ async function reply(chatId: number, telegramUserId: string, userId: string, r: 
       );
     }
   }
-  const payload = renderReply(r, (message) => idByMessage.get(message) ?? "");
-  await sendMessage(chatId, payload);
+  const payloads = renderReplyMessages(r, (message) => idByMessage.get(message) ?? "");
+  for (const payload of payloads) {
+    await sendMessage(chatId, payload);
+  }
+}
+
+// A friendly, localized fallback when something throws mid-turn.
+async function replyError(chatId: number, telegramUserId: string) {
+  await reply(chatId, telegramUserId, `tg:${telegramUserId}`, {
+    content: "Tuve un problema procesando eso. Inténtalo de nuevo en un momento.",
+  }).catch(() => {});
 }
 
 async function linkWithCode(chatId: number, from: TgUser, code: string) {
@@ -92,8 +101,14 @@ async function handleText(chatId: number, from: TgUser, text: string) {
   }
 
   const { userId } = await resolveTelegramUser({ telegramUserId, chatId, username: from.username });
-  const result = await sendAgentMessage(userId, trimmed);
-  await reply(chatId, telegramUserId, userId, toReply(result));
+  await sendTyping(chatId);
+  try {
+    const result = await sendAgentMessage(userId, trimmed);
+    await reply(chatId, telegramUserId, userId, toReply(result));
+  } catch (error) {
+    console.error("[telegram] agent failed:", error instanceof Error ? error.message : error);
+    await replyError(chatId, telegramUserId);
+  }
 }
 
 async function handleCallback(update: NonNullable<TgUpdate["callback_query"]>) {
@@ -110,8 +125,14 @@ async function handleCallback(update: NonNullable<TgUpdate["callback_query"]>) {
     return;
   }
   const { userId } = await resolveTelegramUser({ telegramUserId, chatId });
-  const result = await sendAgentMessage(userId, message);
-  await reply(chatId, telegramUserId, userId, toReply(result));
+  await sendTyping(chatId);
+  try {
+    const result = await sendAgentMessage(userId, message);
+    await reply(chatId, telegramUserId, userId, toReply(result));
+  } catch (error) {
+    console.error("[telegram] callback agent failed:", error instanceof Error ? error.message : error);
+    await replyError(chatId, telegramUserId);
+  }
 }
 
 export async function POST(request: Request) {
