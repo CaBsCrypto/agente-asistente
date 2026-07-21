@@ -1,8 +1,8 @@
 // Resolve a Telegram chat identity to an agent user id.
 // - Linked: telegram_links row → the user's real Privy account (shared wallet/memory/connections).
 // - Standalone: a synthetic "tg:<id>" agent_users row so foreign keys hold and the user has their own state.
-import { randomUUID } from "node:crypto";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { randomBytes, randomUUID } from "node:crypto";
+import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   agentUsers,
@@ -43,6 +43,53 @@ export async function resolveTelegramUser(input: {
   const userId = standaloneUserId(input.telegramUserId);
   await ensureAgentUser(userId);
   return { userId, linked: false };
+}
+
+// Human-friendly one-time code: 8 chars, no ambiguous glyphs (0/O, 1/I).
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export function newLinkCode(source: Uint8Array = randomBytes(8)): string {
+  let code = "";
+  for (const byte of source) code += CODE_ALPHABET[byte % CODE_ALPHABET.length];
+  return code.slice(0, 8);
+}
+
+// Web side: mint a one-time code the user pastes into the bot to link their account.
+export async function generateTelegramLinkCode(
+  userId: string,
+  ttlMs = 15 * 60 * 1000,
+): Promise<{ code: string; expiresAt: Date }> {
+  const code = newLinkCode();
+  const expiresAt = new Date(Date.now() + ttlMs);
+  await getDb().insert(telegramLinkCodes).values({ code, userId, expiresAt });
+  return { code, expiresAt };
+}
+
+// Web side: is a Telegram identity currently linked to this account?
+export async function getTelegramLink(
+  userId: string,
+): Promise<{ linked: boolean; username?: string; linkedAt?: string }> {
+  const rows = await getDb()
+    .select({ username: telegramLinks.username, linkedAt: telegramLinks.linkedAt })
+    .from(telegramLinks)
+    .where(and(eq(telegramLinks.userId, userId), eq(telegramLinks.status, "active")))
+    .orderBy(desc(telegramLinks.linkedAt))
+    .limit(1);
+  const row = rows[0];
+  if (!row) return { linked: false };
+  return {
+    linked: true,
+    username: row.username ?? undefined,
+    linkedAt: row.linkedAt.toISOString(),
+  };
+}
+
+// Web side: revoke all Telegram links for this account.
+export async function unlinkTelegramUser(userId: string): Promise<{ ok: true }> {
+  await getDb()
+    .update(telegramLinks)
+    .set({ status: "revoked", updatedAt: new Date() })
+    .where(eq(telegramLinks.userId, userId));
+  return { ok: true };
 }
 
 // Redeem a web-generated one-time code to bind this Telegram identity to an existing Privy account.

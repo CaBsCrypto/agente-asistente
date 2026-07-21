@@ -52,11 +52,31 @@ async function reply(chatId: number, telegramUserId: string, userId: string, r: 
   await sendMessage(chatId, payload);
 }
 
+async function linkWithCode(chatId: number, from: TgUser, code: string) {
+  const telegramUserId = String(from.id);
+  try {
+    const { userId } = await redeemLinkCode({ telegramUserId, chatId, username: from.username, code });
+    await reply(chatId, telegramUserId, userId, {
+      content: "Listo — tu Telegram quedó **vinculado** a tu cuenta. Ahora compartimos wallet, memoria y conexiones.",
+    });
+  } catch {
+    await reply(chatId, telegramUserId, `tg:${telegramUserId}`, {
+      content: "Ese código es inválido o expiró. Genera uno nuevo en la app web e inténtalo de nuevo.",
+    });
+  }
+}
+
 async function handleText(chatId: number, from: TgUser, text: string) {
   const telegramUserId = String(from.id);
   const trimmed = text.trim();
 
-  if (trimmed === "/start") {
+  // /start optionally carries a deep-link payload (t.me/<bot>?start=CODE) → treat it as a link code.
+  if (trimmed === "/start" || trimmed.toLowerCase().startsWith("/start ")) {
+    const payload = trimmed.includes(" ") ? trimmed.slice(trimmed.indexOf(" ") + 1).trim() : "";
+    if (payload) {
+      await linkWithCode(chatId, from, payload);
+      return;
+    }
     const { linked } = await resolveTelegramUser({ telegramUserId, chatId, username: from.username });
     await reply(chatId, telegramUserId, `tg:${telegramUserId}`, {
       content: linked
@@ -67,17 +87,7 @@ async function handleText(chatId: number, from: TgUser, text: string) {
   }
 
   if (trimmed.toLowerCase().startsWith("/link ")) {
-    const code = trimmed.slice("/link ".length).trim();
-    try {
-      const { userId } = await redeemLinkCode({ telegramUserId, chatId, username: from.username, code });
-      await reply(chatId, telegramUserId, userId, {
-        content: "Listo — tu Telegram quedó **vinculado** a tu cuenta. Ahora compartimos wallet, memoria y conexiones.",
-      });
-    } catch {
-      await reply(chatId, telegramUserId, `tg:${telegramUserId}`, {
-        content: "Ese código es inválido o expiró. Genera uno nuevo en la app web e inténtalo de nuevo.",
-      });
-    }
+    await linkWithCode(chatId, from, trimmed.slice("/link ".length).trim());
     return;
   }
 
