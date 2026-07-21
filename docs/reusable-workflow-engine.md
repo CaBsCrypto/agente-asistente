@@ -58,7 +58,7 @@ must retain their existing transaction-specific protections.
 | Notion | Search workspace | Read | Routed through LangGraph; authenticated production acceptance pending |
 | DeFindex | Prepare Testnet deposit | Financial | Privy approval, one submission and verified Stellar receipt |
 | Soroswap | Testnet quote | Read | Live protocol route becomes available |
-| UNBLCK | State, booking and cancellation | Read/write | Official Agent API implemented; real linked-member acceptance pending |
+| UNBLCK | State, booking and cancellation | Read/write | Live — real bookings and a cancellation confirmed on the partner's own member portal (QR access pass) |
 | Travala | Search inventory | Read | Stable upstream acceptance test |
 
 ## Safe rollout

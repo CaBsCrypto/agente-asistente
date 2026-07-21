@@ -1,6 +1,6 @@
 # Connection Center and Browser Bridge
 
-> **Update ? July 20, 2026:** UNBLCK now exposes an official Agent Hub API.
+> **Update — July 21, 2026:** UNBLCK now exposes an official Agent Hub API.
 > The preferred route is Connect code plus Telegram/WhatsApp identity, followed
 > by LangGraph-governed reads and approved mutations. See
 > [UNBLCK Agent API integration](unblck-agent-api.md). The Browser Bridge below
@@ -79,4 +79,4 @@ The bridge now inspects only an authenticated provider tab after explicit user a
 - duplicate protection for retries;
 - outcome evidence returned by the provider.
 
-Until those controls pass a real acceptance test, UNBLCK is **Browser verification ready**, not **Booking live**.
+UNBLCK is now **Booking live**: those controls passed a real acceptance test — the agent booked and cancelled real hub day-passes through the Agent API, confirmed on UNBLCK's own member portal with a QR access pass.

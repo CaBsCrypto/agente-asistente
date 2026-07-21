@@ -83,7 +83,7 @@ Ative USDC
 
 ## Current proof status
 
-The XLM path is ready for an authenticated acceptance test: wallet lookup, chat-requested Testnet funding, transaction preparation, Privy confirmation, submission and receipt handling are implemented.
+The XLM path is a **Live Testnet proof**: a user completed a Privy-signed 1 XLM deposit into the public DeFindex vault, confirmed on-chain (transaction hash `71a45ae162a4b49419b8fcaa06d317eb08c2d588cd7c93c8e783c2dc8319b50a`), with wallet lookup, exact review, submission and a replay-safe receipt working end to end.
 
 The USDC trustline path is also implemented. An end-to-end USDC deposit still requires a funded distributor for the exact issuer used by the public vault. agent-assistant does not currently control one, so the product must not claim automatic USDC funding or substitute Circle Testnet USDC with a different issuer.
 

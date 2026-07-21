@@ -71,14 +71,16 @@ The same commands are recognized in English, Spanish and Portuguese.
 - Horizon submission, durable receipt and idempotent retry handling.
 - Mainnet disabled.
 
-## Acceptance proof still required
+## Acceptance proof (DeFindex XLM completed)
 
-The code path is ready, but product evidence is not complete until a real authenticated user records:
+The DeFindex XLM path is proven: a user completed a Privy-confirmed 1 XLM deposit, explorer-verifiable (transaction hash), with a replay-safe receipt returned on retry without a second submission. Items 2–4 below are done.
 
-1. The wallet before and after chat-requested Friendbot funding.
-2. A Privy-confirmed DeFindex XLM transaction.
-3. The explorer-verifiable transaction receipt.
-4. A retry that returns the same stored receipt without a second submission.
+Remaining to round out the onboarding evidence:
+
+1. A recorded text-only onboarding capturing the wallet before and after chat-requested Friendbot funding.
+2. ~~A Privy-confirmed DeFindex XLM transaction.~~ Done.
+3. ~~The explorer-verifiable transaction receipt.~~ Done.
+4. ~~A retry that returns the same stored receipt without a second submission.~~ Done.
 
 A funded exact-issuer USDC distributor is separately required before claiming an end-to-end USDC deposit.
 

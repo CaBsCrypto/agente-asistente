@@ -12,7 +12,7 @@ flowchart LR
     PERSONAL --> OUTBOUND["Outbound connectors"]
     OUTBOUND --> NOTION["Notion MCP"]
     OUTBOUND --> TRAVALA["Travala MCP"]
-    OUTBOUND --> CMC["CoinMarketCap API"]
+    OUTBOUND --> CMC["Market data (CoinGecko)"]
 ~~~
 
 This closes the architectural loop:
@@ -198,7 +198,7 @@ The personal agent continues to consume external products:
 | --- | --- | --- | --- |
 | Notion | Remote MCP | OAuth | Read-only search; acceptance pending |
 | Travala | Remote MCP | Current public access | Read-only hotel discovery |
-| CoinMarketCap | HTTP API | No personal account required in trial | Read-only quotes/watchlist |
+| CoinGecko (primary) + CoinMarketCap (fallback) | HTTP API | Keyless, optional demo key | Read-only quotes/watchlist |
 
 This layer is separate from inbound MCP. A provider may connect through MCP, OAuth API or a conventional server API.
 

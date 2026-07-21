@@ -10,7 +10,7 @@ rewrite.
 Two Telegram surfaces, working together:
 
 - **Bot chat** — a normal Telegram conversation (text in, text + inline buttons out).
-  This is the product: UNBLCK (state/book/cancel), CoinMarketCap prices, watchlist,
+  This is the product: UNBLCK (state/book/cancel), market prices (CoinGecko), watchlist,
   wallet balance, Notion, Travala, memory, and account linking. **No wallet signing.**
 - **Mini App** — our own web page running inside Telegram's webview. It appears **only
   to sign a wallet action** (x402, DeFindex), because Privy signs in a browser context

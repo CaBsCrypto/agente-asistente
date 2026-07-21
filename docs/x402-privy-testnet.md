@@ -34,9 +34,9 @@ This integration lets an authenticated user pay the official Stellar x402 demo f
 - `app/api/agent/x402/route.ts`: authenticated prepare/approve/execute lifecycle.
 - `agent_x402_payments`: durable challenge, settlement and delivery evidence.
 
-## Acceptance proof still required
+## Acceptance proof (completed)
 
-The code path and signature primitive are implemented and tested. The remaining acceptance step is operational: fund the logged-in user's exact x402 Testnet USDC balance and confirm one live payment against `https://stellar.org/x402-demo/api/protected/testnet`. Do not describe the external payment as completed until an explorer transaction hash is recorded.
+A Privy user completed the official 0.01 USDC Testnet payment against `https://stellar.org/x402-demo/api/protected/testnet`. Settlement, delivery evidence and a replay-safe receipt are durable, and a repeated confirmation returns the same receipt without a second debit — the payment is a Live Testnet proof, not a plan.
 
 `npm run x402:signing:doctor` validates the live challenge and prepares the exact authorization hash without submitting a payment or moving funds.
 
