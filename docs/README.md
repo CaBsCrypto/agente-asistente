@@ -25,22 +25,33 @@ This directory is the source of truth for operating, demonstrating and extending
 10. Use the [acceptance testing guide](acceptance-testing.md) before claiming an integration works.
 11. Review the [graph memory and project map](graph-memory.md) to validate topic-scoped memory.
 
-### Developers and integrations
+Start with the two maps, then drill into a specific surface.
 
 1. Read the [developer guide](developer-guide.md).
-2. Review the [architecture diagrams](architecture.md).
-3. Review the [Lang ecosystem map](lang-ecosystem.md), [reusable LangGraph engine](reusable-workflow-engine.md) and [LangChain orchestration boundary](langchain-orchestration.md).
-4. Review the [Soroswap Testnet flow](soroswap-testnet.md) and [UNBLCK Agent API integration](unblck-agent-api.md).
-5. Read the [bidirectional MCP gateway](mcp-gateway.md).
-6. Review the [Gemini notebook integration](gemini-notebook-integration.md) before adding personal knowledge sources.
-7. Read the [MCP integration guide](mcp-integration.md).
-8. Review the [OpenZeppelin Stellar Channels boundary](openzeppelin-stellar-channels.md).
-9. Review the [MPP Router discovery and payment gate](mpp-router.md).
-10. Review the [Stellar 8004 registration plan](stellar-8004.md).
-11. Read the [browser-assisted Connection Center](connection-center.md).
-12. Read the [Privy + Stellar architecture](privy-stellar-testnet.md).
+2. Read the [API & integration reference](api-reference.md) — every HTTP route, MCP tool, outbound connector, auth model and environment variable, sourced from the code.
+3. Review the [architecture diagrams](architecture.md).
+
+Runtime and orchestration:
+
+4. Review the [Lang ecosystem map](lang-ecosystem.md), [reusable LangGraph engine](reusable-workflow-engine.md) and [LangChain orchestration boundary](langchain-orchestration.md).
+5. Read the [bidirectional MCP gateway](mcp-gateway.md) and the [MCP integration guide](mcp-integration.md).
+6. Read the [browser-assisted Connection Center](connection-center.md).
+
+Per-integration deep dives:
+
+7. [UNBLCK Agent API integration](unblck-agent-api.md) (Live) and the [Soroswap Testnet flow](soroswap-testnet.md).
+8. [Privy + Stellar architecture](privy-stellar-testnet.md) and the [DeFindex Testnet guide](defindex-testnet.md) (Live XLM proof).
+9. [x402 + Privy Testnet payment](x402-privy-testnet.md) (Live proof).
+10. [Telegram bot](telegram-bot.md) — chat-first bridge + signing Mini App, with the go-live checklist.
+11. [Testnet Autopilot](testnet-autopilot.md), [OpenZeppelin Stellar Channels](openzeppelin-stellar-channels.md), [MPP Router](mpp-router.md) and the [Stellar 8004 plan](stellar-8004.md).
+
+Extend and validate:
+
+12. Review the [Gemini notebook integration](gemini-notebook-integration.md) before adding personal knowledge sources.
 13. Run the [acceptance testing workflow](acceptance-testing.md) before and after deployment.
 14. Send the [new product integration prompt](NEW_PRODUCT_INTEGRATION_AGENT_PROMPT.md) to an implementation agent or partner engineer.
+
+For the illustrated single-page tour, open the [visual product & architecture overview](overview.html) in a browser.
 
 ### Founder operations
 
