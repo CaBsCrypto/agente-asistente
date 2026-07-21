@@ -633,7 +633,7 @@ export async function sendAgentMessage(userId: string, content: string) {
           formatMarketQuote(quote, language),
         ].join("\n\n"),
         connection: {
-          name: "CoinMarketCap Agent Hub",
+          name: "CoinGecko",
           stage: "Read-only connected" as const,
           priority: "P0" as const,
         },
@@ -650,7 +650,7 @@ export async function sendAgentMessage(userId: string, content: string) {
         content:
           local("CoinMarketCap could not validate that asset, so I did not add anything to your watchlist.", "O CoinMarketCap não conseguiu validar esse ativo, então nada foi adicionado à sua watchlist."),
         connection: {
-          name: "CoinMarketCap Agent Hub",
+          name: "CoinGecko",
           stage: "Read-only connected" as const,
           priority: "P0" as const,
         },
@@ -669,7 +669,7 @@ export async function sendAgentMessage(userId: string, content: string) {
         content:
           local("Your CoinMarketCap watchlist is empty. Add an asset to begin tracking real market data.", "Sua watchlist do CoinMarketCap está vazia. Adicione um ativo para acompanhar dados reais de mercado."),
         connection: {
-          name: "CoinMarketCap Agent Hub",
+          name: "CoinGecko",
           stage: "Read-only connected" as const,
           priority: "P0" as const,
         },
@@ -722,7 +722,7 @@ export async function sendAgentMessage(userId: string, content: string) {
           local("Read-only market data. No trading action was performed.", "Dados de mercado somente para leitura. Nenhuma operação foi executada."),
         ].join("\n\n"),
         connection: {
-          name: "CoinMarketCap Agent Hub",
+          name: "CoinGecko",
           stage: "Read-only connected" as const,
           priority: "P0" as const,
         },
@@ -744,7 +744,7 @@ export async function sendAgentMessage(userId: string, content: string) {
       reply = {
         content: formatMarketQuote(quote, language),
         connection: {
-          name: "CoinMarketCap Agent Hub",
+          name: "CoinGecko",
           stage: "Read-only connected" as const,
           priority: "P0" as const,
         },
@@ -769,7 +769,7 @@ export async function sendAgentMessage(userId: string, content: string) {
             ? local("CoinMarketCap's keyless trial is temporarily rate-limited. No cached price was presented as live.", "O trial sem chave do CoinMarketCap está temporariamente limitado. Nenhum preço em cache foi apresentado como ao vivo.")
             : local("CoinMarketCap could not return a verified quote for that asset.", "O CoinMarketCap não conseguiu retornar uma cotação verificada para esse ativo."),
         connection: {
-          name: "CoinMarketCap Agent Hub",
+          name: "CoinGecko",
           stage: "Read-only connected" as const,
           priority: "P0" as const,
         },
