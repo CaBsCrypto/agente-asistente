@@ -92,6 +92,15 @@ type X402ReplayEvidence = {
   replayDebit: "0.0000000 USDC";
 };
 
+// In-app transaction receipt shown in a modal, so "open receipt" never ejects the user.
+type ReceiptData = {
+  title: string;
+  network: string;
+  rows: { label: string; value: string }[];
+  transactionHash: string | null;
+  explorerUrl: string | null;
+};
+
 type ChatAction = {
   label: string;
   message?: string;
@@ -293,6 +302,10 @@ export default function AgentChat({
   const [tgCode, setTgCode] = useState<{ code: string; deepLink?: string; expiresAt: string } | null>(null);
   const [tgLinked, setTgLinked] = useState<{ linked: boolean; username?: string } | null>(null);
   const [tgCopied, setTgCopied] = useState(false);
+
+  // In-app receipt modal (keeps the user inside the app instead of opening the explorer).
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [receiptCopied, setReceiptCopied] = useState(false);
 
 
 
@@ -800,6 +813,22 @@ export default function AgentChat({
       window.setTimeout(() => setTgCopied(false), 1500);
     } catch {
       setTgCopied(false);
+    }
+  }
+
+  function openReceipt(data: ReceiptData) {
+    setReceiptCopied(false);
+    setReceipt(data);
+  }
+
+  async function copyReceiptHash() {
+    if (!receipt?.transactionHash) return;
+    try {
+      await navigator.clipboard.writeText(receipt.transactionHash);
+      setReceiptCopied(true);
+      window.setTimeout(() => setReceiptCopied(false), 1500);
+    } catch {
+      setReceiptCopied(false);
     }
   }
 
@@ -1451,6 +1480,50 @@ export default function AgentChat({
           )}
         </div>
 
+        {receipt && (
+          <div className="receipt-backdrop" onClick={() => setReceipt(null)}>
+            <section
+              className="receipt-card"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="receipt-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <header>
+                <span>{locale === "es" ? "RECIBO · CONFIRMADO" : locale === "pt" ? "RECIBO · CONFIRMADO" : "RECEIPT · CONFIRMED"}</span>
+                <button type="button" aria-label="Close" onClick={() => setReceipt(null)}>X</button>
+              </header>
+              <h3 id="receipt-title">{receipt.title}</h3>
+              <dl>
+                <div><dt>{ui.network}</dt><dd>{receipt.network}</dd></div>
+                {receipt.rows.map((row) => (
+                  <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>
+                ))}
+              </dl>
+              {receipt.transactionHash && (
+                <div className="receipt-hash">
+                  <span>{locale === "es" ? "Hash de transacción" : locale === "pt" ? "Hash da transação" : "Transaction hash"}</span>
+                  <code>{receipt.transactionHash}</code>
+                  <button type="button" onClick={() => void copyReceiptHash()}>
+                    {receiptCopied
+                      ? locale === "es" ? "¡Copiado!" : locale === "pt" ? "Copiado!" : "Copied!"
+                      : locale === "es" ? "Copiar" : locale === "pt" ? "Copiar" : "Copy"}
+                  </button>
+                </div>
+              )}
+              <footer>
+                <button type="button" className="secondary" onClick={() => setReceipt(null)}>
+                  {locale === "es" ? "Cerrar" : locale === "pt" ? "Fechar" : "Close"}
+                </button>
+                {receipt.explorerUrl && (
+                  <a href={receipt.explorerUrl} target="_blank" rel="noreferrer">
+                    {(locale === "es" ? "Ver en el explorer" : locale === "pt" ? "Ver no explorer" : "View on explorer") + " ↗"}
+                  </a>
+                )}
+              </footer>
+            </section>
+          </div>
+        )}
         {connectionPopup && (
           <div className="connection-center-backdrop">
             <section className="connection-center-card" role="dialog" aria-modal="true" aria-labelledby="connection-center-title">
@@ -1692,10 +1765,19 @@ export default function AgentChat({
                       ? locale === "es" ? "Firmando y enviando..." : locale === "pt" ? "Assinando e enviando..." : "Signing and submitting..."
                       : locale === "es" ? "Confirmar swap con Privy" : locale === "pt" ? "Confirmar swap com Privy" : "Confirm swap with Privy"}
                   </button>
-                ) : soroswapApproval.explorerUrl ? (
-                  <a href={soroswapApproval.explorerUrl} target="_blank" rel="noreferrer">
+                ) : soroswapApproval.explorerUrl || soroswapApproval.transactionHash ? (
+                  <button type="button" onClick={() => openReceipt({
+                    title: soroswapApproval.preview.title,
+                    network: soroswapApproval.preview.network,
+                    rows: [
+                      { label: locale === "es" ? "Entregas" : "You send", value: `${soroswapApproval.preview.amountIn} ${soroswapApproval.preview.assetIn}` },
+                      { label: locale === "es" ? "Recibes" : "You receive", value: `${soroswapApproval.preview.amountOut} ${soroswapApproval.preview.assetOut}` },
+                    ],
+                    transactionHash: soroswapApproval.transactionHash,
+                    explorerUrl: soroswapApproval.explorerUrl,
+                  })}>
                     {locale === "es" ? "Abrir recibo" : locale === "pt" ? "Abrir recibo" : "Open receipt"}
-                  </a>
+                  </button>
                 ) : null}
               </div>
             )}
@@ -1781,8 +1863,18 @@ export default function AgentChat({
                   <button type="button" disabled={Boolean(defindexBusy)} onClick={() => void confirmDefindex()}>
                     {defindexBusy === "execute" ? dui.signing : dui.confirm}
                   </button>
-                ) : defindexApproval.explorerUrl ? (
-                  <a href={defindexApproval.explorerUrl} target="_blank" rel="noreferrer">{dui.receipt}</a>
+                ) : defindexApproval.explorerUrl || defindexApproval.transactionHash ? (
+                  <button type="button" onClick={() => openReceipt({
+                    title: defindexApproval.preview.title,
+                    network: defindexApproval.preview.network,
+                    rows: [
+                      { label: dui.asset, value: defindexApproval.preview.asset },
+                      { label: dui.amount, value: defindexApproval.preview.amount },
+                      { label: dui.destination, value: defindexApproval.preview.destination },
+                    ],
+                    transactionHash: defindexApproval.transactionHash,
+                    explorerUrl: defindexApproval.explorerUrl,
+                  })}>{dui.receipt}</button>
                 ) : null}
               </div>
             )}
@@ -1818,8 +1910,17 @@ export default function AgentChat({
                 </dl>
                 {x402Trustline.status === "prepared" ? (
                   <button type="button" disabled={x402Busy} onClick={() => void confirmX402Trustline()}>{x402Busy ? xui.paying : "Confirm USDC trustline with Privy"}</button>
-                ) : x402Trustline.explorerUrl ? (
-                  <a href={x402Trustline.explorerUrl} target="_blank" rel="noreferrer">{xui.receipt}</a>
+                ) : x402Trustline.explorerUrl || x402Trustline.transactionHash ? (
+                  <button type="button" onClick={() => openReceipt({
+                    title: x402Trustline.preview.title,
+                    network: x402Trustline.preview.network,
+                    rows: [
+                      { label: xui.asset, value: x402Trustline.preview.asset },
+                      { label: xui.destination, value: x402Trustline.preview.destination },
+                    ],
+                    transactionHash: x402Trustline.transactionHash,
+                    explorerUrl: x402Trustline.explorerUrl,
+                  })}>{xui.receipt}</button>
                 ) : null}
               </div>
             )}
@@ -1840,7 +1941,17 @@ export default function AgentChat({
                   </button>
                 ) : x402Payment.explorerUrl ? (
                   <div className="x402-confirmed-actions">
-                    <a href={x402Payment.explorerUrl} target="_blank" rel="noreferrer">{xui.receipt}</a>
+                    <button type="button" onClick={() => openReceipt({
+                      title: "Stellar x402 protected resource",
+                      network: x402Payment.network,
+                      rows: [
+                        { label: xui.asset, value: `${x402Payment.asset} · ${x402Payment.assetContract}` },
+                        { label: xui.amount, value: `${x402Payment.amount} USDC` },
+                        { label: xui.destination, value: x402Payment.payTo },
+                      ],
+                      transactionHash: x402Payment.transactionHash,
+                      explorerUrl: x402Payment.explorerUrl,
+                    })}>{xui.receipt}</button>
                     <button type="button" disabled={x402Busy} onClick={() => void verifyX402Replay()}>
                       {x402Busy ? xrui.checkingReplay : xrui.verifyReplay}
                     </button>
@@ -1914,13 +2025,19 @@ export default function AgentChat({
           <div><dt>{xrui.balance}</dt><dd>{liveX402UsdcBalance === null ? "\u2014" : `${liveX402UsdcBalance} USDC`}</dd></div>
           <div><dt>{ui.network}</dt><dd>Stellar Testnet</dd></div>
         </dl>
-        <a
-          href={"https://stellar.expert/explorer/testnet/account/" + walletAddress}
-          target="_blank"
-          rel="noreferrer"
+        <button
+          type="button"
+          className="agent-verify-wallet"
+          onClick={() => openReceipt({
+            title: ui.verify,
+            network: "Stellar Testnet",
+            rows: [{ label: "Wallet", value: walletAddress }],
+            transactionHash: null,
+            explorerUrl: "https://stellar.expert/explorer/testnet/account/" + walletAddress,
+          })}
         >
           {ui.verify}
-        </a>
+        </button>
         <div className="agent-connected-apps">
           <strong>{ui.capabilities}</strong>
           <span>
