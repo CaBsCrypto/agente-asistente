@@ -2,7 +2,10 @@
 // - Linked: telegram_links row → the user's real Privy account (shared wallet/memory/connections).
 // - Standalone: a synthetic "tg:<id>" agent_users row so foreign keys hold and the user has their own state.
 import { randomBytes, randomUUID } from "node:crypto";
-import { and, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, lt } from "drizzle-orm";
+
+// Stale button actions are pruned after this long (best-effort, on write).
+const PENDING_ACTION_TTL_MS = 24 * 60 * 60 * 1000;
 import { getDb } from "@/db";
 import {
   agentUsers,
@@ -58,9 +61,15 @@ export async function generateTelegramLinkCode(
   userId: string,
   ttlMs = 15 * 60 * 1000,
 ): Promise<{ code: string; expiresAt: Date }> {
+  const db = getDb();
   const code = newLinkCode();
   const expiresAt = new Date(Date.now() + ttlMs);
-  await getDb().insert(telegramLinkCodes).values({ code, userId, expiresAt });
+  await db.insert(telegramLinkCodes).values({ code, userId, expiresAt });
+  // Best-effort: drop this user's expired codes so the table stays bounded.
+  await db
+    .delete(telegramLinkCodes)
+    .where(and(eq(telegramLinkCodes.userId, userId), lt(telegramLinkCodes.expiresAt, new Date())))
+    .catch(() => {});
   return { code, expiresAt };
 }
 
@@ -101,22 +110,18 @@ export async function redeemLinkCode(input: {
 }): Promise<{ userId: string }> {
   const db = getDb();
   const now = new Date();
-  const rows = await db
-    .select({ userId: telegramLinkCodes.userId })
-    .from(telegramLinkCodes)
+  // Claim the code atomically: only an unused, unexpired code updates and returns.
+  const claimed = await db
+    .update(telegramLinkCodes)
+    .set({ usedAt: now })
     .where(and(
       eq(telegramLinkCodes.code, input.code.toUpperCase()),
       isNull(telegramLinkCodes.usedAt),
       gt(telegramLinkCodes.expiresAt, now),
     ))
-    .limit(1);
-  const match = rows[0];
+    .returning({ userId: telegramLinkCodes.userId });
+  const match = claimed[0];
   if (!match) throw new Error("telegram_link_code_invalid");
-
-  await db
-    .update(telegramLinkCodes)
-    .set({ usedAt: now })
-    .where(eq(telegramLinkCodes.code, input.code.toUpperCase()));
 
   await db
     .insert(telegramLinks)
@@ -149,32 +154,38 @@ export async function storePendingAction(input: {
   userId: string;
   message: string;
 }): Promise<string> {
+  const db = getDb();
   const id = randomUUID().replace(/-/g, "").slice(0, 16);
-  await getDb().insert(telegramPendingActions).values({
+  await db.insert(telegramPendingActions).values({
     id,
     telegramUserId: input.telegramUserId,
     userId: input.userId,
     message: input.message,
   });
+  // Best-effort: prune this user's stale (untapped) button actions so the table stays bounded.
+  await db
+    .delete(telegramPendingActions)
+    .where(and(
+      eq(telegramPendingActions.telegramUserId, input.telegramUserId),
+      lt(telegramPendingActions.createdAt, new Date(Date.now() - PENDING_ACTION_TTL_MS)),
+    ))
+    .catch(() => {});
   return id;
 }
 
-// Look up (and consume) the full message behind a callback id.
+// Atomically consume the full message behind a callback id. Using a single
+// DELETE ... RETURNING means a duplicate button tap (or a duplicated Telegram
+// update) can only succeed once — the second one gets no row back.
 export async function takePendingAction(input: {
   telegramUserId: string;
   id: string;
 }): Promise<string | null> {
-  const db = getDb();
-  const rows = await db
-    .select({ message: telegramPendingActions.message, userId: telegramPendingActions.userId })
-    .from(telegramPendingActions)
+  const rows = await getDb()
+    .delete(telegramPendingActions)
     .where(and(
       eq(telegramPendingActions.id, input.id),
       eq(telegramPendingActions.telegramUserId, input.telegramUserId),
     ))
-    .limit(1);
-  const row = rows[0];
-  if (!row) return null;
-  await db.delete(telegramPendingActions).where(eq(telegramPendingActions.id, input.id));
-  return row.message;
+    .returning({ message: telegramPendingActions.message });
+  return rows[0]?.message ?? null;
 }
