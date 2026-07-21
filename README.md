@@ -8,7 +8,7 @@
 
 The product combines a simple chat for end users with MCP, WebMCP and API surfaces for developers. Sensitive actions are constrained by identity, policy, explicit approval, idempotency and durable evidence.
 
-> **Honest MVP boundary:** authentication, Stellar wallet creation, CoinMarketCap data, persistent user state and the commerce safety demo are real. Notion and direct DeFindex Testnet signing are implemented and awaiting complete user acceptance. Merchant fulfillment and mainnet settlement are not live.
+> **Honest MVP boundary:** authentication, Stellar wallet creation, live market data, persistent user state, the commerce safety demo, a real UNBLCK hub booking and a Privy-signed DeFindex Testnet deposit are real. Notion is implemented and awaiting complete user acceptance. Merchant fulfillment and mainnet settlement are not live.
 
 [Live product](https://agente-asistente.vercel.app) · [New user guide](https://agente-asistente.vercel.app/guide) · [Developer portal](https://agente-asistente.vercel.app/developers) · [Open the agent](https://agente-asistente.vercel.app/agent) · [Safety demo](https://agente-asistente.vercel.app/demo) · [Integration Lab](https://agente-asistente.vercel.app/connections) · [Waitlist](https://agente-asistente.vercel.app/waitlist)
 
@@ -31,8 +31,8 @@ Status meanings are shared across all project documentation:
 | Chat-requested Testnet XLM | Ready to validate | Friendbot only runs after a text request for an absent account |
 | Wallet balance and explorer link | Live | Horizon account lookup |
 | Persistent chat and user state | Live | Neon Postgres |
-| CoinMarketCap quotes | Live, read-only | Official Trial Pro API |
-| CoinMarketCap watchlist | Live, read-only | Per-user persistent watchlist |
+| Market prices | Live, read-only | CoinGecko primary (keyless), CoinMarketCap automatic fallback |
+| Market watchlist | Live, read-only | Per-user persistent watchlist over CoinGecko/CoinMarketCap |
 | Notion OAuth and search | LangGraph-routed, ready to validate | OAuth PKCE, encrypted tokens, official Notion MCP and durable workflow trail |
 | Travala hotel discovery | Live, read-only | Public Travala Travel MCP |
 | Intent, policy and replay protection | Sandbox | Durable intent and one receipt per execution |
@@ -40,17 +40,18 @@ Status meanings are shared across all project documentation:
 | Personal agent MCP | Development foundation | Privy bearer identity at /api/mcp/agent |
 | Service provider MCP | Development foundation | Scoped catalog administration at /api/mcp/provider |
 | Chrome WebMCP | Experimental sandbox | Offer discovery and intent preparation |
-| Wallet-signed Stellar transaction | Ready to validate | Client-side Privy confirmation, server-verified Ed25519 signature and durable receipt |
+| Wallet-signed Stellar transaction | Live Testnet proof | A Privy-signed DeFindex Testnet deposit was confirmed on-chain (transaction hash), server-verified, with a durable receipt |
 | Stellar x402 payment | Live Testnet proof | A second Privy user completed the official 0.01 USDC flow; settlement, delivery evidence and the replay-safe receipt are durable |
 | Acceptance runner | Live, read-only | Production doctor validates health, MCP discovery, official x402 challenge and distributor balances |
 | Testnet Autopilot | Policy layer live; delegated signer pending | Time-bound activation, risk colors, allowlist, hard XLM/USDC limits, daily cap and immediate pause |
 | OpenZeppelin Stellar Channels | Configured; acceptance pending | Testnet-only fee sponsorship and submission after Privy user signature |
 | MPP Router | Discovery live; spending disabled | Free catalog with live prices for mixed free/paid Mainnet APIs; no automatic payment |
 | Stellar 8004 | Registration draft ready | MCP and payment profile prepared without claiming on-chain registration |
-| DeFindex XLM | Ready to validate | Conversational intent, exact transaction review and public Soroban vault integration |
+| DeFindex XLM | Live Testnet proof | A user completed a Privy-signed 1 XLM deposit into the public DeFindex Testnet vault, confirmed on-chain (transaction hash); intent freeze, exact review and replay-safe receipt |
 | DeFindex USDC | Trustline ready; deposit funding blocked | Exact trustline flow, but no controlled compatible-USDC distributor |
 | Soroswap XLM/USDC | Integration ready; external Testnet unavailable | Quote/build/send client, Privy review and durable receipts are implemented; live validation on Jul 18 found the Soroswap API reachable but reporting zero Testnet protocols |
 | UNBLCK / ArcusX | UNBLCK Live; ArcusX planned | UNBLCK link/state/book/cancel verified end-to-end against the real Agent Hub API: WhatsApp identity linked, real bookings and a cancellation confirmed on UNBLCK's own member portal, LangGraph approval and replay protection, replies localized EN/ES |
+| Telegram bot | Built; ready to switch on | Chat, full UNBLCK flow, read-only tools and web↔Telegram account linking are merged and hardened; needs a bot token + migration to go live. The wallet-signing Mini App is scaffolded (initData validation, `web_app` button, session route) with Privy signing pending |
 | Gmail, Drive, Calendar and Trello | Planned | Catalog entries only |
 
 The dated source of truth is [docs/product-status.md](docs/product-status.md).
@@ -78,17 +79,17 @@ Wallet creation is automatic; Testnet funding is requested from the chat. XLM is
 
 The application does not generate a password or expose a seed phrase. Login establishes identity; it does not authorize a transaction.
 
-### 2. Query CoinMarketCap
+### 2. Query market prices
 
 Try these prompts:
 
 ~~~text
-What is the current XLM price on CoinMarketCap?
-Add XLM to my CoinMarketCap watchlist
+What is the current XLM price?
+Add XLM to my watchlist
 Show my crypto watchlist
 ~~~
 
-Quotes come from CoinMarketCap and include a timestamp. This connection cannot trade or move funds.
+Quotes come from CoinGecko (with CoinMarketCap as an automatic fallback) and include a timestamp. This connection cannot trade or move funds.
 
 ### 3. Connect Notion
 
@@ -142,7 +143,7 @@ flowchart LR
     ID --> A["Agent and tool router"]
     A --> P["Policy and explicit approval"]
     A --> N["Notion MCP"]
-    A --> C["CoinMarketCap API"]
+    A --> C["Market data (CoinGecko)"]
     A --> T["Travala MCP"]
     P --> W["User-owned Stellar wallet"]
     W --> S["Stellar Testnet"]
@@ -198,7 +199,7 @@ flowchart LR
     subgraph OUT["Outbound · we use apps"]
         NO["Notion · MCP + OAuth"]
         TV["Travala · public MCP"]
-        CM["CoinMarketCap · API"]
+        CM["CoinGecko · API"]
     end
     EA --> P1
     WEB --> P1
@@ -228,7 +229,7 @@ Chrome **WebMCP** registers `search_agent_offers` and `prepare_commerce_intent`;
 | --- | --- | --- | --- |
 | Notion | Hosted remote MCP (`mcp.notion.com/mcp`) | OAuth 2.1 PKCE, AES-256-GCM tokens | Workspace search (read-only), routed through the engine |
 | Travala | Public Travel MCP (JSON-RPC) | None | Hotel discovery (read-only) |
-| CoinMarketCap | REST API | Trial Pro key | Live quotes + watchlist (read-only) |
+| CoinGecko (primary) + CoinMarketCap (fallback) | REST API | Keyless (optional demo key) | Live quotes + watchlist (read-only) |
 | UNBLCK | Agent Hub Check-in API | Partner key + channel identity | Read state, book &amp; cancel — approval-gated |
 
 ## MCP tools and clients
@@ -262,7 +263,7 @@ Example client configuration:
 | get_receipt | Retrieve execution evidence | No |
 The delegated-autonomy boundary is documented in [Testnet Autopilot security model](docs/testnet-autopilot.md).
 
-Inbound MCP lets other agents use agent-assistant. Outbound connectors let agent-assistant use Notion, CoinMarketCap and Travala. These directions may use MCP, OAuth or a conventional API.
+Inbound MCP lets other agents use agent-assistant. Outbound connectors let agent-assistant use Notion, CoinGecko/CoinMarketCap and Travala. These directions may use MCP, OAuth or a conventional API.
 
 Chrome WebMCP registers search_agent_offers and prepare_commerce_intent. Wallet authorization and execution are intentionally excluded.
 

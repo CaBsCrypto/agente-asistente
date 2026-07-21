@@ -20,8 +20,8 @@ This document separates deployed proof from product vision. Status definitions l
 | Per-user execution policies | Implemented, ready to validate | Network, spend, approval and risk preflight enforced before DeFindex preparation | Record allowed and blocked acceptance proofs |
 | Decision explanations | Implemented, ready to validate | Why this action UI plus durable reason codes and applied rules | Measure user comprehension and trust |
 | Connection list | Live | Per-user Neon records | Add scopes and last-used metadata |
-| CoinMarketCap quote | Live, read-only | Official Trial Pro API response | Partner key, MCP or production plan |
-| CoinMarketCap watchlist | Live, read-only | Persistent symbols per user | Add scheduled alerts |
+| Market price quote | Live, read-only | CoinGecko response (keyless), CoinMarketCap fallback | Optional demo key for higher limits |
+| Market watchlist | Live, read-only | Persistent symbols per user over CoinGecko/CoinMarketCap | Add scheduled alerts |
 | Notion search | Implemented through LangGraph, ready to validate | OAuth PKCE, encrypted tokens, official MCP call and durable workflow trail | Complete one authenticated production search |
 | Travala hotel search | Live, read-only | Public Travel MCP response | Validate errors and UX |
 | General language planning | Partial | Deterministic command routing | Add model-backed planning with evals |
@@ -40,7 +40,7 @@ This document separates deployed proof from product vision. Status definitions l
 | OpenZeppelin Stellar Channels | Configured, ready to validate | Official client pinned to Testnet; production key is server-side and user signature remains required | Submit one Privy-signed XDR and verify its explorer receipt |
 | Privy x402 auth-entry signing | Implemented, ready to validate | Custom ClientStellarSigner hashes SEP-43 auth entries and delegates Ed25519 raw signing to the user-owned Privy wallet | Complete one live 0.01 USDC Testnet payment |
 | Stellar x402 demo payment | Implemented, ready for acceptance | Live 402 challenge inspection, pinned asset/amount, automatic 0.50 USDC Testnet funding, atomic execution claim and durable replay receipt | Complete one live payment and record explorer hash |
-| DeFindex XLM deposit | Ready to validate, P0 | Conversational EN/ES/PT intent, public vault simulation, prepared XDR and explicit Privy review | Confirm with Privy and explorer receipt |
+| DeFindex XLM deposit | Live Testnet proof, P0 | Validated Jul 21: a user completed a Privy-signed 1 XLM deposit into the public DeFindex Testnet vault, confirmed on-chain (transaction hash), with intent freeze, exact review and a replay-safe receipt | Repeat with a second user and record more receipts |
 | DeFindex USDC trustline | Ready to validate, P0 | Exact issuer and ChangeTrust review implemented from chat | Confirm with Privy and explorer receipt |
 | DeFindex USDC deposit | Blocked on compatible funding | Exact vault flow implemented; no controlled distributor for its issuer | Source exact Testnet USDC or deploy a controlled vault |
 | Mainnet payment | Planned | None | Only after testnet safety review |
@@ -51,10 +51,11 @@ This document separates deployed proof from product vision. Status definitions l
 
 | Integration | Status | Access path | Limitation |
 | --- | --- | --- | --- |
-| CoinMarketCap | Live, read-only | Official Trial Pro API | No alerts, trade or x402 yet |
+| Market data (CoinGecko + CoinMarketCap) | Live, read-only | CoinGecko primary (keyless, optional demo key), CoinMarketCap automatic fallback | No alerts, trade or x402 yet |
 | Notion | LangGraph-routed, ready to validate | Official remote MCP + per-user OAuth | Authenticated production acceptance test pending |
-| Travala | Live, read-only | Public Travel MCP | No booking or payment |
-| DeFindex | Ready to validate | Direct public Soroban contracts, no API key | Confirm XLM proof; USDC deposit awaits exact-issuer funding |
+| Travala | Live, read-only | Public Travel MCP (hotels only; no flights upstream) | No booking or payment |
+| DeFindex | XLM Live Testnet proof; USDC blocked | Direct public Soroban contracts, no API key | XLM signed deposit confirmed on-chain; USDC deposit awaits exact-issuer funding |
+| Telegram bot | Built; ready to switch on | Webhook adapter over the same agent core; account linking; Mini App scaffolded | Needs a bot token + migration to go live; wallet signing (Mini App + Privy) pending |
 | UNBLCK | Live | Connect code, encrypted channel binding, live state, LangGraph approval for book/cancel and durable replay protection; verified end-to-end against the real Agent Hub API on Jul 20–21 (WhatsApp identity linked, real bookings and a cancellation confirmed on UNBLCK's own member portal, replies localized EN/ES) | Web-native channel is not supported upstream yet |
 | ArcusX | Planned partner pilot | Direct contact | Task lifecycle contract needed |
 | Gmail, Drive, Calendar | Planned | Future OAuth connectors | Catalog only |
@@ -68,15 +69,16 @@ Already demonstrable:
 
 - A new user authenticates through Privy.
 - The user receives a real user-owned Stellar wallet automatically; the x402 flow activates it with Friendbot and funds 0.50 USDC from the Testnet-only distributor after trustline approval.
-- The agent reads real CoinMarketCap and Travala data.
+- The agent reads real CoinGecko (fallback CoinMarketCap) and Travala data.
+- The agent booked and cancelled a real UNBLCK hub day-pass, confirmed on the partner's own portal with a QR access pass.
+- A user completed a Privy-signed 1 XLM DeFindex Testnet deposit, confirmed on-chain (transaction hash), with a replay-safe receipt.
 - User state, chat and watchlists persist.
 - The sandbox returns the same receipt on duplicate execution.
 
 Required for the strongest application update:
 
 1. One recorded text-only onboarding from wallet lookup through Friendbot funding.
-2. One Privy-signed DeFindex XLM Testnet deposit with an explorer link.
-3. The same DeFindex transaction hash returned on retry without a second submission.
-4. One external OAuth connection completed end to end, ideally Notion.
-5. Three design-partner commitments or letters of intent.
-6. A concise 90-second recording with no simulated behavior described as real.
+2. A second Privy-signed DeFindex XLM Testnet deposit to widen the proof (the first is done).
+3. One external OAuth connection completed end to end, ideally Notion.
+4. Three design-partner commitments or letters of intent.
+5. A concise 90-second recording with no simulated behavior described as real.
