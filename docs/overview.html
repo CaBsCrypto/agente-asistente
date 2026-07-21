@@ -347,6 +347,7 @@
   <div class="shell" style="display:flex;align-items:center;justify-content:space-between;width:min(1180px,calc(100% - 44px));">
     <a class="brand" href="#top"><b>AA</b> agent-assistant</a>
     <div class="nav-links">
+      <a href="#proofs">Proofs</a>
       <a href="#architecture">Architecture</a>
       <a href="#lifecycle">Lifecycle</a>
       <a href="#flows">Flows</a>
@@ -403,7 +404,7 @@
 
     <div class="callout">
       <span class="mark">MVP&nbsp;BOUNDARY</span>
-      <p><strong>Honest status.</strong> Authentication, Stellar wallet creation, market data, persistent user state, the replay-safe commerce demo and a real Testnet x402 payment are live. Notion and DeFindex Testnet signing are implemented and awaiting complete user acceptance. Merchant fulfillment and mainnet settlement are not live. Research, sandbox behavior and production integrations are never conflated.</p>
+      <p><strong>Honest status.</strong> Authentication, Stellar wallet creation, market data, persistent user state, the replay-safe commerce demo, a real Testnet x402 payment, a real UNBLCK hub booking and a Privy-signed DeFindex Testnet deposit are live. Notion is implemented and awaiting complete user acceptance; the Telegram bot is built and merged but not yet switched on. Merchant fulfillment and mainnet settlement are not live. Research, sandbox behavior and production integrations are never conflated.</p>
     </div>
 
     <div class="grid-3">
@@ -421,6 +422,37 @@
         <span class="k">Partner / merchant</span>
         <h3>Be discoverable &amp; payable.</h3>
         <p>Expose a scoped catalog through the provider MCP so agents can find and act on your services — with policy and evidence, and settlement kept separate from fulfillment.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE PROOFS -->
+<section id="proofs" class="band">
+  <div class="shell">
+    <div class="sec-head">
+      <p class="eyebrow">Proof, not roadmap</p>
+      <h2 class="title">Three real actions the agent has already taken.</h2>
+      <p class="sec-lede">Each ran the same lifecycle — freeze &rarr; policy &rarr; exact approval &rarr; execute once &rarr; durable evidence — against a real external system, not a simulation.</p>
+    </div>
+    <div class="grid-3">
+      <article class="card t-coral">
+        <span class="k">Book &middot; UNBLCK</span>
+        <h3>A real coworking day-pass.</h3>
+        <p>From a chat message, the agent booked &mdash; and cancelled &mdash; a real Tellus Hub day-pass. The partner's own portal issued a scannable QR entry pass and refunded the credit.</p>
+        <p><span class="pill live">Live</span></p>
+      </article>
+      <article class="card t-amber">
+        <span class="k">Pay &middot; x402</span>
+        <h3>A non-custodial payment.</h3>
+        <p>A Privy user completed the official 0.01 USDC Stellar Testnet flow. Settlement, delivery evidence and a replay-safe receipt are durable &mdash; pay twice, charged once.</p>
+        <p><span class="pill live">Live Testnet proof</span></p>
+      </article>
+      <article class="card t-forest">
+        <span class="k">Deposit &middot; DeFindex</span>
+        <h3>A real DeFi deposit.</h3>
+        <p>A Privy-signed 1 XLM deposit into the public DeFindex Testnet vault, confirmed on-chain (tx <span class="mono">71a45ae1&hellip;</span>), with a replay-safe receipt.</p>
+        <p><span class="pill live">Live Testnet proof</span></p>
       </article>
     </div>
   </div>
@@ -452,7 +484,7 @@ flowchart TB
   end
   subgraph EXT["Providers &amp; network"]
     NOTION["Notion MCP"]
-    CMC["CoinMarketCap API"]
+    CMC["Market data (CoinGecko)"]
     TRV["Travala MCP"]
     UNB["UNBLCK Agent API"]
     STL["Stellar Testnet · Horizon / Soroban"]
@@ -677,7 +709,7 @@ flowchart LR
   subgraph OUT["Outbound · we use apps"]
     NO["Notion · MCP + OAuth"]
     TV["Travala · public MCP"]
-    CM["CoinMarketCap · API"]
+    CM["CoinGecko · API"]
   end
   EA --> P1
   WEB --> P1
@@ -738,7 +770,7 @@ flowchart LR
         <tbody>
           <tr><td><span class="name">Notion</span></td><td>Hosted MCP client → <code>mcp.notion.com/mcp</code></td><td>OAuth 2.1 PKCE · AES-256-GCM tokens</td><td>Search the user's workspace (read-only), routed through the engine</td></tr>
           <tr><td><span class="name">Travala</span></td><td>Public Travel MCP (JSON-RPC)</td><td>None</td><td>Hotel discovery (read-only); no booking or payment</td></tr>
-          <tr><td><span class="name">CoinMarketCap</span></td><td>REST API</td><td>Trial Pro key</td><td>Live quotes + per-user watchlist (read-only)</td></tr>
+          <tr><td><span class="name">CoinGecko + CoinMarketCap</span></td><td>REST API</td><td>Keyless (optional demo key)</td><td>Live quotes + per-user watchlist (read-only); CoinGecko primary, CMC fallback</td></tr>
           <tr><td><span class="name">UNBLCK</span></td><td>Agent Hub Check-in API</td><td>Partner key + channel identity</td><td>Read state, book &amp; cancel hub check-ins — approval-gated</td></tr>
         </tbody>
       </table>
@@ -759,12 +791,13 @@ flowchart LR
       <table>
         <thead><tr><th>Connector</th><th>What it does</th><th>Class</th><th>Status</th></tr></thead>
         <tbody>
+          <tr><td><span class="name">UNBLCK</span></td><td>Member hub: read state, book &amp; cancel check-ins via Agent API</td><td>Read / write</td><td><span class="pill live">Live</span></td></tr>
           <tr><td><span class="name">x402</span></td><td>Testnet USDC micropayment against the official Stellar demo, Privy-signed</td><td>Financial</td><td><span class="pill live">Live Testnet proof</span></td></tr>
-          <tr><td><span class="name">CoinMarketCap</span></td><td>Crypto quotes + per-user watchlist</td><td>Read</td><td><span class="pill live">Live</span></td></tr>
-          <tr><td><span class="name">Travala</span></td><td>Hotel discovery via public Travel MCP</td><td>Read</td><td><span class="pill live">Live</span></td></tr>
+          <tr><td><span class="name">DeFindex</span></td><td>Exact Testnet XDR for vault deposits &amp; the USDC trustline</td><td>Financial</td><td><span class="pill live">XLM Live · USDC blocked on funding</span></td></tr>
+          <tr><td><span class="name">CoinGecko + CoinMarketCap</span></td><td>Crypto quotes + per-user watchlist (CoinGecko primary, CMC fallback)</td><td>Read</td><td><span class="pill live">Live</span></td></tr>
+          <tr><td><span class="name">Travala</span></td><td>Hotel discovery via public Travel MCP (hotels only)</td><td>Read</td><td><span class="pill live">Live</span></td></tr>
+          <tr><td><span class="name">Telegram bot</span></td><td>Full agent over a webhook: chat, UNBLCK, read-only tools, account linking</td><td>Read / write</td><td><span class="pill validate">Built · ready to switch on</span></td></tr>
           <tr><td><span class="name">Notion</span></td><td>Workspace search via official remote MCP, LangGraph-routed</td><td>Read</td><td><span class="pill validate">Ready to validate</span></td></tr>
-          <tr><td><span class="name">DeFindex</span></td><td>Exact Testnet XDR for vault deposits &amp; the USDC trustline</td><td>Financial</td><td><span class="pill validate">XLM ready · USDC blocked on funding</span></td></tr>
-          <tr><td><span class="name">UNBLCK</span></td><td>Member hub: read state, book &amp; cancel check-ins via Agent API</td><td>Read / write</td><td><span class="pill validate">Ready for acceptance</span></td></tr>
           <tr><td><span class="name">Soroswap</span></td><td>Testnet XLM/USDC quote + unsigned-XDR swap</td><td>Read / financial</td><td><span class="pill sandbox">Integration ready · external Testnet unavailable</span></td></tr>
         </tbody>
       </table>
@@ -809,14 +842,15 @@ flowchart LR
           <tr><td>Automatic Stellar wallet</td><td><span class="pill live">Live</span></td><td>One user-owned wallet created at login</td></tr>
           <tr><td>EN / ES / PT experience</td><td><span class="pill live">Live</span></td><td>Persistent locale, multilingual core commands</td></tr>
           <tr><td>Persistent chat &amp; user state</td><td><span class="pill live">Live</span></td><td>Neon Postgres</td></tr>
-          <tr><td>CoinMarketCap quotes &amp; watchlist</td><td><span class="pill read">Live · read-only</span></td><td>Official Trial Pro API, per-user watchlist</td></tr>
-          <tr><td>Travala hotel discovery</td><td><span class="pill read">Live · read-only</span></td><td>Public Travala Travel MCP</td></tr>
+          <tr><td>UNBLCK hub link / book / cancel</td><td><span class="pill live">Live</span></td><td>Real bookings + a cancellation confirmed on the partner portal (QR pass)</td></tr>
           <tr><td>Stellar x402 payment</td><td><span class="pill live">Live Testnet proof</span></td><td>0.01 USDC flow completed with durable, replay-safe receipt</td></tr>
+          <tr><td>DeFindex XLM deposit</td><td><span class="pill live">Live Testnet proof</span></td><td>Privy-signed 1 XLM deposit, on-chain tx hash, replay-safe receipt</td></tr>
+          <tr><td>Wallet-signed Stellar transaction</td><td><span class="pill live">Live</span></td><td>Proven by the DeFindex deposit; server-verified signature</td></tr>
+          <tr><td>Market data (CoinGecko + CMC)</td><td><span class="pill read">Live · read-only</span></td><td>CoinGecko primary (keyless), CoinMarketCap fallback; per-user watchlist</td></tr>
+          <tr><td>Travala hotel discovery</td><td><span class="pill read">Live · read-only</span></td><td>Public Travala Travel MCP (hotels only)</td></tr>
           <tr><td>Public inbound MCP (7 tools)</td><td><span class="pill sandbox">Sandbox</span></td><td>Intent → policy → execute → receipt at /api/mcp</td></tr>
+          <tr><td>Telegram bot</td><td><span class="pill validate">Built · ready to switch on</span></td><td>Bridge merged &amp; hardened; needs a bot token + migration</td></tr>
           <tr><td>Notion OAuth &amp; search</td><td><span class="pill validate">Ready to validate</span></td><td>PKCE, encrypted tokens, official MCP, LangGraph trail</td></tr>
-          <tr><td>Wallet-signed Stellar transaction</td><td><span class="pill validate">Ready to validate</span></td><td>Browser Privy confirmation, server-verified signature</td></tr>
-          <tr><td>DeFindex XLM deposit</td><td><span class="pill validate">Ready to validate</span></td><td>Exact XDR review against a public Soroban vault</td></tr>
-          <tr><td>UNBLCK hub link / book / cancel</td><td><span class="pill validate">Ready for acceptance</span></td><td>Agent API with digest-bound approval</td></tr>
           <tr><td>Gmail · Drive · Calendar · Trello</td><td><span class="pill planned">Planned</span></td><td>Catalog entries only</td></tr>
         </tbody>
       </table>
