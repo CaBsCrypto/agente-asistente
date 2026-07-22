@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import BrandLockup from "./brand-lockup";
 import IntegrationRecommendationForm from "./integration-recommendation-form";
 import LanguageToggle, { useLocale } from "./language-toggle";
@@ -284,6 +286,12 @@ const copy = {
 export default function HomeExperience() {
   const { locale, setLocale } = useLocale();
   const t = copy[locale];
+  const router = useRouter();
+
+  useEffect(() => {
+    router.prefetch("/connections");
+    router.prefetch("/developers");
+  }, [router]);
 
   return (
     <main className="home-next" id="top">
@@ -294,7 +302,7 @@ export default function HomeExperience() {
           <a href="#integrations">{t.nav[1]}</a>
           <a href="#how">{t.nav[2]}</a>
           <a href="#build">{t.nav[3]}</a>
-          <Link href="/developers">{t.nav[4]}</Link>
+          <Link href="/developers#quickstart" prefetch>{t.nav[4]}</Link>
         </div>
         <div className="home-nav-actions">
           <LanguageToggle locale={locale} onChange={setLocale} compact />
@@ -357,7 +365,7 @@ export default function HomeExperience() {
             </div>
             <div>
               <p>{t.integrationsText}</p>
-              <Link href="/connections">{t.connectionsCta} <b>{"\u2192"}</b></Link>
+              <Link href="/connections" prefetch>{t.connectionsCta} <b>{"\u2192"}</b></Link>
             </div>
           </div>
 
@@ -427,13 +435,13 @@ export default function HomeExperience() {
             <span>{t.forBusiness}</span>
             <h2>{t.businessTitle}</h2>
             <p>{t.businessText}</p>
-            <Link href="/connections">{t.businessCta} <b>{"\u2192"}</b></Link>
+            <Link href="/developers#provider" prefetch>{t.businessCta} <b>{"\u2192"}</b></Link>
           </article>
           <article className="developers">
             <span>{t.forDevelopers}</span>
             <h2>{t.developerTitle}</h2>
             <p>{t.developerText}</p>
-            <Link href="/developers">{t.developerCta} <b>{"\u2192"}</b></Link>
+            <Link href="/developers#quickstart" prefetch>{t.developerCta} <b>{"\u2192"}</b></Link>
           </article>
         </div>
       </section>
