@@ -179,6 +179,9 @@ export default function AdminDashboard({
           <Link className="admin-stellar-link" href="/admin/stellar">
             Stellar Lab
           </Link>
+          <Link className="admin-stellar-link" href="/admin/integrations">
+            Integration requests
+          </Link>
           <button onClick={signOut}>Sign out</button>
         </div>
       </header>

@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import BrandLockup from "./brand-lockup";
+import IntegrationRecommendationForm from "./integration-recommendation-form";
 import LanguageToggle, { useLocale } from "./language-toggle";
 
 const copy = {
   en: {
-    nav: ["What it does", "How it works", "For business", "Developers"],
+    nav: ["What it does", "Integrations", "How it works", "For business", "Developers"],
     enter: "Enter",
     eyebrow: "YOUR PERSONAL EXECUTION AGENT",
     title: <>Ask Carmelita.<br /><em>She prepares it. You decide.</em></>,
@@ -62,6 +63,34 @@ const copy = {
       ["DeFindex", "Vault action flow"],
       ["Travala", "Live travel search"],
     ],
+    integrationsEyebrow: "CONNECTED AND VERIFIED",
+    integrationsTitle: "Useful services Carmelita can already reach.",
+    integrationsText: "Each status describes what has actually been tested. Discovery, signing and execution remain separate capabilities.",
+    integrations: [
+      ["LIVE", "UNBLCK", "Book and cancel workspace days", "Verified through the partner booking API"],
+      ["TESTNET", "DeFindex", "Deposit XLM into a public vault", "Privy-signed transaction confirmed on Stellar"],
+      ["TESTNET", "Stellar x402", "Pay 0.01 USDC without duplicate charges", "Settlement and replay-safe receipt verified"],
+      ["READ ONLY", "Travala", "Search real hotel inventory", "Live public Travel MCP results"],
+      ["READ ONLY", "CoinGecko + CMC", "Quote markets and maintain a watchlist", "Live prices with automatic fallback"],
+    ],
+    connectionsCta: "Explore the integration lab",
+    integrationForm: {
+      eyebrow: "SHAPE THE ROADMAP",
+      title: "Recommend an integration",
+      text: "Tell us which service Carmelita should connect next and what you want to accomplish with it.",
+      nameLabel: "Application or service",
+      namePlaceholder: "Google Calendar, Slack, Rappi...",
+      emailLabel: "Your email",
+      emailPlaceholder: "you@company.com",
+      useCaseLabel: "What should Carmelita do?",
+      useCasePlaceholder: "For example: find a free slot and schedule a meeting.",
+      consent: "Carmelita may contact me about this integration request.",
+      submit: "Recommend integration",
+      sending: "Saving recommendation...",
+      success: "Recommendation saved. We will use it to prioritize the roadmap.",
+      duplicate: "We already have this recommendation from you. Thank you.",
+      error: "We could not save it right now. Please try again.",
+    },
     finalTitle: "What should Carmelita handle first?",
     finalText: "Create your agent, connect what you use and start in Testnet with no real funds.",
     finalCta: "Open Carmelita",
@@ -69,7 +98,7 @@ const copy = {
     footer: "Built in Latin America for a global agent economy.",
   },
   es: {
-    nav: ["Qu\u00e9 puede hacer", "C\u00f3mo funciona", "Para empresas", "Developers"],
+    nav: ["Qu\u00e9 puede hacer", "Integraciones", "C\u00f3mo funciona", "Para empresas", "Developers"],
     enter: "Ingresar",
     eyebrow: "TU AGENTE PERSONAL DE EJECUCI\u00d3N",
     title: <>{"P\u00eddeselo a Carmelita."}<br /><em>{"Ella lo prepara. T\u00fa decides."}</em></>,
@@ -97,6 +126,34 @@ const copy = {
     nameText: "Nueve letras resumen lo que cada acci\u00f3n \u00fatil debe proteger.",
     nameLetters: [["C", "Contexto"], ["A", "Acciones"], ["R", "Reglas"], ["M", "Memoria"], ["E", "Ejecuci\u00f3n"], ["L", "L\u00edmites"], ["I", "Identidad"], ["T", "Transacciones"], ["A", "Auditor\u00eda"]],
     memoryEyebrow: "PERSONAL, NO GEN\u00c9RICO",
+    integrationsEyebrow: "CONECTADO Y VERIFICADO",
+    integrationsTitle: "Servicios \u00fatiles a los que Carmelita ya puede llegar.",
+    integrationsText: "Cada estado describe lo que realmente probamos. Descubrir, firmar y ejecutar siguen siendo capacidades separadas.",
+    integrations: [
+      ["ACTIVO", "UNBLCK", "Reservar y cancelar d\u00edas de trabajo", "Verificado mediante la API de reservas del partner"],
+      ["TESTNET", "DeFindex", "Depositar XLM en un vault p\u00fablico", "Transacci\u00f3n firmada con Privy y confirmada en Stellar"],
+      ["TESTNET", "Stellar x402", "Pagar 0,01 USDC sin cobros duplicados", "Liquidaci\u00f3n y recibo resistente a reintentos verificados"],
+      ["SOLO LECTURA", "Travala", "Buscar inventario real de hoteles", "Resultados en vivo mediante Travel MCP"],
+      ["SOLO LECTURA", "CoinGecko + CMC", "Cotizar mercados y mantener una watchlist", "Precios reales con fallback autom\u00e1tico"],
+    ],
+    connectionsCta: "Explorar el laboratorio de integraciones",
+    integrationForm: {
+      eyebrow: "AYUDA A PRIORIZAR",
+      title: "Recomienda una integraci\u00f3n",
+      text: "Cu\u00e9ntanos qu\u00e9 servicio deber\u00eda conectar Carmelita y qu\u00e9 quieres lograr con \u00e9l.",
+      nameLabel: "Aplicaci\u00f3n o servicio",
+      namePlaceholder: "Google Calendar, Slack, Rappi...",
+      emailLabel: "Tu email",
+      emailPlaceholder: "tu@empresa.com",
+      useCaseLabel: "\u00bfQu\u00e9 deber\u00eda hacer Carmelita?",
+      useCasePlaceholder: "Por ejemplo: encontrar un horario libre y agendar una reuni\u00f3n.",
+      consent: "Carmelita puede contactarme sobre esta solicitud de integraci\u00f3n.",
+      submit: "Recomendar integraci\u00f3n",
+      sending: "Guardando recomendaci\u00f3n...",
+      success: "Recomendaci\u00f3n guardada. La usaremos para priorizar el roadmap.",
+      duplicate: "Ya tenemos esta recomendaci\u00f3n tuya. Gracias.",
+      error: "No pudimos guardarla ahora. Int\u00e9ntalo nuevamente.",
+    },
     memoryTitle: "Aprende c\u00f3mo prefieres hacer las cosas.",
     memoryText: "Carmelita usa solamente las memorias, preferencias y reglas que decides guardar. Cada acci\u00f3n comienza con tu contexto y termina dentro de tus l\u00edmites.",
     memories: ["Espacios tranquilos", "Asiento en ventana", "M\u00e1x. 50 USDC", "Preguntar antes de pagar"],
@@ -132,7 +189,35 @@ const copy = {
     footer: "Construido en Latinoam\u00e9rica para una econom\u00eda global de agentes.",
   },
   pt: {
-    nav: ["O que pode fazer", "Como funciona", "Para empresas", "Developers"],
+    integrationsEyebrow: "CONECTADO E VERIFICADO",
+    integrationsTitle: "Servi\u00e7os \u00fateis que Carmelita j\u00e1 pode acessar.",
+    integrationsText: "Cada status descreve o que realmente testamos. Descoberta, assinatura e execu\u00e7\u00e3o continuam sendo capacidades separadas.",
+    integrations: [
+      ["ATIVO", "UNBLCK", "Reservar e cancelar dias de trabalho", "Verificado pela API de reservas do parceiro"],
+      ["TESTNET", "DeFindex", "Depositar XLM em um vault p\u00fablico", "Transa\u00e7\u00e3o assinada com Privy e confirmada na Stellar"],
+      ["TESTNET", "Stellar x402", "Pagar 0,01 USDC sem cobran\u00e7as duplicadas", "Liquida\u00e7\u00e3o e recibo resistente a repeti\u00e7\u00f5es verificados"],
+      ["SOMENTE LEITURA", "Travala", "Pesquisar invent\u00e1rio real de hot\u00e9is", "Resultados ao vivo pelo Travel MCP"],
+      ["SOMENTE LEITURA", "CoinGecko + CMC", "Consultar mercados e manter uma watchlist", "Pre\u00e7os reais com fallback autom\u00e1tico"],
+    ],
+    connectionsCta: "Explorar o laborat\u00f3rio de integra\u00e7\u00f5es",
+    integrationForm: {
+      eyebrow: "AJUDE A PRIORIZAR",
+      title: "Recomende uma integra\u00e7\u00e3o",
+      text: "Conte qual servi\u00e7o Carmelita deve conectar e o que voc\u00ea quer realizar com ele.",
+      nameLabel: "Aplicativo ou servi\u00e7o",
+      namePlaceholder: "Google Calendar, Slack, Rappi...",
+      emailLabel: "Seu email",
+      emailPlaceholder: "voce@empresa.com",
+      useCaseLabel: "O que Carmelita deve fazer?",
+      useCasePlaceholder: "Por exemplo: encontrar um hor\u00e1rio livre e agendar uma reuni\u00e3o.",
+      consent: "Carmelita pode entrar em contato sobre esta solicita\u00e7\u00e3o.",
+      submit: "Recomendar integra\u00e7\u00e3o",
+      sending: "Salvando recomenda\u00e7\u00e3o...",
+      success: "Recomenda\u00e7\u00e3o salva. Vamos us\u00e1-la para priorizar o roadmap.",
+      duplicate: "J\u00e1 temos esta recomenda\u00e7\u00e3o sua. Obrigado.",
+      error: "N\u00e3o foi poss\u00edvel salvar agora. Tente novamente.",
+    },
+    nav: ["O que pode fazer", "Integra\u00e7\u00f5es", "Como funciona", "Para empresas", "Developers"],
     enter: "Entrar",
     eyebrow: "SEU AGENTE PESSOAL DE EXECU\u00c7\u00c3O",
     title: <>{"Pe\u00e7a \u00e0 Carmelita."}<br /><em>{"Ela prepara. Voc\u00ea decide."}</em></>,
@@ -206,9 +291,10 @@ export default function HomeExperience() {
         <Link href="/" aria-label="Carmelita home"><BrandLockup /></Link>
         <div className="home-nav-links">
           <a href="#possibilities">{t.nav[0]}</a>
-          <a href="#how">{t.nav[1]}</a>
-          <a href="#build">{t.nav[2]}</a>
-          <Link href="/developers">{t.nav[3]}</Link>
+          <a href="#integrations">{t.nav[1]}</a>
+          <a href="#how">{t.nav[2]}</a>
+          <a href="#build">{t.nav[3]}</a>
+          <Link href="/developers">{t.nav[4]}</Link>
         </div>
         <div className="home-nav-actions">
           <LanguageToggle locale={locale} onChange={setLocale} compact />
@@ -262,7 +348,38 @@ export default function HomeExperience() {
         </div>
       </section>
 
+      <section className="home-integrations" id="integrations">
+        <div className="shell">
+          <div className="home-integrations-heading">
+            <div>
+              <p className="eyebrow">{t.integrationsEyebrow}</p>
+              <h2>{t.integrationsTitle}</h2>
+            </div>
+            <div>
+              <p>{t.integrationsText}</p>
+              <Link href="/connections">{t.connectionsCta} <b>{"\u2192"}</b></Link>
+            </div>
+          </div>
+
+          <div className="home-integrations-grid">
+            <div className="home-integration-list">
+              {t.integrations.map((integration) => (
+                <article key={integration[1]}>
+                  <span>{integration[0]}</span>
+                  <div>
+                    <h3>{integration[1]}</h3>
+                    <p>{integration[2]}</p>
+                  </div>
+                  <small>{integration[3]}</small>
+                </article>
+              ))}
+            </div>
+            <IntegrationRecommendationForm locale={locale} copy={t.integrationForm} />
+          </div>
+        </div>
+      </section>
       <section className="home-name shell" aria-labelledby="carmelita-name-title">
+
         <div className="home-name-heading">
           <p className="eyebrow">{t.nameEyebrow}</p>
           <h2 id="carmelita-name-title">{t.nameTitle}</h2>

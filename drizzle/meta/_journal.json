@@ -99,6 +99,13 @@
       "when": 1784597523397,
       "tag": "0013_hot_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1784708525827,
+      "tag": "0014_absent_yellowjacket",
+      "breakpoints": true
     }
   ]
 }
