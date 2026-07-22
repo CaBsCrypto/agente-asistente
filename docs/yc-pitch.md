@@ -2,6 +2,8 @@
 
 Last updated: July 22, 2026
 
+This document applies the [canonical Carmelita product narrative](product-narrative.md) to fundraising. Product status and evidence must come from [product-status.md](product-status.md) and [yc-evidence-ledger.md](yc-evidence-ledger.md).
+
 ## The narrative
 
 AI assistants can recommend what to do, but they usually stop before a real

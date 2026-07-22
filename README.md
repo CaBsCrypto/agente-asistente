@@ -18,6 +18,8 @@ Validated proof: a real UNBLCK booking and cancellation; a duplicate-resistant 0
 
 [Live product](https://agente-asistente.vercel.app) · [New user guide](https://agente-asistente.vercel.app/guide) · [Developer portal](https://agente-asistente.vercel.app/developers) · [Open the agent](https://agente-asistente.vercel.app/agent) · [Safety demo](https://agente-asistente.vercel.app/demo) · [Integration Lab](https://agente-asistente.vercel.app/connections) · [Waitlist](https://agente-asistente.vercel.app/waitlist)
 
+> **Start with the story:** read the [canonical product narrative](docs/product-narrative.md) to understand what Carmelita does, the [business onboarding guide](docs/business-onboarding.md) to make a service agent-ready, or the [developer guide](docs/developer-guide.md) to integrate it.
+
 > **Visual overview:** a single-page product &amp; architecture showcase — 16:9 cover, layered architecture, the safe-action lifecycle, end-to-end sequence flows and the bidirectional MCP gateway — lives at [`docs/overview.html`](docs/overview.html). Open it in a browser for the full illustrated tour; the sections below are the canonical text.
 
 ## What works now
@@ -414,4 +416,4 @@ Join the [waitlist](https://agente-asistente.vercel.app/waitlist) or propose a p
 
 The agent now has a Testnet-only x402 payment path for the official Stellar demo. Privy's Stellar client hook signs a pinned authorization hash inside the authenticated browser; the API verifies that signature, freezes the live HTTP 402 requirements before approval, and stores settlement and delivery evidence without exporting a secret key or requiring Freighter. See [docs/x402-privy-testnet.md](docs/x402-privy-testnet.md).
 
-Run `npm run qa:local` before deployment, `npm run x402:signing:doctor` to validate the live signing payload without moving funds, and `npm run acceptance:doctor` after Vercel is ready. The final `0.01 USDC` acceptance payment is intentionally confirmed by the logged-in user through Privy in the browser. See [acceptance testing](docs/acceptance-testing.md).
+Run `npm run qa:local` before deployment, `npm run x402:signing:doctor` to validate the live signing payload without moving funds, and `npm run acceptance:doctor` after Vercel is ready. Every new `0.01 USDC` acceptance payment must be confirmed by the logged-in user through Privy in the browser; validated receipts are reused for repeatable demos. See [acceptance testing](docs/acceptance-testing.md).

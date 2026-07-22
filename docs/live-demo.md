@@ -1,80 +1,137 @@
-# 90-second live demo
+# 90-second Carmelita product demo
 
-Use one coherent story for YC: identity, one real payment, duplicate protection and one useful read-only connection.
+Last reviewed: **July 22, 2026**
+
+The demo must tell one story: a user asks, Carmelita applies context and rules,
+executes through a real service or wallet, and returns evidence.
+
+Do not tour the landing page or explain the technology stack first.
+
+## Narrative
+
+> AI assistants can recommend what to do. Carmelita completes the action safely.
+
+The sequence moves from a familiar off-chain action to an on-chain payment. This
+shows that the product is a reusable execution layer, not a crypto-only wallet
+or a single-purpose booking bot.
 
 ## Preflight
 
 - Production health responds at `/api/health`.
 - Privy login works for the dedicated demo account.
 - The Stellar Testnet wallet and explorer link are visible.
-- The latest x402 payment is confirmed and the wallet has `0.4900000 USDC`.
-- Neon persistence is active.
-- Travala acceptance returns at least one current hotel result.
-- Never show Privy tokens, signatures, OTPs or environment variables.
+- The validated UNBLCK account and booking evidence are ready.
+- The latest x402 receipt is restored from Neon.
+- Duplicate verification returns the original hash and zero second debit.
+- Never show OTPs, tokens, signatures, environment variables or private inboxes.
 
-## Recommended script
+## Recording script
 
-### 0-20 seconds: identity and wallet
+### 0–12 seconds — the promise
 
-Open `/agent` and sign in. Show the wallet address, Testnet label and explorer link.
+Show the Carmelita chat after login.
 
-Say: “Every user gets a user-owned Stellar wallet through Privy. Login establishes identity, but it never authorizes a payment.”
+Say:
 
-### 20-45 seconds: real x402 settlement
+> “Carmelita is a personal AI agent that turns a conversation into a controlled,
+> verifiable action.”
 
-Click **x402 receipt** to restore the latest confirmed payment from Neon. Show:
+Ask:
+
+~~~text
+Muéstrame mi wallet y mis reglas.
+~~~
+
+Point to the user-owned Stellar address, Testnet label and approval limits.
+
+### 12–35 seconds — a real service action
+
+Show the prepared or previously completed UNBLCK action.
+
+~~~text
+Reserva un espacio de trabajo para el próximo viernes.
+~~~
+
+Say:
+
+> “Carmelita checks the connected account, prepares the exact date and asks for
+> approval. The booking is confirmed in UNBLCK''s own system.”
+
+Show the provider reference or member-portal evidence. Do not imply payment if
+the booking used an existing credit.
+
+### 35–60 seconds — an exact payment
+
+Restore the validated x402 receipt or prepare the exact 0.01 USDC Testnet action.
+
+Say:
+
+> “For a payment, the same agent adds a stricter gate. The recipient, asset and
+> amount are frozen. Privy signs from the user''s wallet; our server never holds
+> the key.”
+
+Show:
 
 - `0.0100000 USDC`;
 - Stellar Testnet;
-- the recipient;
-- the transaction receipt;
-- the delivered protected resource.
+- transaction hash;
+- protected delivery evidence.
 
-Say: “The user approved exactly 0.01 USDC. Privy signed only that authorization and Stellar settled it once.”
+### 60–75 seconds — duplicate protection
 
-### 45-65 seconds: duplicate-resistant replay
+Run **Verify duplicate protection**.
 
-Click **Verify duplicate protection**. Show:
+Say:
 
-- the original transaction hash;
-- balance before: `0.4900000 USDC`;
-- balance after: `0.4900000 USDC`;
-- second debit: `0.0000000 USDC`;
-- same receipt.
+> “A retry returns the original receipt. It never reaches signing or settlement
+> a second time.”
 
-Say: “A retry never reaches signing or settlement. It returns the original receipt and the wallet balance does not change.”
+Show the same hash, unchanged balance and `0.0000000 USDC` second debit.
 
-### 65-90 seconds: useful external service
+### 75–90 seconds — the platform
 
-Search live Travala hotel inventory. Do not imply booking or payment.
+Briefly show the Integration Lab and its honest statuses.
 
-Say: “The same agent can discover real services without moving funds. We are building the control and commerce layer that lets agents act for people safely.”
+Say:
 
-## Verified evidence
+> “Businesses connect one narrow action through an API or MCP. Carmelita supplies
+> identity, policy, approval, execute-once behavior and evidence. We are starting
+> in Latin America and building this execution layer for services globally.”
 
-- Privy-created Stellar wallet for a second user.
-- Friendbot Testnet activation.
-- Official x402 USDC trustline.
-- Internal `0.50 USDC` Testnet funding.
-- Real `0.01 USDC` x402 settlement.
-- Explorer hash: `8ec3c7e8197aa286328329b6715295b45ac498195f280b5d18598f78d541f18f`.
-- Final balance: `0.4900000 USDC`.
-- Neon payment record with settlement, delivery preview and idempotency key.
-- Live Travala read-only MCP search.
+Finish on:
 
-## Boundaries to state clearly
+> **Ask Carmelita. She prepares it. You decide.**
+
+## Optional alternate clip
+
+Use the Privy-signed 1 XLM DeFindex Testnet deposit instead of UNBLCK when the
+audience is primarily crypto-native. Do not attempt to show every integration in
+one video.
+
+## Evidence to keep ready
+
+- Privy-created Stellar wallet.
+- UNBLCK provider booking/cancellation reference.
+- x402 0.01 USDC Testnet receipt.
+- Original and replay transaction hashes.
+- Unchanged balance after replay.
+- DeFindex 1 XLM Testnet explorer receipt.
+- Integration Lab status labels.
+
+## Honest boundaries
 
 - Testnet assets have no real monetary value.
-- Travala is search-only today; booking remains disabled.
-- The `/demo` action console is a separate no-funds architecture sandbox.
-- Mainnet payments remain disabled.
-- DeFindex has a successful 1 XLM Testnet receipt, but it should be a separate optional clip.
+- UNBLCK is a live technical integration, not a paying customer unless a signed
+  agreement says otherwise.
+- Travala is search-only today.
+- DeFindex XLM is proven; compatible USDC funding remains blocked.
+- Mainnet payments, escrow and physical fulfillment guarantees are not live.
 
 ## Recording checklist
 
-1. Use the dedicated demo email and hide inbox/OTP screens.
-2. Keep the explorer receipt ready.
-3. Restore the existing x402 receipt; do not prepare a new payment.
-4. Run the replay once and show the zero-debit evidence card.
-5. Search Travala with future valid dates.
-6. Record each proof separately and assemble the cleanest 90 seconds.
+1. Record the founder video separately.
+2. Hide login inbox and OTP screens.
+3. Use existing verified receipts instead of risking a live-demo dependency.
+4. Keep each proof clip short and legible.
+5. Add captions for wallet, approval, provider evidence and replay protection.
+6. Never describe a planned connection as working.

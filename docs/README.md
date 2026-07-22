@@ -1,86 +1,118 @@
-# Documentation
+# Carmelita documentation
 
-This directory is the source of truth for operating, demonstrating and extending Carmelita.
+This directory is the source of truth for understanding, demonstrating,
+operating and extending Carmelita.
 
-## New users
+## Start here
 
-1. Open the [public new user guide](https://agente-asistente.vercel.app/guide).
-2. Keep the guide beside the authenticated agent.
-3. Follow the wallet, Testnet XLM, USDC trustline and DeFindex sequence.
-4. Use [the repository manual](user-guide.md) when a markdown version is needed.
+Read the [product narrative](product-narrative.md) first. It explains what
+Carmelita is, the problem it solves, how the user experience works and how to
+describe it consistently.
 
-## Choose a path
+Then choose your path:
 
-### Product and fundraising
+| You are… | Start with | Then read |
+| --- | --- | --- |
+| A new user | [User guide](user-guide.md) | [Personal Execution Vault](personal-execution-vault.md) |
+| A business or partner | [Business onboarding](business-onboarding.md) | [Connection Center](connection-center.md) |
+| A developer | [Developer guide](developer-guide.md) | [API reference](api-reference.md) and [architecture](architecture.md) |
+| Preparing the demo | [90-second demo](live-demo.md) | [Product status](product-status.md) |
+| Preparing YC | [YC pitch](yc-pitch.md) | [Application answer bank](yc-application.md) and [evidence ledger](yc-evidence-ledger.md) |
+| Operating the product | [Admin operations](admin-operations.md) | [Acceptance testing](acceptance-testing.md) |
 
-1. Read the [current product status](product-status.md) and the [Carmelita brand transition guide](brand-transition.md).
-2. Track verified proof in the [YC evidence ledger](yc-evidence-ledger.md) — the current source of truth for what is Live.
-3. Complete the [YC application answer bank](yc-application.md).
-4. Rehearse the [90-second live demo](live-demo.md).
-5. Use only claims marked **Live** or **Sandbox** in external materials.
-6. Use the [CoinMarketCap pilot brief](coinmarketcap-partner-pilot.md) for outreach.
-7. Historical planning context: the [YC closeout roadmap](yc-closeout-roadmap.md) and [seven-day plan](yc-seven-day-plan.md) (both superseded by the evidence ledger above).
-8. Read the [Personal Execution Vault guide](personal-execution-vault.md) for user memory, policies and decision evidence.
-9. Use the [acceptance testing guide](acceptance-testing.md) before claiming an integration works.
-10. Review the [graph memory and project map](graph-memory.md) to validate topic-scoped memory.
+The public entry points are:
 
-Start with the two maps, then drill into a specific surface.
+- [Product](https://agente-asistente.vercel.app)
+- [Agent](https://agente-asistente.vercel.app/agent)
+- [New-user guide](https://agente-asistente.vercel.app/guide)
+- [Integration Lab](https://agente-asistente.vercel.app/connections)
+- [Developer portal](https://agente-asistente.vercel.app/developers)
 
-1. Read the [developer guide](developer-guide.md).
-2. Read the [API & integration reference](api-reference.md) — every HTTP route, MCP tool, outbound connector, auth model and environment variable, sourced from the code.
-3. Review the [architecture diagrams](architecture.md).
+## The documentation model
 
-Runtime and orchestration:
+~~~mermaid
+flowchart TD
+    N["Product narrative"] --> U["User guide"]
+    N --> B["Business onboarding"]
+    N --> D["Developer guide"]
+    N --> Y["Demo and YC"]
+    D --> A["Architecture and API"]
+    A --> I["Integration deep dives"]
+    I --> T["Acceptance evidence"]
+    T --> S["Product status"]
+~~~
 
-4. Review the [Lang ecosystem map](lang-ecosystem.md), [reusable LangGraph engine](reusable-workflow-engine.md) and [LangChain orchestration boundary](langchain-orchestration.md).
-5. Read the [bidirectional MCP gateway](mcp-gateway.md) and the [MCP integration guide](mcp-integration.md).
-6. Read the [browser-assisted Connection Center](connection-center.md).
+## Core product documents
 
-Per-integration deep dives:
+- [Product narrative](product-narrative.md) — canonical story and terminology.
+- [Product status](product-status.md) — dated truth about what is live.
+- [Brand system](brand-system.md) — voice, visual language and naming.
+- [Brand transition](brand-transition.md) — legacy identifiers that remain for compatibility.
+- [User guide](user-guide.md) — text-first Testnet onboarding.
+- [Business onboarding](business-onboarding.md) — paths for services and merchants.
+- [Developer guide](developer-guide.md) — inbound MCP, HTTP sandbox and outbound connectors.
+- [Architecture](architecture.md) — trust boundaries and sequence diagrams.
+- [API reference](api-reference.md) — HTTP, MCP, auth and configuration surfaces.
 
-7. [UNBLCK Agent API integration](unblck-agent-api.md) (Live) and the [Soroswap Testnet flow](soroswap-testnet.md).
-8. [Privy + Stellar architecture](privy-stellar-testnet.md) and the [DeFindex Testnet guide](defindex-testnet.md) (Live XLM proof).
-9. [x402 + Privy Testnet payment](x402-privy-testnet.md) (Live proof).
-10. [Telegram bot](telegram-bot.md) — chat-first bridge + signing Mini App, with the go-live checklist.
-11. [Testnet Autopilot](testnet-autopilot.md), [OpenZeppelin Stellar Channels](openzeppelin-stellar-channels.md), [MPP Router](mpp-router.md) and the [Stellar 8004 plan](stellar-8004.md).
+## Integrations and orchestration
 
-Extend and validate:
+- [Bidirectional MCP gateway](mcp-gateway.md)
+- [MCP integration guide](mcp-integration.md)
+- [Reusable workflow engine](reusable-workflow-engine.md)
+- [Lang ecosystem](lang-ecosystem.md)
+- [LangChain orchestration boundary](langchain-orchestration.md)
+- [Graph memory](graph-memory.md)
+- [Connection Center](connection-center.md)
+- [UNBLCK](unblck-agent-api.md)
+- [Privy + Stellar](privy-stellar-testnet.md)
+- [Stellar x402](x402-privy-testnet.md)
+- [DeFindex](defindex-testnet.md)
+- [Soroswap](soroswap-testnet.md)
+- [Telegram](telegram-bot.md)
+- [MPP Router](mpp-router.md)
+- [Stellar 8004](stellar-8004.md)
 
-12. Review the [Gemini notebook integration](gemini-notebook-integration.md) before adding personal knowledge sources.
-13. Run the [acceptance testing workflow](acceptance-testing.md) before and after deployment.
-14. Send the [new product integration prompt](NEW_PRODUCT_INTEGRATION_AGENT_PROMPT.md) to an implementation agent or partner engineer.
+## Fundraising and proof
 
-For the illustrated single-page tour, open the [visual product & architecture overview](overview.html) in a browser.
+- [YC pitch and narrative](yc-pitch.md)
+- [YC application answer bank](yc-application.md)
+- [YC evidence ledger](yc-evidence-ledger.md)
+- [90-second live demo](live-demo.md)
+- [CoinMarketCap pilot brief](coinmarketcap-partner-pilot.md)
+- [Acceptance testing](acceptance-testing.md)
 
-### Founder operations
+Historical planning documents remain useful context but are not current status:
 
-1. Use [admin operations](admin-operations.md) for lead and pilot management.
-2. Use [waitlist operations](waitlist-operations.md) for Neon setup and YC metrics.
+- [YC closeout roadmap](yc-closeout-roadmap.md)
+- [Seven-day plan](yc-seven-day-plan.md)
 
 ## Shared status language
 
 | Status | Meaning |
 | --- | --- |
 | **Live** | Deployed and verified against a real external system |
-| **Ready to validate** | Implemented but missing a complete user acceptance test |
-| **Sandbox** | Working product proof with simulated execution or settlement |
+| **Live Testnet proof** | Real on-chain execution using assets with no real monetary value |
+| **Ready to validate** | Implemented but missing a complete acceptance test |
+| **Sandbox** | Working proof with simulated execution or settlement |
 | **Planned** | Researched or designed, not implemented |
 
-Every integration should document five separate facts:
+Every integration must separately report:
 
-1. **Discovery:** can the agent find the tool or provider?
-2. **Authentication:** has the user granted access?
-3. **Execution:** can the tool perform the intended action?
-4. **Settlement:** was money moved and verified?
-5. **Fulfillment:** was the product or service delivered?
+1. discovery;
+2. authentication;
+3. preparation;
+4. execution;
+5. settlement;
+6. fulfillment.
 
-Passing one stage never implies that later stages work.
+Passing one stage never implies that a later stage works.
 
 ## Maintenance rules
 
-- Update [product-status.md](product-status.md) whenever a capability changes.
-- Add a dated verification note and evidence for every **Live** claim.
-- Never call partner outreach an integration.
-- Never call a simulated receipt an on-chain payment.
-- Keep secrets and real access tokens out of documentation and screenshots.
-- Run the commands in the root README before publishing code-related changes.
+- Update [Product status](product-status.md) whenever a capability changes.
+- Use the [Product narrative](product-narrative.md) as the canonical explanation.
+- Add dated evidence for every **Live** claim.
+- Never call outreach an integration or Testnet money production revenue.
+- Never call settlement proof fulfillment proof.
+- Keep secrets, real tokens and private user data out of documentation.
+- Run the repository validation commands before publishing code-related claims.

@@ -40,7 +40,7 @@ The same flow works in English and Portuguese.
 | Activa XLM | Explanation that XLM is native and account status | No |
 | Activa USDC | Exact ChangeTrust transaction review | Privy confirmation |
 | Siguiente paso | Recomputed Horizon status and valid next action | No |
-| Deposita 1 XLM | Simulated DeFindex transaction review | Privy confirmation |
+| Deposita 1 XLM | Exact DeFindex Testnet transaction review and, after approval, an on-chain receipt | Privy confirmation |
 
 ## Safety rules
 

@@ -1,6 +1,6 @@
 # Product status
 
-Last reviewed: **July 21, 2026**
+Last reviewed: **July 22, 2026**
 
 This document separates deployed proof from product vision. Status definitions live in the [documentation index](README.md).
 
@@ -36,10 +36,10 @@ This document separates deployed proof from product vision. Status definitions l
 | Policy evaluation | Implemented, ready to validate | Per-user rules enforced in chat and DeFindex prepare endpoint | Add merchant limits and complete acceptance test |
 | Explicit demo approval | Sandbox | Short-lived hashed capability | Transaction-scoped Privy approval |
 | Duplicate-resistant receipt | Sandbox | Unique receipt per intent | Reuse on-chain hash on retry |
-| Privy Stellar transaction signing | Ready to validate | User JWT authorization plus verified Ed25519 transaction signature | Complete authenticated acceptance test |
+| Privy Stellar transaction signing | Live Testnet proof | User JWT authorization, verified Ed25519 signature and confirmed x402/DeFindex transactions | Repeat with a fresh user during acceptance testing |
 | OpenZeppelin Stellar Channels | Configured, ready to validate | Official client pinned to Testnet; production key is server-side and user signature remains required | Submit one Privy-signed XDR and verify its explorer receipt |
-| Privy x402 auth-entry signing | Implemented, ready to validate | Custom ClientStellarSigner hashes SEP-43 auth entries and delegates Ed25519 raw signing to the user-owned Privy wallet | Complete one live 0.01 USDC Testnet payment |
-| Stellar x402 demo payment | Implemented, ready for acceptance | Live 402 challenge inspection, pinned asset/amount, automatic 0.50 USDC Testnet funding, atomic execution claim and durable replay receipt | Complete one live payment and record explorer hash |
+| Privy x402 auth-entry signing | Live Testnet proof | Custom ClientStellarSigner delegated SEP-43 signing to the user-owned Privy wallet in a confirmed 0.01 USDC Testnet payment | Repeat with a fresh user and preserve the acceptance recording |
+| Stellar x402 demo payment | Live Testnet proof | Confirmed 0.01 USDC settlement, protected delivery, durable receipt and zero-debit replay verification | Record the clean 90-second acceptance clip |
 | DeFindex XLM deposit | Live Testnet proof, P0 | Validated Jul 21: a user completed a Privy-signed 1 XLM deposit into the public DeFindex Testnet vault, confirmed on-chain (transaction hash), with intent freeze, exact review and a replay-safe receipt | Repeat with a second user and record more receipts |
 | DeFindex USDC trustline | Ready to validate, P0 | Exact issuer and ChangeTrust review implemented from chat | Confirm with Privy and explorer receipt |
 | DeFindex USDC deposit | Blocked on compatible funding | Exact vault flow implemented; no controlled distributor for its issuer | Source exact Testnet USDC or deploy a controlled vault |

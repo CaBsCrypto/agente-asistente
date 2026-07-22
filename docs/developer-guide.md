@@ -2,6 +2,8 @@
 
 This guide is for engineers integrating an agent, application or merchant with Carmelita.
 
+For the product model and vocabulary, start with the [canonical narrative](product-narrative.md). If you represent a service provider, read [Carmelita for Business](business-onboarding.md) before choosing a technical path.
+
 ## Choose the integration direction
 
 | Goal | Start here |

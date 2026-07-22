@@ -2,6 +2,8 @@
 
 Last updated: July 22, 2026
 
+Use the [canonical product narrative](product-narrative.md) for positioning, [product status](product-status.md) for claims and the [live-demo script](live-demo.md) for the recording.
+
 This is the working source for the application and interview. Replace every bracketed field before submission. Never convert a roadmap item into a traction claim.
 
 ## Company in one sentence
