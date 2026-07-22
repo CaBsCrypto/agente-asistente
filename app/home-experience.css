@@ -1,4 +1,4 @@
-.home-next{min-height:100vh;overflow:hidden;background:var(--paper)}
+.home-next{min-height:100vh;overflow-x:clip;background:var(--paper)}
 .home-nav{height:78px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;border-bottom:1px solid var(--line)}
 .home-nav>a{justify-self:start;text-decoration:none}
 .home-nav-links{display:flex;align-items:center;gap:28px}
