@@ -212,6 +212,7 @@ proof of physical fulfillment.
 
 ## Read next
 
+- Mission and direction: [Mission, vision and principles](mission-vision.md)
 - New user: [User guide](user-guide.md)
 - Business or partner: [Business onboarding](business-onboarding.md)
 - Developer: [Developer guide](developer-guide.md)

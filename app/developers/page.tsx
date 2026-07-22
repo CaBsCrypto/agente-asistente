@@ -65,6 +65,7 @@ const copy = {
     docsTitle: "Documentation that matches the product state",
     docs: [
       ["Product narrative", "What Carmelita does, how the control model works and how to explain it.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/product-narrative.md"],
+      ["Mission and vision", "Why Carmelita exists, its north star and the principles that constrain growth.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/mission-vision.md"],
       ["Business onboarding", "Choose the smallest API, MCP, WebMCP or guided integration path.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/business-onboarding.md"],
       ["Developer guide", "Quickstart, APIs, connectors, errors and definition of done.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/developer-guide.md"],
       ["Architecture", "Identity, consent, tools, payment boundaries and deployment diagrams.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/architecture.md"],
@@ -121,6 +122,7 @@ const copy = {
     docsTitle: "Documentación alineada con el estado real",
     docs: [
       ["Narrativa del producto", "Qué hace Carmelita, cómo funciona el control y cómo explicarlo.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/product-narrative.md"],
+      ["Misión y visión", "Por qué existe Carmelita, su norte y los principios que limitan su crecimiento.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/mission-vision.md"],
       ["Onboarding para negocios", "Elige la ruta más pequeña mediante API, MCP, WebMCP o integración guiada.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/business-onboarding.md"],
       ["Guía para developers", "Quickstart, APIs, conectores, errores y definición de terminado.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/developer-guide.md"],
       ["Arquitectura", "Diagramas de identidad, consentimiento, herramientas, pagos y despliegue.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/architecture.md"],
@@ -177,6 +179,7 @@ const copy = {
     docsTitle: "Documentação alinhada ao estado real",
     docs: [
       ["Narrativa do produto", "O que Carmelita faz, como funciona o controle e como explicá-lo.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/product-narrative.md"],
+      ["Missão e visão", "Por que Carmelita existe, sua direção e os princípios que limitam seu crescimento.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/mission-vision.md"],
       ["Onboarding para negócios", "Escolha a menor rota via API, MCP, WebMCP ou integração guiada.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/business-onboarding.md"],
       ["Guia para developers", "Quickstart, APIs, conectores, erros e definição de pronto.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/developer-guide.md"],
       ["Arquitetura", "Diagramas de identidade, consentimento, ferramentas, pagamentos e deploy.", "https://github.com/CaBsCrypto/agente-asistente/blob/main/docs/architecture.md"],

@@ -45,6 +45,7 @@ flowchart TD
 ## Core product documents
 
 - [Product narrative](product-narrative.md) — canonical story and terminology.
+- [Mission, vision and principles](mission-vision.md) — purpose, north star and long-term constraints.
 - [Product status](product-status.md) — dated truth about what is live.
 - [Brand system](brand-system.md) — voice, visual language and naming.
 - [Brand transition](brand-transition.md) — legacy identifiers that remain for compatibility.

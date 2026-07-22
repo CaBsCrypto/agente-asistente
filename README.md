@@ -378,6 +378,9 @@ For YC, the strongest claim is: **a user can sign in, receive a Stellar wallet t
 
 Start at the [documentation index](docs/README.md).
 
+- [Canonical product narrative](docs/product-narrative.md)
+- [Mission, vision and principles](docs/mission-vision.md)
+- [Carmelita for Business onboarding](docs/business-onboarding.md)
 - [Visual product &amp; architecture overview](docs/overview.html) — illustrated single-page tour (open in a browser)
 - [New user guide](docs/user-guide.md)
 - [Architecture and flows](docs/architecture.md)
