@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import BrandLockup from "../../brand-lockup";
 import { redirect } from "next/navigation";
 import {
   getAdminIdentity,
@@ -10,8 +11,8 @@ import AdminLoginForm from "./login-form";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Founder access | agent-assistant",
-  description: "Private operations workspace for agent-assistant.",
+  title: "Founder access | Carmelita",
+  description: "Private operations workspace for Carmelita.",
 };
 
 export default async function AdminLoginPage({
@@ -29,8 +30,7 @@ export default async function AdminLoginPage({
     <main className="admin-login-page">
       <section className="admin-login-shell">
         <Link className="brand" href="/">
-          <b>AA</b>
-          agent-assistant
+          <BrandLockup />
         </Link>
         <div className="admin-login-copy">
           <p className="eyebrow">FOUNDER OPERATIONS</p>

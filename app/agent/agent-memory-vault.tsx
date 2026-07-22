@@ -41,7 +41,7 @@ const emptyVault: Vault = { knowledge: [], policies: [], decisions: [] };
 const copy = {
   en: {
     eyebrow: "PERSONAL EXECUTION VAULT",
-    title: "My Agent",
+    title: "Carmelita",
     text: "Teach preferences, set hard limits and review how every action was decided.",
     placeholder: "I prefer quiet hotels with a desk...",
     save: "Remember this",
@@ -64,7 +64,7 @@ const copy = {
   },
   es: {
     eyebrow: "PERSONAL EXECUTION VAULT",
-    title: "My Agent",
+    title: "Carmelita",
     text: "Ens\u00e9\u00f1ale tus preferencias, define l\u00edmites estrictos y revisa c\u00f3mo decidi\u00f3 cada acci\u00f3n.",
     placeholder: "Prefiero hoteles tranquilos y con escritorio...",
     save: "Recordar esto",
@@ -87,7 +87,7 @@ const copy = {
   },
   pt: {
     eyebrow: "PERSONAL EXECUTION VAULT",
-    title: "My Agent",
+    title: "Carmelita",
     text: "Ensine suas prefer\u00eancias, defina limites r\u00edgidos e revise como cada a\u00e7\u00e3o foi decidida.",
     placeholder: "Prefiro hot\u00e9is tranquilos e com mesa...",
     save: "Lembrar disso",

@@ -5,7 +5,7 @@ import ProviderAdmin from "./provider-admin";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Service providers | agent-assistant",
+  title: "Service providers | Carmelita",
   description: "Provision scoped MCP access for service providers.",
   robots: { index: false, follow: false },
 };

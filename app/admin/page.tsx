@@ -8,7 +8,7 @@ import AdminDashboard from "./admin-dashboard";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Founder operations | agent-assistant",
+  title: "Founder operations | Carmelita",
   description: "Private demand, pilot and waitlist operations.",
   robots: { index: false, follow: false },
 };

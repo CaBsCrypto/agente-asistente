@@ -22,7 +22,7 @@ verification status vary by provider and can change.
   nor an old cached price is enough evidence.
 
 MPP Router currently describes a Mainnet Stellar USDC flow. Because the product
-is Testnet-first, agent-assistant exposes discovery only. It does not
+is Testnet-first, Carmelita exposes discovery only. It does not
 automatically pay or silently cross from Testnet to Mainnet.
 
 ## Current implementation

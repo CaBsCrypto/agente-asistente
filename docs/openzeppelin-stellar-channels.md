@@ -14,7 +14,7 @@ This is infrastructure, not custody and not unlimited autonomy.
 ```mermaid
 sequenceDiagram
   participant U as User
-  participant A as agent-assistant
+  participant A as Carmelita
   participant P as Privy wallet
   participant O as OpenZeppelin Channels
   participant S as Stellar Testnet

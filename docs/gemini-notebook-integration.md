@@ -8,7 +8,7 @@ models and must not be presented as interchangeable.
 Gemini File Search is an API for creating file-search stores, importing
 documents, indexing them and retrieving relevant passages for a model request.
 This is the practical foundation for a private knowledge notebook inside
-agent-assistant.
+Carmelita.
 
 Recommended mapping:
 

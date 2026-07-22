@@ -3,7 +3,7 @@
 Status: **registration profile prepared; not registered on-chain**.
 
 Stellar 8004 provides registries for agent identity, reputation and validation.
-It can make agent-assistant discoverable as a service with an owner wallet,
+It can make Carmelita discoverable as a service with an owner wallet,
 public endpoint, capabilities and payment protocols.
 
 ## Current preparation

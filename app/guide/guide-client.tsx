@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import BrandLockup from "../brand-lockup";
 import { useState } from "react";
 import LanguageToggle, { useLocale } from "../language-toggle";
 
@@ -10,14 +11,14 @@ const copy = {
     back: "Product",
     agent: "Open my agent",
     eyebrow: "START HERE",
-    title: "Your first safe agent action, from chat.",
+    title: "Your first safe action with Carmelita, from chat.",
     lede:
       "Create your account, understand your wallet and complete the Stellar Testnet path without touching a DeFi console.",
     badges: ["5-minute setup", "No real money", "English · Español · Português"],
     before: "Before you begin",
     beforeTitle: "Testnet is a practice environment.",
     beforeText:
-      "Privy creates one user-owned Stellar wallet for each account. Testnet XLM has no real value, Mainnet is disabled and your private key never reaches agent-assistant.",
+      "Privy creates one user-owned Stellar wallet for each account. Testnet XLM has no real value, Mainnet is disabled and your private key never reaches Carmelita.",
     beforeItems: [
       "Use a new email if you want to observe the complete wallet activation flow.",
       "An existing wallet will keep its address and current on-chain state.",
@@ -61,7 +62,7 @@ const copy = {
       ["Why did the agent not add more XLM?", "Your account already exists. The agent avoids another Friendbot request and reports the current balance."],
       ["Why does Activate XLM not open a transaction?", "XLM is native to Stellar, so there is no XLM trustline transaction."],
       ["Why is my USDC balance still zero?", "The trustline only allows the wallet to receive the exact asset. A compatible distributor is still required."],
-      ["Why can I not deposit USDC?", "The public vault requires one exact USDC issuer. agent-assistant will not substitute another token with the same code."],
+      ["Why can I not deposit USDC?", "The public vault requires one exact USDC issuer. Carmelita will not substitute another token with the same code."],
       ["What if Testnet resets?", "Sign in again, ask for your wallet and request Testnet XLM. The agent recomputes the state from Stellar."],
       ["What if a review expires?", "Ask the agent to prepare the action again. Never approve an old or unexpected transaction."],
     ],
@@ -78,14 +79,14 @@ const copy = {
     back: "Producto",
     agent: "Abrir mi agente",
     eyebrow: "COMIENZA AQUÍ",
-    title: "Tu primera acción segura, completamente desde el chat.",
+    title: "Tu primera acción segura con Carmelita, completamente desde el chat.",
     lede:
       "Crea tu cuenta, entiende tu wallet y completa el recorrido de Stellar Testnet sin operar una consola DeFi.",
     badges: ["Configuración en 5 minutos", "Sin dinero real", "English · Español · Português"],
     before: "Antes de comenzar",
     beforeTitle: "Testnet es un entorno de práctica.",
     beforeText:
-      "Privy crea una wallet Stellar propiedad del usuario para cada cuenta. El XLM de Testnet no tiene valor real, Mainnet está desactivada y tu clave privada nunca llega a agent-assistant.",
+      "Privy crea una wallet Stellar propiedad del usuario para cada cuenta. El XLM de Testnet no tiene valor real, Mainnet está desactivada y tu clave privada nunca llega a Carmelita.",
     beforeItems: [
       "Usa un email nuevo si quieres observar el flujo completo de activación.",
       "Una wallet existente conserva su dirección y su estado on-chain actual.",
@@ -129,7 +130,7 @@ const copy = {
       ["¿Por qué el agente no agregó más XLM?", "Tu cuenta ya existe. El agente evita otra solicitud a Friendbot y muestra el saldo actual."],
       ["¿Por qué Activa XLM no abre una transacción?", "XLM es nativo de Stellar, por lo que no existe una transacción de trustline XLM."],
       ["¿Por qué mi saldo USDC sigue en cero?", "La trustline solamente permite recibir el activo exacto. Todavía se necesita un distribuidor compatible."],
-      ["¿Por qué no puedo depositar USDC?", "El vault público requiere un issuer USDC exacto. agent-assistant no sustituirá otro token con el mismo código."],
+      ["¿Por qué no puedo depositar USDC?", "El vault público requiere un issuer USDC exacto. Carmelita no sustituirá otro token con el mismo código."],
       ["¿Qué ocurre si Testnet se reinicia?", "Ingresa nuevamente, pide tu wallet y solicita XLM Testnet. El agente recalcula el estado desde Stellar."],
       ["¿Qué hago si la revisión expiró?", "Pide al agente preparar la acción nuevamente. Nunca apruebes una transacción antigua o inesperada."],
     ],
@@ -146,14 +147,14 @@ const copy = {
     back: "Produto",
     agent: "Abrir meu agente",
     eyebrow: "COMECE AQUI",
-    title: "Sua primeira ação segura, totalmente pelo chat.",
+    title: "Sua primeira ação segura com Carmelita, totalmente pelo chat.",
     lede:
       "Crie sua conta, entenda sua wallet e conclua o percurso da Stellar Testnet sem operar um console DeFi.",
     badges: ["Configuração em 5 minutos", "Sem dinheiro real", "English · Español · Português"],
     before: "Antes de começar",
     beforeTitle: "A Testnet é um ambiente de prática.",
     beforeText:
-      "A Privy cria uma wallet Stellar do usuário para cada conta. O XLM da Testnet não tem valor real, a Mainnet está desativada e sua chave privada nunca chega ao agent-assistant.",
+      "A Privy cria uma wallet Stellar do usuário para cada conta. O XLM da Testnet não tem valor real, a Mainnet está desativada e sua chave privada nunca chega à Carmelita.",
     beforeItems: [
       "Use um novo email para observar o fluxo completo de ativação.",
       "Uma wallet existente mantém seu endereço e estado on-chain atual.",
@@ -197,7 +198,7 @@ const copy = {
       ["Por que o agente não adicionou mais XLM?", "Sua conta já existe. O agente evita outra solicitação à Friendbot e mostra o saldo atual."],
       ["Por que Ative XLM não abre uma transação?", "XLM é nativo da Stellar, portanto não existe transação de trustline XLM."],
       ["Por que meu saldo USDC continua zero?", "A trustline apenas permite receber o ativo exato. Ainda é necessário um distribuidor compatível."],
-      ["Por que não posso depositar USDC?", "O vault público exige um issuer USDC exato. agent-assistant não substituirá outro token com o mesmo código."],
+      ["Por que não posso depositar USDC?", "O vault público exige um issuer USDC exato. Carmelita não substituirá outro token com o mesmo código."],
       ["O que acontece se a Testnet reiniciar?", "Entre novamente, peça sua wallet e solicite XLM da Testnet. O agente recalcula o estado na Stellar."],
       ["O que fazer se a revisão expirar?", "Peça ao agente para preparar a ação novamente. Nunca aprove uma transação antiga ou inesperada."],
     ],
@@ -246,8 +247,7 @@ export default function GuideClient() {
     <main className="guide-page">
       <nav className="guide-nav shell">
         <Link className="brand" href="/">
-          <b>AA</b>
-          agent-assistant
+          <BrandLockup />
         </Link>
         <div>
           <Link href="/">{t.back}</Link>
@@ -356,7 +356,7 @@ export default function GuideClient() {
       </section>
 
       <footer className="guide-footer shell">
-        <Link className="brand" href="/"><b>AA</b>agent-assistant</Link>
+        <Link className="brand" href="/"><BrandLockup /></Link>
         <span>{t.footer}</span>
       </footer>
     </main>

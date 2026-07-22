@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BrandLockup from "../../brand-lockup";
 import { requireAdminPage } from "@/app/admin/auth";
 import { getPrivyStellarReadiness } from "@/app/privy-stellar";
 import StellarLab from "./stellar-lab";
@@ -6,7 +7,7 @@ import StellarLab from "./stellar-lab";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Privy + Stellar testnet lab | agent-assistant",
+  title: "Privy + Stellar testnet lab | Carmelita",
   description: "Private founder lab for Stellar wallet and signing tests.",
   robots: { index: false, follow: false },
 };
@@ -19,8 +20,7 @@ export default async function StellarAdminPage() {
     <main className="stellar-lab-page">
       <header className="admin-topbar">
         <Link className="brand" href="/">
-          <b>AA</b>
-          agent-assistant
+          <BrandLockup />
         </Link>
         <nav className="stellar-admin-nav">
           <Link href="/admin">Waitlist CRM</Link>

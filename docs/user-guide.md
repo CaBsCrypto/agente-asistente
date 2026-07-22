@@ -68,7 +68,7 @@ A trustline only permits the wallet to hold an exact asset. The wallet still nee
 
 ### The USDC deposit is unavailable
 
-The public DeFindex vault uses one exact USDC issuer. agent-assistant does not currently control a funded distributor and will not substitute another asset with the same code.
+The public DeFindex vault uses one exact USDC issuer. Carmelita does not currently control a funded distributor and will not substitute another asset with the same code.
 
 ### Testnet was reset
 

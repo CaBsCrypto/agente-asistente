@@ -1,6 +1,6 @@
 # Lang ecosystem architecture
 
-agent-assistant uses the Lang ecosystem as an interpretation and orchestration
+Carmelita uses the Lang ecosystem as an interpretation and orchestration
 layer. It never replaces deterministic policy checks, Privy authorization or
 on-chain receipt verification.
 

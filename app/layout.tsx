@@ -1,27 +1,28 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./home-experience.css";
 import WebMcpRegistry from "./webmcp-registry";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://agente-asistente.vercel.app"),
-  title: "agent-assistant | Agents act. You stay in control.",
+  title: "Carmelita | Knows you. Acts for you.",
   description:
-    "A trilingual, non-custodial action and commerce layer for people, AI agents, developers and businesses.",
+    "Carmelita is a trilingual, non-custodial agent that knows your context and acts within your rules.",
   openGraph: {
-    title: "agent-assistant | Agents act. You stay in control.",
+    title: "Carmelita | Knows you. Acts for you.",
     description:
-      "Build, publish and execute agent-ready actions through policy, explicit authority and durable receipts.",
+      "Carmelita turns requests into controlled actions through policy, explicit authority and durable receipts.",
     url: "https://agente-asistente.vercel.app",
-    siteName: "agent-assistant",
-    images: [{ url: "/og.png", width: 1536, height: 1024, alt: "agent-assistant action flow" }],
+    siteName: "Carmelita",
+    images: [{ url: "/og.png", width: 1536, height: 1024, alt: "Carmelita action flow" }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "agent-assistant | Agents act. You stay in control.",
+    title: "Carmelita | Knows you. Acts for you.",
     description:
-      "A non-custodial action layer for the agent economy.",
+      "Carmelita knows you, acts for you and keeps every sensitive action under your control.",
     images: ["/og.png"],
   },
 };

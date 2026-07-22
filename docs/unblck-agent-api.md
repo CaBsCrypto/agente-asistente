@@ -9,7 +9,7 @@ Official contract: [Agent Hub Check-in API](https://github.com/blessedux/unblck_
 1. The member generates a one-time Connect code at
    `https://www.unblck.cl/member/hub/connect`.
 2. The member provides the code plus a real Telegram or WhatsApp identity.
-3. Agent Assistant exchanges the code through `POST /channel-links`.
+3. Carmelita exchanges the code through `POST /channel-links`.
 4. The channel identity is encrypted at rest and bound to the Privy user.
 5. Credits, open days, passes and bookings are read through
    `GET /hub-checkins`.

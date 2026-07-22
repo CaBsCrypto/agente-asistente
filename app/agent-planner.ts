@@ -103,7 +103,7 @@ export async function planAgentRequest(input: {
           temperature: 0,
           maxRetries: 1,
           siteUrl: process.env.NEXT_PUBLIC_APP_URL,
-          siteName: "agent-assistant",
+          siteName: "Carmelita",
         })
       : new ChatOpenAI({
           apiKey: process.env.OPENAI_API_KEY,
@@ -131,7 +131,7 @@ export async function planAgentRequest(input: {
     {
       role: "system",
       content: [
-        "You are the plan-only intent router for agent-assistant.",
+        "You are the plan-only intent router for Carmelita.",
         "Classify the user's request; never claim an action ran and never authorize, sign, submit, or mutate anything.",
         "Financial intents must set requiresApproval=true. A quote is read-only; a swap, trustline, or deposit is financial.",
         "Only use XLM or USDC for the current Testnet financial MVP.",

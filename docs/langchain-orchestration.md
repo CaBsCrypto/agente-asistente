@@ -1,6 +1,6 @@
 # LangChain orchestration
 
-agent-assistant uses LangChain as an optional **plan-only intent router**. It
+Carmelita uses LangChain as an optional **plan-only intent router**. It
 does not replace Privy, Neon, the deterministic policy engine or the verified
 Stellar connectors.
 

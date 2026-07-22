@@ -1,6 +1,6 @@
 # DeFindex on Stellar Testnet
 
-agent-assistant integrates directly with public DeFindex Soroban vaults. It does not require a DeFindex API key or a DeFindex-hosted MCP server.
+Carmelita integrates directly with public DeFindex Soroban vaults. It does not require a DeFindex API key or a DeFindex-hosted MCP server.
 
 ## Public contracts
 
@@ -66,14 +66,14 @@ Ative USDC
 8. The user explicitly confirms.
 9. The browser calls Privy's `useSignRawHash` for that exact transaction hash.
 10. The browser sends only the resulting 64-byte Ed25519 signature to the same-origin backend.
-11. agent-assistant verifies the signature against the wallet address, attaches it to the frozen XDR and submits once.
+11. Carmelita verifies the signature against the wallet address, attaches it to the frozen XDR and submits once.
 12. The transaction hash, status and explorer link are stored as a durable receipt.
 13. A retry returns the existing receipt instead of submitting again.
 
 ## Safety boundary
 
 - Stellar Testnet only.
-- No private key or seed phrase reaches agent-assistant.
+- No private key or seed phrase reaches Carmelita.
 - The backend never calls Privy `rawSign` and never receives a private key; signing remains in the authenticated browser.
 - Login alone does not request funds or submit a transaction.
 - Friendbot funding is requested by chat and guarded by live account existence.
@@ -85,7 +85,7 @@ Ative USDC
 
 The XLM path is a **Live Testnet proof**: a user completed a Privy-signed 1 XLM deposit into the public DeFindex vault, confirmed on-chain (transaction hash `71a45ae162a4b49419b8fcaa06d317eb08c2d588cd7c93c8e783c2dc8319b50a`), with wallet lookup, exact review, submission and a replay-safe receipt working end to end.
 
-The USDC trustline path is also implemented. An end-to-end USDC deposit still requires a funded distributor for the exact issuer used by the public vault. agent-assistant does not currently control one, so the product must not claim automatic USDC funding or substitute Circle Testnet USDC with a different issuer.
+The USDC trustline path is also implemented. An end-to-end USDC deposit still requires a funded distributor for the exact issuer used by the public vault. Carmelita does not currently control one, so the product must not claim automatic USDC funding or substitute Circle Testnet USDC with a different issuer.
 
 The public XLM and USDC vaults were readable on-chain, but both reported zero capital allocated to their configured Blend strategy during the latest verification. Deposits can mint vault shares, but Testnet yield must not be claimed unless a later on-chain query proves funds are invested.
 

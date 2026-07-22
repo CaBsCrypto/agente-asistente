@@ -1,11 +1,12 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
+import BrandLockup from "../brand-lockup";
 import WaitlistForm from "./waitlist-form";
 
 export const metadata: Metadata = {
-  title: "Early access | agent-assistant",
+  title: "Early access | Carmelita",
   description:
-    "Join the private beta for an assistant that can take useful actions under your control.",
+    "Join the private beta for Carmelita, a personal agent that acts within your rules.",
 };
 
 export default function WaitlistPage() {
@@ -13,8 +14,7 @@ export default function WaitlistPage() {
     <main className="waitlist-page">
       <nav className="waitlist-nav shell">
         <Link className="brand" href="/">
-          <b>AA</b>
-          agent-assistant
+          <BrandLockup />
         </Link>
         <Link href="/">Back home</Link>
       </nav>
@@ -22,9 +22,9 @@ export default function WaitlistPage() {
       <section className="waitlist-hero waitlist-hero-simple shell">
         <div className="waitlist-copy">
           <p className="eyebrow">PRIVATE BETA · LATIN AMERICA TO THE WORLD</p>
-          <h1>Be first to delegate real actions.</h1>
+          <h1>Meet Carmelita before everyone else.</h1>
           <p className="waitlist-lede">
-            Join the early group testing an assistant that can research, book,
+            Join the early group testing Carmelita, a personal agent that can research, book,
             hire and pay—with your approval at every important step.
           </p>
           <div className="waitlist-signals">

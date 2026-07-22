@@ -8,7 +8,7 @@ The public /agent experience uses Privy native Stellar support with @stellar/ste
 sequenceDiagram
     participant U as User
     participant P as Privy
-    participant A as agent-assistant
+    participant A as Carmelita
     participant H as Stellar Horizon
     U->>P: Sign in with Google or email
     P-->>U: Access token

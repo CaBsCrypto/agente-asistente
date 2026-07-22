@@ -1,6 +1,6 @@
 # Soroswap Testnet integration
 
-agent-assistant integrates the official Soroswap API as a server-only connector.
+Carmelita integrates the official Soroswap API as a server-only connector.
 The API key is never sent to the browser. Mainnet is not accepted by the route.
 
 ## Live dependency status

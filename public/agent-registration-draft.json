@@ -1,7 +1,7 @@
 {
   "status": "draft-not-registered",
-  "name": "agent-assistant",
-  "description": "A policy-controlled personal agent that discovers services, prepares actions and uses a user-owned Stellar wallet.",
+  "name": "Carmelita",
+  "description": "A personal AI agent with memory, permissions and a user-owned Stellar wallet that safely executes real-world actions.",
   "website": "https://agente-asistente.vercel.app",
   "mcpDiscovery": "https://agente-asistente.vercel.app/.well-known/mcp.json",
   "mcpEndpoint": "https://agente-asistente.vercel.app/api/mcp",

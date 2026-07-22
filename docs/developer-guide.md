@@ -1,6 +1,6 @@
 # Developer guide
 
-This guide is for engineers integrating an agent, application or merchant with agent-assistant.
+This guide is for engineers integrating an agent, application or merchant with Carmelita.
 
 ## Choose the integration direction
 
@@ -8,13 +8,13 @@ This guide is for engineers integrating an agent, application or merchant with a
 | --- | --- |
 | Let another AI agent discover offers and create safe intents | Inbound remote MCP |
 | Build a custom frontend for the sandbox lifecycle | Commerce HTTP API |
-| Let agent-assistant use your product | Outbound connector |
+| Let Carmelita use your product | Outbound connector |
 | Make a page discoverable in supporting Chrome versions | WebMCP |
 | Add login, user state or wallet features | Privy-authenticated application APIs |
 
 Read the [architecture diagrams](architecture.md) and [current product status](product-status.md) first.
 
-The live [developer portal](https://agente-asistente.vercel.app/developers) provides an English/Spanish self-service entry point with three paths: use agent-assistant, publish a service, or connect an external product. The language preference is stored locally and does not affect API contracts.
+The live [developer portal](https://agente-asistente.vercel.app/developers) provides an English/Spanish self-service entry point with three paths: use Carmelita, publish a service, or connect an external product. The language preference is stored locally and does not affect API contracts.
 
 ## Quickstart
 
