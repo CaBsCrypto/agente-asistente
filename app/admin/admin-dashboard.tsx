@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import BrandLockup from "../brand-lockup";
 import { useMemo, useState } from "react";
 import type {
   AdminWaitlistSignup,
@@ -165,8 +166,7 @@ export default function AdminDashboard({
     <main className="admin-page">
       <header className="admin-topbar">
         <Link className="brand" href="/">
-          <b>AA</b>
-          agent-assistant
+          <BrandLockup />
         </Link>
         <div>
           <span className="admin-live">

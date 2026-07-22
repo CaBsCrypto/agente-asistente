@@ -273,7 +273,7 @@ export default function ActionConsole() {
           </header>
           {!receipt ? (
             <div className="receipt-empty">
-              <i>AA</i>
+              <i>C</i>
               <strong>No receipt yet</strong>
               <p>The action must pass policy and explicit approval before execution.</p>
             </div>

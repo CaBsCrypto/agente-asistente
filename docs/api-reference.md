@@ -1,6 +1,6 @@
 # API & integration reference
 
-A single, accurate map of every surface agent-assistant exposes and every external
+A single, accurate map of every surface Carmelita exposes and every external
 system it calls. Sourced directly from the code (`app/`), not from marketing copy.
 
 Last reviewed: **July 21, 2026**.

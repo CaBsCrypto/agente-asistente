@@ -88,7 +88,7 @@ export function verifyStellarSignature(
 export async function createPrivyStellarWallet(label?: string) {
   const wallet = await getPrivyClient().wallets().create({
     chain_type: "stellar",
-    display_name: label?.trim().slice(0, 80) || "Agent Assistant Testnet",
+    display_name: label?.trim().slice(0, 80) || "Carmelita Testnet",
     external_id: "aa-stellar-testnet-" + randomUUID(),
   });
 
@@ -142,7 +142,7 @@ export async function getOrCreateUserStellarWallet(userId: string) {
   try {
     const wallet = await getPrivyClient().wallets().create({
       chain_type: "stellar",
-      display_name: "Agent Assistant Wallet",
+      display_name: "Carmelita Wallet",
       external_id: externalId,
       owner: { user_id: userId },
       idempotency_key: externalId,

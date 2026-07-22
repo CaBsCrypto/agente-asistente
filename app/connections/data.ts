@@ -116,7 +116,7 @@ export const connections: Connection[] = [
     updated: "Jul 17, 2026",
   },
   {
-    name: "agent-assistant MCP",
+    name: "Carmelita MCP",
     category: "Core protocol",
     stage: "Connected",
     priority: "P0",
@@ -417,7 +417,7 @@ export const connections: Connection[] = [
     category: "Voice and home",
     stage: "Research",
     priority: "P1",
-    route: "Alexa Custom Skill -> agent-assistant API",
+    route: "Alexa Custom Skill -> Carmelita API",
     proof: "Alexa supports custom skills backed by an HTTPS web service.",
     nextAction: "Prototype voice intent -> create_intent -> approval handoff.",
     href: "https://developer.amazon.com/en-US/alexa/alexa-skills-kit/get-deeper/custom-skills",

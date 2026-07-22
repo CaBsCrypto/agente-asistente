@@ -1,8 +1,8 @@
-# CoinMarketCap x agent-assistant pilot
+# CoinMarketCap x Carmelita pilot
 
 ## What exists today
 
-agent-assistant is a permissioned personal agent with:
+Carmelita is a permissioned personal agent with:
 
 - Privy authentication.
 - A user-owned Stellar Testnet wallet.
@@ -53,7 +53,7 @@ This would demonstrate an end-to-end agent purchase of verified market data.
 
 ## Outreach message
 
-Hi [Name] — I am building agent-assistant, a permissioned AI agent that connects to apps, has a user-owned wallet and can execute auditable actions and payments.
+Hi [Name] — I am building Carmelita, a permissioned AI agent that connects to apps, has a user-owned wallet and can execute auditable actions and payments.
 
 We have already integrated CoinMarketCap's official Trial Pro API into the live product. Users can ask for an XLM/BTC/ETH quote in chat, add assets to a persistent watchlist and see timestamped CMC market data.
 

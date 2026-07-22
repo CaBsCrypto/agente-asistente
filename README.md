@@ -1,14 +1,20 @@
-# agent-assistant
+# Carmelita
 
 <p align="center">
-  <img src="public/agent-assistant-readme-cover.png" alt="agent-assistant connects people, agents, applications and payments through explicit permissions" width="100%" />
+  <img src="public/brand/carmelita-readme-cover.svg" alt="Carmelita connects people, agents, applications and payments through explicit permissions" width="100%" />
 </p>
 
-**A permissioned personal agent that connects to apps, prepares commerce actions and will pay from a user-owned wallet.**
+**Carmelita is a personal AI agent with memory, permissions and a user-owned wallet that safely executes real-world actions.**
+
+> **Knows you. Acts for you.**
+
+The public URL, GitHub repository and some protocol identifiers still use the legacy `agente-asistente` / `agent-assistant` name. They remain unchanged during the brand transition so existing integrations keep working; see [the brand transition guide](docs/brand-transition.md).
 
 The product combines a simple chat for end users with MCP, WebMCP and API surfaces for developers. Sensitive actions are constrained by identity, policy, explicit approval, idempotency and durable evidence.
 
 > **Honest MVP boundary:** authentication, Stellar wallet creation, live market data, persistent user state, the commerce safety demo, a real UNBLCK hub booking and a Privy-signed DeFindex Testnet deposit are real. Notion is implemented and awaiting complete user acceptance. Merchant fulfillment and mainnet settlement are not live.
+
+Validated proof: a real UNBLCK booking and cancellation; a duplicate-resistant 0.01 USDC x402 payment on Stellar Testnet; a Privy-signed 1 XLM DeFindex Testnet deposit; and live read-only Travala hotel search.
 
 [Live product](https://agente-asistente.vercel.app) · [New user guide](https://agente-asistente.vercel.app/guide) · [Developer portal](https://agente-asistente.vercel.app/developers) · [Open the agent](https://agente-asistente.vercel.app/agent) · [Safety demo](https://agente-asistente.vercel.app/demo) · [Integration Lab](https://agente-asistente.vercel.app/connections) · [Waitlist](https://agente-asistente.vercel.app/waitlist)
 
@@ -190,7 +196,7 @@ flowchart LR
         PRO["Service provider"]
         WEB["Chrome WebMCP"]
     end
-    subgraph CORE["agent-assistant"]
+    subgraph CORE["Carmelita"]
         P1["/api/mcp<br/>public sandbox"]
         P2["/api/mcp/agent<br/>Privy bearer"]
         P3["/api/mcp/provider<br/>scoped key"]
@@ -263,7 +269,7 @@ Example client configuration:
 | get_receipt | Retrieve execution evidence | No |
 The delegated-autonomy boundary is documented in [Testnet Autopilot security model](docs/testnet-autopilot.md).
 
-Inbound MCP lets other agents use agent-assistant. Outbound connectors let agent-assistant use Notion, CoinGecko/CoinMarketCap and Travala. These directions may use MCP, OAuth or a conventional API.
+Inbound MCP lets other agents use Carmelita. Outbound connectors let Carmelita use Notion, CoinGecko/CoinMarketCap and Travala. These directions may use MCP, OAuth or a conventional API.
 
 Chrome WebMCP registers search_agent_offers and prepare_commerce_intent. Wallet authorization and execution are intentionally excluded.
 
@@ -400,7 +406,7 @@ Start at the [documentation index](docs/README.md).
 
 ## Project
 
-agent-assistant is an early-stage, solo-founder project built in Latin America for a global agent economy. The first wedge is a trusted personal agent with real connections and a user-owned Stellar wallet. The long-term infrastructure helps businesses become discoverable, actionable and payable by agents.
+Carmelita is an early-stage, solo-founder project built in Latin America for a global agent economy. The first wedge is a trusted personal agent with real connections and a user-owned Stellar wallet. The long-term infrastructure helps businesses become discoverable, actionable and payable by agents.
 
 Join the [waitlist](https://agente-asistente.vercel.app/waitlist) or propose a pilot through the [Integration Lab](https://agente-asistente.vercel.app/connections).
 

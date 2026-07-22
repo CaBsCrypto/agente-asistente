@@ -1,6 +1,8 @@
 "use client";
 
 import LanguageToggle, { useLocale } from "./language-toggle";
+import BrandLockup from "./brand-lockup";
+export { default } from "./home-experience";
 
 const copy = {
   en: {
@@ -8,9 +10,9 @@ const copy = {
     guide: "Guide",
     signIn: "Sign in",
     eyebrow: "COMMERCE INFRASTRUCTURE FOR AI AGENTS",
-    headline: <>Agents can take action. <em>You stay in control.</em></>,
-    lede: "A non-custodial control layer for agents that discover, book, hire and pay under policies defined by real people.",
-    primary: "Open your agent",
+    headline: <>Knows you. <em>Acts for you.</em></>,
+    lede: "Carmelita is a personal AI agent with memory, permissions and a user-owned wallet that safely discovers, books, hires and pays for you.",
+    primary: "Open Carmelita",
     secondary: "Try the live demo",
     boundary: "Privy identity + user-owned Stellar wallet · Testnet only · No real funds enabled",
     review: "Action ready for review",
@@ -75,9 +77,9 @@ const copy = {
     guide: "Guía",
     signIn: "Ingresar",
     eyebrow: "INFRAESTRUCTURA DE COMERCIO PARA AGENTES DE IA",
-    headline: <>Los agentes pueden actuar. <em>Tú mantienes el control.</em></>,
-    lede: "Una capa de control no custodial para agentes que descubren, reservan, contratan y pagan bajo políticas definidas por personas reales.",
-    primary: "Abrir mi agente",
+    headline: <>Te conoce. <em>{"Act\u00faa por ti."}</em></>,
+    lede: "Carmelita es un agente personal de IA con memoria, permisos y una wallet propiedad del usuario que descubre, reserva, contrata y paga por ti de forma segura.",
+    primary: "Abrir Carmelita",
     secondary: "Probar demo en vivo",
     boundary: "Identidad Privy + wallet Stellar del usuario · Solo Testnet · Sin fondos reales",
     review: "Acción lista para revisar",
@@ -142,9 +144,9 @@ const copy = {
     guide: "Guia",
     signIn: "Entrar",
     eyebrow: "INFRAESTRUTURA DE COMÉRCIO PARA AGENTES DE IA",
-    headline: <>Agentes podem agir. <em>Você mantém o controle.</em></>,
-    lede: "Uma camada de controle não custodial para agentes que descobrem, reservam, contratam e pagam sob políticas definidas por pessoas reais.",
-    primary: "Abrir meu agente",
+    headline: <>{"Conhece voc\u00ea."} <em>{"Age por voc\u00ea."}</em></>,
+    lede: "Carmelita \u00e9 um agente pessoal de IA com mem\u00f3ria, permiss\u00f5es e uma wallet do usu\u00e1rio que descobre, reserva, contrata e paga por voc\u00ea com seguran\u00e7a.",
+    primary: "Abrir Carmelita",
     secondary: "Testar demo ao vivo",
     boundary: "Identidade Privy + wallet Stellar do usuário · Somente Testnet · Sem fundos reais",
     review: "Ação pronta para revisão",
@@ -206,14 +208,14 @@ const copy = {
   },
 };
 
-export default function Home() {
+export function LegacyHome() {
   const { locale, setLocale } = useLocale();
   const t = copy[locale];
 
   return (
     <main>
       <nav className="nav shell">
-        <a className="brand" href="#top"><b>AA</b>agent-assistant</a>
+        <a className="brand" href="#top"><BrandLockup /></a>
         <div className="nav-links">
           <a href="#product">{t.nav[0]}</a><a href="#lifecycle">{t.nav[1]}</a><a href="#pilots">{t.nav[2]}</a><a href="/guide">{t.guide}</a><a href="/developers">{t.nav[3]}</a><a href="/connections">{t.nav[4]}</a><a href="/waitlist">{t.nav[5]}</a>
           <LanguageToggle locale={locale} onChange={setLocale} compact />
@@ -248,7 +250,7 @@ export default function Home() {
       <section className="wallet shell"><div><p className="eyebrow">{t.walletEyebrow}</p><h2>{t.walletTitle}</h2><p>{t.walletText}</p></div><div>{t.stages.map((stage) => <span key={stage[0]}>{stage[0]} <small>{stage[1]}</small></span>)}</div></section>
 
       <section className="section shell" id="partners"><div className="partner"><div><p className="eyebrow">{t.partnerEyebrow}</p><h2>{t.partnerTitle}</h2><p>{t.partnerText}</p></div><a href="/developers">{t.partnerCta}</a></div></section>
-      <footer className="shell"><span className="brand"><b>AA</b>agent-assistant</span><p>{t.footer}</p></footer>
+      <footer className="shell"><span className="brand"><BrandLockup /></span><p>{t.footer}</p></footer>
     </main>
   );
 }

@@ -1,12 +1,13 @@
 import Link from "next/link";
+import BrandLockup from "../brand-lockup";
 import LoginPanel from "./login-panel";
 import { LanguageControl } from "../language-toggle";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Sign in | agent-assistant",
-  description: "Access your agent, Stellar wallet and saved activity securely with Privy.",
+  title: "Sign in | Carmelita",
+  description: "Access Carmelita, your Stellar wallet and saved activity securely with Privy.",
 };
 
 export default function LoginPage() {
@@ -19,8 +20,7 @@ export default function LoginPage() {
     <main className="login-page">
       <nav className="demo-nav shell">
         <Link className="brand" href="/">
-          <b>AA</b>
-          agent-assistant
+          <BrandLockup />
         </Link>
         <div className="lab-nav-actions"><LanguageControl compact /><Link className="login-back" href="/guide">Guide</Link><Link className="login-back" href="/">Home</Link></div>
       </nav>

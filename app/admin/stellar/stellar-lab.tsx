@@ -210,7 +210,7 @@ export default function StellarLab({
               </>
             ) : (
               <>
-                <i>AA</i>
+                <i>C</i>
                 <h3>No cryptographic proof yet.</h3>
                 <p>
                   Complete the three actions to prove wallet creation, testnet

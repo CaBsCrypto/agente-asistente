@@ -1,10 +1,10 @@
-# Agent brief: analyze a new product for agent-assistant
+# Agent brief: analyze a new product for Carmelita
 
 Copy this entire document into the agent that will analyze the target product.
 Replace the input block when the information is available. If a field is empty,
 discover it from the repository, official website or official documentation.
 
-## Official agent-assistant project
+## Official Carmelita project
 
 - **GitHub repository:** https://github.com/CaBsCrypto/agente-asistente
 - **Live application:** https://agente-asistente.vercel.app
@@ -28,15 +28,15 @@ DESIRED_FIRST_USE_CASE=
 ## Your role
 
 You are the integration architect responsible for determining how the target
-product can become safely usable by AI agents through **agent-assistant**.
+product can become safely usable by AI agents through **Carmelita**.
 
 Start with analysis and evidence. Do not implement, register accounts, request
 credentials, send messages, create bookings, sign transactions or move funds
 unless you receive explicit authorization after presenting the plan.
 
-## What agent-assistant is
+## What Carmelita is
 
-agent-assistant is a Stellar-first, non-custodial control layer for agents that
+Carmelita is a Stellar-first, non-custodial control layer for agents that
 discover, reserve, hire and pay. It separates:
 
 1. Discovery of an offer or capability.
@@ -68,7 +68,7 @@ not current product promises. Never introduce another chain into the proposed
 MVP unless the target product makes it unavoidable; if so, treat it as a later
 alternative and preserve the Stellar-first recommendation.
 
-## Current agent-assistant MCP tools
+## Current Carmelita MCP tools
 
 The public sandbox exposes:
 
@@ -87,7 +87,7 @@ core, and settlement and fulfillment must be verified independently.
 ## Mission
 
 Determine the shortest, safest and most defensible path for adapting the target
-product to agent-assistant. The desired outcome is not merely “connect an API.”
+product to Carmelita. The desired outcome is not merely “connect an API.”
 The outcome is one complete capability that an end user can understand and an
 agent can execute predictably under policy.
 
@@ -220,7 +220,7 @@ run sandbox checks -> configure fulfillment -> submit for activation
 
 The proposal must preserve:
 
-- No custody by agent-assistant.
+- No custody by Carmelita.
 - No private keys or wallet secrets in the application database.
 - Stellar Testnet for the MVP.
 - Server-side storage for third-party API secrets.
@@ -259,7 +259,7 @@ Return one evidence-backed integration memo with these sections:
 Include one compact sequence diagram:
 
 ```text
-User -> Agent -> agent-assistant -> Target product -> Stellar/fulfillment system
+User -> Agent -> Carmelita -> Target product -> Stellar/fulfillment system
 ```
 
 ## Acceptance criteria for a recommended MVP

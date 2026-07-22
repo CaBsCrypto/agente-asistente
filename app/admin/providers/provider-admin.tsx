@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import BrandLockup from "../../brand-lockup";
 import { FormEvent, useState } from "react";
 
 type Provider = {
@@ -55,7 +56,7 @@ export default function ProviderAdmin({
     <main className="admin-page">
       <header className="admin-topbar">
         <Link className="brand" href="/">
-          <b>AA</b>agent-assistant
+          <BrandLockup />
         </Link>
         <div>
           <Link className="admin-stellar-link" href="/admin">Founder dashboard</Link>

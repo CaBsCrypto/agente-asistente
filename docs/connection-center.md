@@ -13,7 +13,7 @@ The Connection Center keeps the agent chat open while a user authenticates with 
 
 1. The user asks the agent to connect to UNBLCK in English, Spanish, or Portuguese.
 2. The agent returns a structured popup action for `https://www.unblck.cl/login`.
-3. The user reviews the provider and requested capabilities inside agent-assistant.
+3. The user reviews the provider and requested capabilities inside Carmelita.
 4. The official UNBLCK login opens in a small browser window.
 5. The user completes the email magic link on the UNBLCK origin.
 6. The Browser Bridge finds an authenticated `https://www.unblck.cl/member/*` tab in the same Chrome profile.
@@ -27,7 +27,7 @@ Install it from `browser-extension`: open `chrome://extensions`, enable **Develo
 ## Security boundary
 
 - UNBLCK credentials, cookies, and magic links remain on `unblck.cl`.
-- agent-assistant does not request or store the UNBLCK password or session cookie.
+- Carmelita does not request or store the UNBLCK password or session cookie.
 - Cross-origin pages are never embedded in an iframe.
 - Popup completion is not accepted as proof of authentication.
 - The extension is restricted to the production agent origin, local development, and `www.unblck.cl`.

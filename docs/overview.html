@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>agent-assistant — Product &amp; Architecture</title>
-<meta name="description" content="Product and architecture documentation for agent-assistant: a permissioned AI agent with a user-owned Stellar wallet, a LangGraph safe-action engine, and a bidirectional MCP gateway.">
+<title>Carmelita — Product &amp; Architecture</title>
+<meta name="description" content="Product and architecture documentation for Carmelita: a personal AI agent with memory, permissions and a user-owned wallet that safely executes real-world actions.">
 </head>
 <body>
 <style>
   /* ============================================================
-     agent-assistant — documentation showcase
+     Carmelita — documentation showcase
      Grounded in the product's own design system (app/globals.css):
      warm cream ground, forest green, coral, amber hard-shadows.
      ============================================================ */
@@ -345,7 +345,7 @@
 
 <nav class="nav">
   <div class="shell" style="display:flex;align-items:center;justify-content:space-between;width:min(1180px,calc(100% - 44px));">
-    <a class="brand" href="#top"><b>AA</b> agent-assistant</a>
+    <a class="brand" href="#top"><b>C</b> Carmelita</a>
     <div class="nav-links">
       <a href="#proofs">Proofs</a>
       <a href="#architecture">Architecture</a>
@@ -399,7 +399,7 @@
     <div class="sec-head">
       <p class="eyebrow">What it is</p>
       <h2 class="title">A trusted layer between people, agents, apps and payments.</h2>
-      <p class="sec-lede">agent-assistant pairs a simple chat for end users with MCP, WebMCP and API surfaces for developers. Every sensitive action is constrained: identity is separated from consent, consent from payment; intents are frozen and hashed before approval; execution runs exactly once and leaves durable evidence. The same engine lets other agents use us, and lets us use other apps.</p>
+      <p class="sec-lede">Carmelita pairs a simple chat for end users with MCP, WebMCP and API surfaces for developers. Every sensitive action is constrained: identity is separated from consent, consent from payment; intents are frozen and hashed before approval; execution runs exactly once and leaves durable evidence. The same engine lets other agents use us, and lets us use other apps.</p>
     </div>
 
     <div class="callout">
@@ -700,7 +700,7 @@ flowchart LR
     PRO["Service provider"]
     WEB["Chrome WebMCP"]
   end
-  subgraph CORE["agent-assistant"]
+  subgraph CORE["Carmelita"]
     P1["/api/mcp&lt;br/&gt;public sandbox"]
     P2["/api/mcp/agent&lt;br/&gt;Privy bearer"]
     P3["/api/mcp/provider&lt;br/&gt;scoped key"]
@@ -895,8 +895,8 @@ flowchart LR
 <footer class="f">
   <div class="shell" style="display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;width:min(1180px,calc(100% - 44px));">
     <div>
-      <a class="brand" href="#top" style="margin-bottom:10px;display:inline-flex;"><b>AA</b> agent-assistant</a>
-      <p class="note">A permissioned personal agent with a user-owned Stellar wallet, built in Latin America for a global agent economy.</p>
+      <a class="brand" href="#top" style="margin-bottom:10px;display:inline-flex;"><b>C</b> Carmelita</a>
+      <p class="note">Knows you. Acts for you. Built in Latin America for a global agent economy.</p>
     </div>
     <div class="note">Testnet only · no real funds · settlement and fulfillment verified separately. Status labels are shared across all project documentation.</div>
   </div>

@@ -35,7 +35,7 @@ flowchart LR
         SESSION["Privy session"]
         CONSENT["Visible confirmation"]
     end
-    subgraph SERVER["agent-assistant server"]
+    subgraph SERVER["Carmelita server"]
         VERIFY["Verify identity"]
         TOOLS["Route tools"]
         RULES["Evaluate policy"]

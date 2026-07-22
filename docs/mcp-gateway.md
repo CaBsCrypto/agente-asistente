@@ -1,6 +1,6 @@
 # Bidirectional MCP gateway
 
-agent-assistant now has three MCP surfaces and one outbound connector layer.
+Carmelita now has three MCP surfaces and one outbound connector layer.
 
 ~~~mermaid
 flowchart LR
@@ -17,7 +17,7 @@ flowchart LR
 
 This closes the architectural loop:
 
-1. agent-assistant can use external services.
+1. Carmelita can use external services.
 2. external clients can use a user's agent.
 3. providers can administer services that agents discover.
 

@@ -2,10 +2,10 @@
 
 > For the personal-agent and provider-admin surfaces, read the [bidirectional MCP gateway](mcp-gateway.md).
 
-agent-assistant participates in MCP in two directions:
+Carmelita participates in MCP in two directions:
 
-- **Inbound MCP:** other agents call agent-assistant commerce tools.
-- **Outbound connectors:** agent-assistant calls external MCP servers or APIs such as Notion, Travala, CoinGecko and CoinMarketCap.
+- **Inbound MCP:** other agents call Carmelita commerce tools.
+- **Outbound connectors:** Carmelita calls external MCP servers or APIs such as Notion, Travala, CoinGecko and CoinMarketCap.
 
 An external product does not automatically need MCP. OAuth plus an API can be sufficient; MCP is preferred when the provider offers a stable, scoped tool contract.
 
@@ -74,7 +74,7 @@ The endpoint is a public sandbox. Production mutation requires user-bound OAuth 
 | Travala | Public remote MCP | Public access for current tool | Read-only hotel discovery |
 | CoinGecko (primary) + CoinMarketCap (fallback) | Public REST API | Keyless (optional demo key) | Read-only quotes and watchlist |
 
-Outbound OAuth tokens are encrypted with CONNECTOR_ENCRYPTION_KEY. Login to agent-assistant does not grant access to an external provider; the user must complete that provider consent flow.
+Outbound OAuth tokens are encrypted with CONNECTOR_ENCRYPTION_KEY. Login to Carmelita does not grant access to an external provider; the user must complete that provider consent flow.
 
 ## WebMCP
 

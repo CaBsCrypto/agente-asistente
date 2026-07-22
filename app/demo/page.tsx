@@ -1,9 +1,10 @@
 import Link from "next/link";
+import BrandLockup from "../brand-lockup";
 import ActionConsole from "./action-console";
 import RecordingGuide from "./recording-guide";
 
 export const metadata = {
-  title: "Live action demo | agent-assistant",
+  title: "Live action demo | Carmelita",
   description: "See the live Privy, Stellar Testnet and x402 payment proof.",
 };
 
@@ -11,7 +12,7 @@ export default function DemoPage() {
   return (
     <main className="demo-page">
       <nav className="demo-nav shell">
-        <Link className="brand" href="/"><b>AA</b>agent-assistant</Link>
+        <Link className="brand" href="/"><BrandLockup /></Link>
         <div><span>LIVE TESTNET</span><Link href="/developers">API docs</Link></div>
       </nav>
 

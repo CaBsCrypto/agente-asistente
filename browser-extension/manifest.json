@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "agent-assistant Browser Bridge",
+  "name": "Carmelita Browser Bridge",
   "version": "0.1.0",
-  "description": "Connects explicitly allowed browser tabs to agent-assistant without exporting cookies or passwords.",
+  "description": "Connects explicitly allowed browser tabs to Carmelita without exporting cookies or passwords.",
   "permissions": ["tabs"],
   "host_permissions": [
     "https://agente-asistente.vercel.app/*",
@@ -25,6 +25,6 @@
     }
   ],
   "action": {
-    "default_title": "agent-assistant Browser Bridge"
+    "default_title": "Carmelita Browser Bridge"
   }
 }

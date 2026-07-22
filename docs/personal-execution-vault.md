@@ -1,6 +1,6 @@
 # Personal Execution Vault
 
-The Personal Execution Vault is the user-owned context and policy layer for agent-assistant. It keeps knowledge, execution rules and decision evidence separate so that a preference can influence a recommendation without becoming financial authority.
+The Personal Execution Vault is the user-owned context and policy layer for Carmelita. It keeps knowledge, execution rules and decision evidence separate so that a preference can influence a recommendation without becoming financial authority.
 
 ## Product model
 

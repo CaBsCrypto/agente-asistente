@@ -1,6 +1,6 @@
-# agent-assistant Browser Bridge
+# Carmelita Browser Bridge
 
-This unpacked Chrome extension connects the agent page to explicitly allowed UNBLCK member tabs. It reads only visible booking state and never exports cookies, passwords, magic links, local storage, or browsing history.
+This unpacked Chrome extension connects Carmelita to explicitly allowed UNBLCK member tabs. It reads only visible booking state and never exports cookies, passwords, magic links, local storage, or browsing history.
 
 ## Install for the MVP
 
@@ -8,7 +8,7 @@ This unpacked Chrome extension connects the agent page to explicitly allowed UNB
 2. Enable **Developer mode**.
 3. Select **Load unpacked**.
 4. Choose this `browser-extension` directory.
-5. Open agent-assistant and an authenticated `https://www.unblck.cl/member/*` tab in the same Chrome profile.
+5. Open Carmelita and an authenticated `https://www.unblck.cl/member/*` tab in the same Chrome profile.
 6. In the agent chat, request UNBLCK and press **Verify browser session**.
 
 ## Current capability

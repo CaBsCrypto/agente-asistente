@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import BrandLockup from "../brand-lockup";
 import LanguageToggle, { useLocale } from "../language-toggle";
 
 const endpoint = "https://agente-asistente.vercel.app/api/mcp";
 const clientConfig = `{
   "mcpServers": {
-    "agent-assistant": {
+    "Carmelita": {
       "url": "${endpoint}"
     }
   }
@@ -34,13 +35,13 @@ const copy = {
     choose: "Choose how you want to build",
     chooseText: "Each path starts small, proves one useful action and keeps sensitive execution behind explicit authority.",
     paths: [
-      ["01", "Use agent-assistant", "Connect an external agent to our public commerce sandbox or, during development, to a user's personal agent.", "Start with public MCP", "#quickstart", "SANDBOX LIVE"],
+      ["01", "Use Carmelita", "Connect an external agent to our public commerce sandbox or, during development, to a user's personal agent.", "Start with public MCP", "#quickstart", "SANDBOX LIVE"],
       ["02", "Publish your service", "Create a scoped provider identity, publish structured offers and make them discoverable by agents.", "See provider flow", "#provider", "PILOT READY"],
-      ["03", "Connect your product", "Expose one official MCP or API action and let agent-assistant call it after user consent.", "Use integration checklist", "#connect-product", "GUIDED"],
+      ["03", "Connect your product", "Expose one official MCP or API action and let Carmelita call it after user consent.", "Use integration checklist", "#connect-product", "GUIDED"],
     ],
     architecture: "One gateway, two directions",
     architectureText: "External agents can use us. Our agent can use external products. Providers can publish the services both sides discover.",
-    diagram: ["External agent", "agent-assistant", "Policy + receipts", "Provider catalog", "External product"],
+    diagram: ["External agent", "Carmelita", "Policy + receipts", "Provider catalog", "External product"],
     quick: "Public MCP quickstart",
     quickText: "No API key is required for the commerce sandbox. Add the endpoint, list the tools and keep one stable idempotency key for every logical action.",
     copy: "Copy config",
@@ -71,7 +72,7 @@ const copy = {
     statusTitle: "Know exactly what is real",
     statusRows: [["Public commerce MCP", "Sandbox live"], ["Provider MCP", "Pilot ready"], ["Personal agent MCP", "Development bridge"], ["DeFindex signing", "Ready to validate"], ["Mainnet settlement", "Disabled"]],
     securityTitle: "Security contract",
-    security: ["No private key or seed phrase reaches agent-assistant.", "Personal users and providers are isolated principals.", "Provider keys are hashed, scoped and returned raw only once.", "Creating an intent never moves funds.", "Retries reuse the original intent or receipt.", "Mainnet and public MCP payment signing remain disabled."],
+    security: ["No private key or seed phrase reaches Carmelita.", "Personal users and providers are isolated principals.", "Provider keys are hashed, scoped and returned raw only once.", "Creating an intent never moves funds.", "Retries reuse the original intent or receipt.", "Mainnet and public MCP payment signing remain disabled."],
     finalTitle: "Start with one action worth proving.",
     finalText: "Connect the public sandbox today or bring us one product action for a guided Testnet pilot.",
     finalPrimary: "Copy MCP endpoint",
@@ -88,13 +89,13 @@ const copy = {
     choose: "Elige cómo quieres construir",
     chooseText: "Cada ruta comienza pequeña, demuestra una acción útil y protege la ejecución sensible con autoridad explícita.",
     paths: [
-      ["01", "Usar agent-assistant", "Conecta un agente externo a nuestro sandbox público o, durante desarrollo, al agente personal de un usuario.", "Comenzar con MCP público", "#quickstart", "SANDBOX ACTIVO"],
+      ["01", "Usar Carmelita", "Conecta un agente externo a nuestro sandbox público o, durante desarrollo, al agente personal de un usuario.", "Comenzar con MCP público", "#quickstart", "SANDBOX ACTIVO"],
       ["02", "Publicar tu servicio", "Crea una identidad de provider con permisos limitados y publica ofertas estructuradas para agentes.", "Ver flujo de providers", "#provider", "PILOTO LISTO"],
-      ["03", "Conectar tu producto", "Expón una acción oficial mediante MCP o API y permite que agent-assistant la use después del consentimiento.", "Usar checklist", "#connect-product", "GUIADO"],
+      ["03", "Conectar tu producto", "Expón una acción oficial mediante MCP o API y permite que Carmelita la use después del consentimiento.", "Usar checklist", "#connect-product", "GUIADO"],
     ],
     architecture: "Un gateway, dos direcciones",
     architectureText: "Agentes externos pueden utilizarnos. Nuestro agente puede utilizar productos externos. Los providers publican los servicios que ambos descubren.",
-    diagram: ["Agente externo", "agent-assistant", "Política + recibos", "Catálogo provider", "Producto externo"],
+    diagram: ["Agente externo", "Carmelita", "Política + recibos", "Catálogo provider", "Producto externo"],
     quick: "Quickstart del MCP público",
     quickText: "El sandbox de comercio no requiere API key. Agrega el endpoint, descubre las herramientas y conserva una idempotency key estable para cada acción lógica.",
     copy: "Copiar config",
@@ -125,7 +126,7 @@ const copy = {
     statusTitle: "Sabe exactamente qué es real",
     statusRows: [["MCP de comercio público", "Sandbox activo"], ["Provider MCP", "Piloto listo"], ["MCP del agente personal", "Puente de desarrollo"], ["Firma DeFindex", "Lista para validar"], ["Liquidación Mainnet", "Desactivada"]],
     securityTitle: "Contrato de seguridad",
-    security: ["Ninguna clave privada o seed phrase llega a agent-assistant.", "Usuarios personales y providers son identidades aisladas.", "Las claves provider se guardan hasheadas y con scopes.", "Crear un intent nunca mueve fondos.", "Los reintentos reutilizan el intent o recibo original.", "Mainnet y la firma de pagos vía MCP público siguen desactivados."],
+    security: ["Ninguna clave privada o seed phrase llega a Carmelita.", "Usuarios personales y providers son identidades aisladas.", "Las claves provider se guardan hasheadas y con scopes.", "Crear un intent nunca mueve fondos.", "Los reintentos reutilizan el intent o recibo original.", "Mainnet y la firma de pagos vía MCP público siguen desactivados."],
     finalTitle: "Comienza con una acción que valga la pena demostrar.",
     finalText: "Conecta hoy el sandbox público o trae una acción de tu producto para un piloto guiado en Testnet.",
     finalPrimary: "Copiar endpoint MCP",
@@ -142,13 +143,13 @@ const copy = {
     choose: "Escolha como você quer construir",
     chooseText: "Cada rota começa pequena, prova uma ação útil e mantém a execução sensível sob autoridade explícita.",
     paths: [
-      ["01", "Usar agent-assistant", "Conecte um agente externo ao nosso sandbox público ou, durante o desenvolvimento, ao agente pessoal de um usuário.", "Começar com MCP público", "#quickstart", "SANDBOX ATIVO"],
+      ["01", "Usar Carmelita", "Conecte um agente externo ao nosso sandbox público ou, durante o desenvolvimento, ao agente pessoal de um usuário.", "Começar com MCP público", "#quickstart", "SANDBOX ATIVO"],
       ["02", "Publicar seu serviço", "Crie uma identidade de provider com permissões limitadas e publique ofertas estruturadas para agentes.", "Ver fluxo de providers", "#provider", "PILOTO PRONTO"],
-      ["03", "Conectar seu produto", "Exponha uma ação oficial via MCP ou API e permita que agent-assistant a use após o consentimento.", "Usar checklist", "#connect-product", "GUIADO"],
+      ["03", "Conectar seu produto", "Exponha uma ação oficial via MCP ou API e permita que Carmelita a use após o consentimento.", "Usar checklist", "#connect-product", "GUIADO"],
     ],
     architecture: "Um gateway, duas direções",
     architectureText: "Agentes externos podem nos usar. Nosso agente pode usar produtos externos. Providers publicam os serviços que ambos descobrem.",
-    diagram: ["Agente externo", "agent-assistant", "Política + recibos", "Catálogo provider", "Produto externo"],
+    diagram: ["Agente externo", "Carmelita", "Política + recibos", "Catálogo provider", "Produto externo"],
     quick: "Quickstart do MCP público",
     quickText: "O sandbox de comércio não exige API key. Adicione o endpoint, descubra as ferramentas e mantenha uma idempotency key estável para cada ação lógica.",
     copy: "Copiar config",
@@ -179,7 +180,7 @@ const copy = {
     statusTitle: "Saiba exatamente o que é real",
     statusRows: [["MCP de comércio público", "Sandbox ativo"], ["Provider MCP", "Piloto pronto"], ["MCP do agente pessoal", "Ponte de desenvolvimento"], ["Assinatura DeFindex", "Pronta para validar"], ["Liquidação Mainnet", "Desativada"]],
     securityTitle: "Contrato de segurança",
-    security: ["Nenhuma chave privada ou seed phrase chega ao agent-assistant.", "Usuários pessoais e providers são identidades isoladas.", "Chaves de provider são armazenadas com hash e scopes.", "Criar um intent nunca move fundos.", "Novas tentativas reutilizam o intent ou recibo original.", "Mainnet e assinatura de pagamentos via MCP público continuam desativados."],
+    security: ["Nenhuma chave privada ou seed phrase chega à Carmelita.", "Usuários pessoais e providers são identidades isoladas.", "Chaves de provider são armazenadas com hash e scopes.", "Criar um intent nunca move fundos.", "Novas tentativas reutilizam o intent ou recibo original.", "Mainnet e assinatura de pagamentos via MCP público continuam desativados."],
     finalTitle: "Comece com uma ação que vale a pena provar.",
     finalText: "Conecte o sandbox público hoje ou traga uma ação do seu produto para um piloto guiado na Testnet.",
     finalPrimary: "Copiar endpoint MCP",
@@ -201,7 +202,7 @@ export default function Developers() {
   return (
     <main className="developer-portal">
       <nav className="developer-nav shell">
-        <Link className="brand" href="/"><b>AA</b>agent-assistant</Link>
+        <Link className="brand" href="/"><BrandLockup /></Link>
         <div><Link href="/">{t.nav[0]}</Link><Link href="/connections">{t.nav[1]}</Link><a href="https://github.com/CaBsCrypto/agente-asistente">{t.nav[2]}</a><LanguageToggle locale={locale} onChange={setLocale} compact /></div>
       </nav>
 
@@ -227,7 +228,7 @@ export default function Developers() {
       <section className="developer-section shell"><div className="status-security"><div><p className="eyebrow">08 · HONEST STATUS</p><h2>{t.statusTitle}</h2><dl>{t.statusRows.map((row) => <div key={row[0]}><dt>{row[0]}</dt><dd>{row[1]}</dd></div>)}</dl></div><div className="security-card"><p className="eyebrow">SECURITY</p><h2>{t.securityTitle}</h2><ul>{t.security.map((item) => <li key={item}>{item}</li>)}</ul></div></div></section>
 
       <section className="developer-final shell"><div><p className="eyebrow">READY WHEN YOU ARE</p><h2>{t.finalTitle}</h2><p>{t.finalText}</p></div><div><button type="button" onClick={() => void copyValue(endpoint, "endpoint")}>{copied === "endpoint" ? t.copied : t.finalPrimary}</button><Link href="/connections">{t.finalSecondary}</Link></div></section>
-      <footer className="developer-footer shell"><Link className="brand" href="/"><b>AA</b>agent-assistant</Link><Link href="/">← {t.back}</Link></footer>
+      <footer className="developer-footer shell"><Link className="brand" href="/"><BrandLockup /></Link><Link href="/">← {t.back}</Link></footer>
     </main>
   );
 }

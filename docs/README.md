@@ -1,6 +1,6 @@
 # Documentation
 
-This directory is the source of truth for operating, demonstrating and extending agent-assistant.
+This directory is the source of truth for operating, demonstrating and extending Carmelita.
 
 ## New users
 
@@ -13,7 +13,7 @@ This directory is the source of truth for operating, demonstrating and extending
 
 ### Product and fundraising
 
-1. Read the [current product status](product-status.md).
+1. Read the [current product status](product-status.md) and the [Carmelita brand transition guide](brand-transition.md).
 2. Track verified proof in the [YC evidence ledger](yc-evidence-ledger.md) — the current source of truth for what is Live.
 3. Complete the [YC application answer bank](yc-application.md).
 4. Rehearse the [90-second live demo](live-demo.md).

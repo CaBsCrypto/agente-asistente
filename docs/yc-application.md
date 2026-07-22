@@ -1,12 +1,14 @@
 # YC application answer bank
 
-Last updated: July 21, 2026
+Last updated: July 22, 2026
 
 This is the working source for the application and interview. Replace every bracketed field before submission. Never convert a roadmap item into a traction claim.
 
 ## Company in one sentence
 
-**agent-assistant is a permissioned action layer that lets AI agents use services and make non-custodial payments from user-owned wallets.**
+**Carmelita is a personal AI agent with memory, permissions and a user-owned wallet that safely executes real-world actions.**
+
+**Knows you. Acts for you.**
 
 Short alternative:
 
@@ -14,7 +16,7 @@ Short alternative:
 
 ## What are you building?
 
-People are beginning to ask agents to research, reserve, hire and pay, but today's integrations stop at chat or give broad access with weak controls. agent-assistant gives each user a persistent agent and a user-owned Stellar wallet, connects the agent to external products through MCP, APIs and OAuth, and applies the same lifecycle to every sensitive action: freeze the intent, evaluate policy, request exact approval, execute once and preserve evidence.
+People are beginning to ask agents to research, reserve, hire and pay, but today's integrations stop at chat or give broad access with weak controls. Carmelita gives each user a persistent agent and a user-owned Stellar wallet, connects the agent to external products through MCP, APIs and OAuth, and applies the same lifecycle to every sensitive action: freeze the intent, evaluate policy, request exact approval, execute once and preserve evidence.
 
 The product also gives businesses a path to become discoverable and actionable by agents through structured offers and narrow MCP tools. We are starting with Stellar Testnet and Latin American design partners, but the interface is designed for global services.
 
@@ -53,7 +55,7 @@ MCP, browser-native agent interfaces and machine-readable payment protocols are 
 
 ## What is different?
 
-Most products optimize one side of the market: a consumer agent, a wallet, an MCP server or a payment rail. agent-assistant connects both directions:
+Most products optimize one side of the market: a consumer agent, a wallet, an MCP server or a payment rail. Carmelita connects both directions:
 
 1. Our agent can use external products.
 2. External agents can use our commerce tools.

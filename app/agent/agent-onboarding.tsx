@@ -11,15 +11,15 @@ import { type Locale, useLocale } from "../language-toggle";
 const onboardingUi = {
   en: {
     loading: "Preparing secure sign-in...",
-    entryEyebrow: "YOUR ALWAYS-READY AGENT",
+    entryEyebrow: "MEET CARMELITA",
     entryTitle: "Sign in once. Your Stellar wallet arrives with you.",
-    entryText: "Continue with email, Google or a passkey. Privy creates the identity; agent-assistant immediately provisions one user-owned Stellar wallet.",
-    create: "Create my agent",
+    entryText: "Continue with email, Google or a passkey. Privy creates the identity; Carmelita immediately provisions one user-owned Stellar wallet.",
+    create: "Meet Carmelita",
     boundary: "No seed phrase or wallet password required during onboarding.",
     onboarding: "CHAT-GUIDED ONBOARDING",
     steps: ["Authenticate with Privy", "Create a user-owned Stellar wallet", "Ask the agent for Testnet XLM", "Review every on-chain action"],
-    workspace: "YOUR AGENT",
-    ready: "Your agent is ready.",
+    workspace: "CARMELITA WORKSPACE",
+    ready: "Carmelita is ready.",
     creating: "Creating your Stellar wallet...",
     authenticated: "Authenticated with Privy",
     signout: "Sign out",
@@ -30,15 +30,15 @@ const onboardingUi = {
   },
   es: {
     loading: "Preparando ingreso seguro...",
-    entryEyebrow: "TU AGENTE SIEMPRE LISTO",
+    entryEyebrow: "CONOCE A CARMELITA",
     entryTitle: "Ingresa una vez. Tu wallet Stellar llega contigo.",
-    entryText: "Continúa con email, Google o passkey. Privy crea la identidad y agent-assistant provisiona inmediatamente una wallet Stellar propiedad del usuario.",
-    create: "Crear mi agente",
+    entryText: "Continúa con email, Google o passkey. Privy crea la identidad y Carmelita provisiona inmediatamente una wallet Stellar propiedad del usuario.",
+    create: "Conocer a Carmelita",
     boundary: "No necesitas seed phrase ni contraseña de wallet durante el onboarding.",
     onboarding: "ONBOARDING DESDE EL CHAT",
     steps: ["Autenticar con Privy", "Crear una wallet Stellar del usuario", "Pedir XLM Testnet al agente", "Revisar cada acción on-chain"],
-    workspace: "TU AGENTE",
-    ready: "Tu agente está listo.",
+    workspace: "ESPACIO DE CARMELITA",
+    ready: "Carmelita está lista.",
     creating: "Creando tu wallet Stellar...",
     authenticated: "Autenticado con Privy",
     signout: "Cerrar sesión",
@@ -49,15 +49,15 @@ const onboardingUi = {
   },
   pt: {
     loading: "Preparando login seguro...",
-    entryEyebrow: "SEU AGENTE SEMPRE PRONTO",
+    entryEyebrow: "CONHEÇA CARMELITA",
     entryTitle: "Entre uma vez. Sua wallet Stellar acompanha você.",
-    entryText: "Continue com email, Google ou passkey. A Privy cria a identidade e agent-assistant provisiona imediatamente uma wallet Stellar do usuário.",
-    create: "Criar meu agente",
+    entryText: "Continue com email, Google ou passkey. A Privy cria a identidade e Carmelita provisiona imediatamente uma wallet Stellar do usuário.",
+    create: "Conhecer Carmelita",
     boundary: "Nenhuma seed phrase ou senha de wallet é necessária durante o onboarding.",
     onboarding: "ONBOARDING PELO CHAT",
     steps: ["Autenticar com Privy", "Criar uma wallet Stellar do usuário", "Pedir XLM da Testnet ao agente", "Revisar cada ação on-chain"],
-    workspace: "SEU AGENTE",
-    ready: "Seu agente está pronto.",
+    workspace: "ESPAÇO DA CARMELITA",
+    ready: "Carmelita está pronta.",
     creating: "Criando sua wallet Stellar...",
     authenticated: "Autenticado com Privy",
     signout: "Sair",
@@ -119,10 +119,16 @@ function shortAddress(address: string) {
   return address.slice(0, 12) + "..." + address.slice(-10);
 }
 
-export default function AgentOnboarding({ configured }: { configured: boolean }) {
+export default function AgentOnboarding({
+  configured,
+  autoLogin = false,
+}: {
+  configured: boolean;
+  autoLogin?: boolean;
+}) {
   const { locale } = useLocale();
   if (!configured) return <PrivySetupRequired />;
-  return <PrivyAgent locale={locale} />;
+  return <PrivyAgent locale={locale} autoLogin={autoLogin} />;
 }
 
 function PrivySetupRequired() {
@@ -146,7 +152,13 @@ function PrivySetupRequired() {
   );
 }
 
-function PrivyAgent({ locale }: { locale: Locale }) {
+function PrivyAgent({
+  locale,
+  autoLogin,
+}: {
+  locale: Locale;
+  autoLogin: boolean;
+}) {
   const t = onboardingUi[locale];
   const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
   const { refreshUser } = useUser();
@@ -158,6 +170,7 @@ function PrivyAgent({ locale }: { locale: Locale }) {
   const [travelError, setTravelError] = useState<string | null>(null);
   const [selectedHotel, setSelectedHotel] = useState<TravelHotel | null>(null);
   const bootstrappedFor = useRef<string | null>(null);
+  const loginStarted = useRef(false);
 
   async function bootstrap(force = false) {
     if (!user?.id || (!force && bootstrappedFor.current === user.id)) return;
@@ -189,6 +202,19 @@ function PrivyAgent({ locale }: { locale: Locale }) {
       setStatus("error");
     }
   }
+
+  useEffect(() => {
+    if (!autoLogin || !ready || authenticated || loginStarted.current) return;
+    loginStarted.current = true;
+    async function openPrivy() {
+      try {
+        await login();
+      } catch {
+        loginStarted.current = false;
+      }
+    }
+    void openPrivy();
+  }, [authenticated, autoLogin, login, ready]);
 
   useEffect(() => {
     if (!ready || !authenticated || !user?.id) return;
