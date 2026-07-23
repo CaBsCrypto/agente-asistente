@@ -87,6 +87,10 @@ Historical planning documents remain useful context but are not current status:
 - [YC closeout roadmap](yc-closeout-roadmap.md)
 - [Seven-day plan](yc-seven-day-plan.md)
 
+Future experiments are documented separately and are never presented as current product capability:
+
+- [SOS and trusted contacts](sos-trusted-contacts.md) - post-YC assisted messaging concept for older adults, families and caregivers.
+
 ## Shared status language
 
 | Status | Meaning |
