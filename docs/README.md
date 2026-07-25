@@ -78,6 +78,7 @@ flowchart TD
 - [YC pitch and narrative](yc-pitch.md)
 - [YC application answer bank](yc-application.md)
 - [YC evidence ledger](yc-evidence-ledger.md)
+- [YC submission checklist](yc-submission-checklist.md)
 - [90-second live demo](live-demo.md)
 - [CoinMarketCap pilot brief](coinmarketcap-partner-pilot.md)
 - [Acceptance testing](acceptance-testing.md)

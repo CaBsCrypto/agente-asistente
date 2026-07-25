@@ -1,6 +1,8 @@
 # 90-second Carmelita product demo
 
-Last reviewed: **July 22, 2026**
+Last reviewed: **July 25, 2026**
+
+Recording status: **Recorded; pending final playback review and upload-link verification.**
 
 The demo must tell one story: a user asks, Carmelita applies context and rules,
 executes through a real service or wallet, and returns evidence.

@@ -1,6 +1,6 @@
 # YC evidence ledger
 
-Last updated: July 21, 2026 (America/Santiago)
+Last updated: July 25, 2026 (America/Santiago)
 
 The single source of truth for what is **verified** versus **pending**. A green
 readiness check is not an execution proof. Use only rows marked **Verified live**
@@ -33,7 +33,7 @@ The three headline actions — **book (UNBLCK), pay (x402), deposit (DeFindex)**
 | Second-user wallet + memory isolation | Needs a fresh two-user acceptance | Save/query memories under two identities |
 | Notion OAuth + search | Code implemented, ready to validate | One authenticated production search that succeeds twice |
 | Design partners | Contacts identified | Three written bounded-pilot commitments (UNBLCK is a live technical integration, not a signed customer) |
-| YC demo recording | Script + preflight exist | Record only after the stop conditions are green; include the UNBLCK booking |
+| YC product demo | Recorded | Complete final playback review, upload it and verify the shared URL |
 
 ## Evidence snapshots
 
@@ -48,6 +48,6 @@ These intentionally require human identity or transaction approval:
 
 1. A fresh second Privy login (two-user acceptance).
 2. Three written partner commitments.
-3. The final product recording and YC factual answers.
+3. The one-minute founder recording and final YC factual review.
 
 Never put Privy tokens, signatures, OTP codes, private email content or admin credentials in this ledger.

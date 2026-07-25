@@ -1,6 +1,6 @@
 # YC pitch and narrative
 
-Last updated: July 22, 2026
+Last updated: July 25, 2026
 
 This document applies the [canonical Carmelita product narrative](product-narrative.md) to fundraising. Product status and evidence must come from [product-status.md](product-status.md) and [yc-evidence-ledger.md](yc-evidence-ledger.md).
 
@@ -80,7 +80,7 @@ points and speak naturally instead of reading a script:
 
 Practice version, approximately one minute:
 
-> Hi, I'm [NAME], the solo founder of Carmelita in Chile. I am building a
+> Hi, I'm Cristian, the solo founder of Carmelita in Chile. I am building a
 > personal AI agent that can complete bookings and payments, not just recommend
 > them. Today agents usually stop before a real transaction because identity,
 > permissions and provider integrations are fragmented. Carmelita gives
@@ -93,7 +93,8 @@ Practice version, approximately one minute:
 > access to early projects, and expanding into the transaction layer for personal
 > agents globally.
 
-Replace `[NAME]`. Do not memorize this word for word.
+Do not memorize this word for word. Use the five-point recording card in the
+[YC submission checklist](yc-submission-checklist.md).
 
 ## 30-second conversational pitch
 
