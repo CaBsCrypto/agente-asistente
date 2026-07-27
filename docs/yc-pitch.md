@@ -64,37 +64,46 @@ partnerships.
 
 ## One-minute founder video
 
-YC asks for the founder speaking to camera, not a product demo. Use these bullet
-points and speak naturally instead of reading a script:
+YC asks for the founder speaking to camera, not a product demo. The written
+application already explains the product; the video exists so a reviewer can see
+whether the founder is coherent, builds, and persists. Do not spend the minute on
+product mechanics — wallet, policy, approval and evidence all belong in the form,
+not here.
 
-1. Name, location and solo-founder status.
-2. “I am building a personal AI agent that can complete transactions, not just
-   recommend them.”
-3. Agents currently stop at payment or booking because identity, authority and
-   provider integrations are fragmented.
-4. Every user gets a user-owned wallet and spending rules; services connect by
-   API or MCP; the agent asks for exact approval and stores evidence.
-5. State the three strongest proofs: UNBLCK, x402 and DeFindex.
-6. Start in Latin America, where the founder has direct access to early services;
-   expand globally as businesses become agent-ready.
+Structure, four beats, roughly fifty seconds:
 
-Practice version, approximately one minute:
+1. **Who** — name, city, solo founder.
+2. **The proof, told as a story** — what the agent actually did, in plain words.
+   Concrete beats abstract; no other applicant can tell this one.
+3. **What it is, in one line** — completes real actions, not recommendations.
+4. **Why this founder** — built it alone, has shipped before, has direct access
+   to the businesses in Latin America.
 
-> Hi, I'm Cristian, the solo founder of Carmelita in Chile. I am building a
-> personal AI agent that can complete bookings and payments, not just recommend
-> them. Today agents usually stop before a real transaction because identity,
-> permissions and provider integrations are fragmented. Carmelita gives
-> every user a user-owned wallet and explicit spending rules. A service connects
-> through its API or MCP; the agent prepares an exact action, asks for approval,
-> executes it once and stores evidence. Our prototype has booked and cancelled a
-> real UNBLCK day-pass, completed a 0.01 USDC x402 payment with replay protection,
-> and deposited 1 XLM into DeFindex on Stellar Testnet. I am starting with
-> crypto-native and local services in Latin America, where I already have direct
-> access to early projects, and expanding into the transaction layer for personal
-> agents globally.
+Practice version, approximately fifty seconds:
 
-Do not memorize this word for word. Use the five-point recording card in the
+> Hi, I'm Cristian Brown, solo founder of Carmelita, in Santiago, Chile.
+>
+> A few days ago my agent booked a day-pass at a real coworking hub — from a chat
+> message. The operator's own portal confirmed it with a QR pass. Then it
+> cancelled, and the credit came back. No human touched it, except to approve.
+>
+> That's Carmelita: a personal AI agent that completes real actions, not just
+> recommendations. Each user has their own wallet and their own spending rules,
+> and nothing executes without exact approval.
+>
+> I built all of it myself. I'm technical, I'm solo, and I've shipped before —
+> games, client products, an agent studio.
+>
+> I'm starting in Latin America because I already have direct access to these
+> businesses.
+
+Do not memorize this word for word — learn the four beats and speak them. One
+take, phone at eye level, window in front of you, look at the lens. No intro, no
+editing, no music. Recording notes are in the
 [YC submission checklist](yc-submission-checklist.md).
+
+Keep any payment claim on testnet where it belongs. Overstating a technical proof
+as production is the one mistake in this video that cannot be walked back.
 
 ## 30-second conversational pitch
 
