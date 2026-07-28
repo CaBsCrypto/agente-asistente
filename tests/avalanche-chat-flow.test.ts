@@ -126,9 +126,14 @@ test("receipt evidence verifies Fuji chain and transaction fields", async () => 
       ? "0xa869"
       : request.method === "eth_getTransactionByHash"
         ? {
+            hash,
+            chainId: "0xa869",
             from: `0x${"a".repeat(40)}`,
             to: destination,
             value: "0x38d7ea4c68000",
+            nonce: "0x7",
+            gas: "0x5208",
+            gasPrice: "0x3b9aca00",
             blockNumber: "0x10",
           }
         : { status: "0x1", blockNumber: "0x10" };
@@ -140,7 +145,12 @@ test("receipt evidence verifies Fuji chain and transaction fields", async () => 
     fetcher,
   );
   assert.equal(evidence.chainId, 43113);
+  assert.equal(evidence.transactionHash, hash);
+  assert.equal(evidence.transactionChainId, 43113);
   assert.equal(evidence.valueWei, "1000000000000000");
+  assert.equal(evidence.nonce, 7);
+  assert.equal(evidence.gasLimit, "21000");
+  assert.equal(evidence.gasPriceWei, "1000000000");
   assert.equal(evidence.receiptStatus, "0x1");
 });
 
@@ -155,20 +165,24 @@ test("client action is locked to preview nonce/value and does not enable sponsor
   assert.match(source, /gas: preview\.gasLimitHex/);
   assert.match(source, /method: "eth_sendTransaction"/);
   assert.doesNotMatch(source, /sponsor\s*:\s*true/);
-assert.match(source, /Open official Fuji faucet/);
+  assert.match(source, /Open official Fuji faucet/);
   assert.match(source, /const \{ refreshUser \} = useUser\(\)/);
   assert.match(source, /await refreshUser\(\)/);
-  assert.match(source, /setSubmittedHash\(transactionHash\)/);
+  assert.match(source, /setSubmittedHash\(normalizedHash\)/);
+  assert.match(source, /setSubmittedHash\(persistedHash\)/);
   assert.match(source, /verifySubmittedTransaction\(submittedHash\)/);
-  assert.match(source, /if \(!preview \|\| submittedHash \|\| submissionLock\.current\) return/);
+  assert.match(source, /preview\.status !== "prepared"/);
+  assert.match(source, /preview\.transactionHash/);
+  assert.match(source, /walletClientType === "privy"/);
+  assert.match(source, /method: "eth_chainId"/);
 });
 test("submitted receipt retries re-query the same hash instead of returning stale evidence", async () => {
   const source = await readFile(
     new URL("../app/wallets/avalanche-transfer.ts", import.meta.url),
     "utf8",
   );
-  assert.match(source, /const isSubmittedRetry/);
-  assert.match(source, /existingHash === input\.transactionHash/);
+  assert.match(source, /let isSubmittedRetry/);
+  assert.match(source, /currentHash\(\) === transactionHash/);
   assert.match(source, /getEvmTransactionEvidence/);
   assert.match(source, /replayProtected: isSubmittedRetry/);
   assert.match(source, /fuji_preview_already_consumed/);

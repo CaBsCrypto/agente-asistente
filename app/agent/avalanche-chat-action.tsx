@@ -144,10 +144,18 @@ export default function AvalancheChatAction({
     });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error ?? "fuji_transfer_prepare_failed");
+    const persistedHash = typeof body.transactionHash === "string" &&
+      /^0x[a-fA-F0-9]{64}$/.test(body.transactionHash)
+      ? body.transactionHash.toLowerCase()
+      : null;
+    if (body.status === "submitted" && !persistedHash) {
+      throw new Error("fuji_submitted_hash_missing");
+    }
     setPreview(body);
+    setSubmittedHash(persistedHash);
   }
 
-async function verifySubmittedTransaction(transactionHash: string) {
+  async function verifySubmittedTransaction(transactionHash: string) {
     if (!preview) throw new Error("fuji_preview_missing");
     const response = await authorizedFetch("/api/agent/wallets/avalanche/transfer", {
       method: "POST",
@@ -175,15 +183,30 @@ async function verifySubmittedTransaction(transactionHash: string) {
   }
 
   async function approve() {
-    if (!preview || submittedHash || submissionLock.current) return;
+    if (
+      !preview ||
+      preview.status !== "prepared" ||
+      preview.transactionHash ||
+      submittedHash ||
+      submissionLock.current
+    ) return;
+    if (new Date(preview.expiresAt).getTime() <= Date.now()) {
+      throw new Error("fuji_preview_expired");
+    }
     submissionLock.current = true;
     try {
       const wallet = wallets.find(
-        (item) => item.address.toLowerCase() === preview.from.toLowerCase(),
+        (item) => item.walletClientType === "privy" &&
+          item.address.toLowerCase() === preview.from.toLowerCase(),
       );
       if (!wallet) throw new Error("privy_evm_wallet_not_available_in_session");
       await wallet.switchChain(43113);
       const provider = await wallet.getEthereumProvider();
+      const providerChainId = await provider.request({ method: "eth_chainId" });
+      if (
+        typeof providerChainId !== "string" ||
+        Number(BigInt(providerChainId)) !== 43113
+      ) throw new Error("privy_provider_chain_mismatch");
       const transactionHash = await provider.request({
         method: "eth_sendTransaction",
         params: [{
@@ -195,12 +218,16 @@ async function verifySubmittedTransaction(transactionHash: string) {
           nonce: hex(preview.nonce),
         }],
       });
-      if (typeof transactionHash !== "string") {
+      if (
+        typeof transactionHash !== "string" ||
+        !/^0x[a-fA-F0-9]{64}$/.test(transactionHash)
+      ) {
         throw new Error("privy_transaction_hash_missing");
       }
       // Save the hash before verification. Retry can only verify this hash.
-      setSubmittedHash(transactionHash);
-      await verifySubmittedTransaction(transactionHash);
+      const normalizedHash = transactionHash.toLowerCase();
+      setSubmittedHash(normalizedHash);
+      await verifySubmittedTransaction(normalizedHash);
     } finally {
       submissionLock.current = false;
     }
@@ -248,17 +275,17 @@ async function verifySubmittedTransaction(transactionHash: string) {
             <div><dt>{t.gas}</dt><dd>{preview.maxGasCostWei}</dd></div>
             <div><dt>{t.expires}</dt><dd>{preview.expiresAt}</dd></div>
           </dl>
-          {preview.status === "prepared" && (
+          {preview.status === "submitted" ? (
             submittedHash ? (
               <button type="button" disabled={busy} onClick={() => void run(() => verifySubmittedTransaction(submittedHash))}>
                 {busy ? t.working : t.retry}
               </button>
-            ) : (
-              <button type="button" disabled={busy || submissionLock.current} onClick={() => void run(approve)}>
-                {busy ? t.working : t.approve}
-              </button>
-            )
-          )}
+            ) : <span>SUBMITTED HASH UNAVAILABLE · BROADCAST DISABLED</span>
+          ) : preview.status === "prepared" ? (
+            <button type="button" disabled={busy || submissionLock.current} onClick={() => void run(approve)}>
+              {busy ? t.working : t.approve}
+            </button>
+          ) : null}
         </section>
       )}
       {notice && <p role="status">{notice}</p>}

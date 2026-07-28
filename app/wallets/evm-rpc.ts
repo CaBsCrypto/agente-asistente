@@ -118,7 +118,8 @@ export async function getEvmTransactionEvidence(
   const [chainIdHex, transaction] = await Promise.all([
     rpc<string>(network, "eth_chainId", [], fetcher),
     rpc<{
-      from: string; to: string | null; value: string; blockNumber: string | null;
+      hash: string; chainId: string; from: string; to: string | null; value: string;
+      nonce: string; gas: string; gasPrice: string; blockNumber: string | null;
     } | null>(network, "eth_getTransactionByHash", [transactionHash], fetcher),
   ]);
   const observedChainId = Number(BigInt(chainIdHex));
@@ -129,9 +130,14 @@ export async function getEvmTransactionEvidence(
   );
   return {
     chainId: observedChainId,
+    transactionHash: transaction.hash.toLowerCase(),
+    transactionChainId: Number(BigInt(transaction.chainId)),
     from: transaction.from,
     to: transaction.to,
     valueWei: BigInt(transaction.value).toString(),
+    nonce: Number(BigInt(transaction.nonce)),
+    gasLimit: BigInt(transaction.gas).toString(),
+    gasPriceWei: BigInt(transaction.gasPrice).toString(),
     blockNumber: receipt?.blockNumber
       ? Number(BigInt(receipt.blockNumber))
       : transaction.blockNumber ? Number(BigInt(transaction.blockNumber)) : null,

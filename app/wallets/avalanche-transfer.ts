@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { agentActivities, agentWallets } from "@/db/schema";
 import {
@@ -93,14 +93,29 @@ export async function prepareFujiDemoTransfer(input: {
     transactionHash: null,
     explorerUrl: null,
   };
-  await getDb().insert(agentActivities).values({
+  const inserted = await getDb().insert(agentActivities).values({
     id,
     userId: input.userId,
     eventType: "avalanche.transfer.prepared",
     summary: "Prepared 0.001 AVAX Fuji transfer",
     metadata,
-  }).onConflictDoNothing();
-  return metadata;
+  }).onConflictDoNothing().returning({ metadata: agentActivities.metadata });
+  if (inserted[0]) return inserted[0].metadata;
+
+  // A concurrent request won the unique preview ID. Never return local,
+  // unpersisted parameters: refetch and bind exclusively to the winner.
+  const [persisted] = await getDb().select({
+    metadata: agentActivities.metadata,
+  }).from(agentActivities).where(and(
+    eq(agentActivities.id, id),
+    eq(agentActivities.userId, input.userId),
+  )).limit(1);
+  if (!persisted) throw new Error("fuji_preview_conflict_unresolved");
+  if (
+    persisted.metadata.destination !== destination ||
+    persisted.metadata.amount !== input.amount
+  ) throw new Error("idempotency_key_reused");
+  return persisted.metadata;
 }
 
 export async function recordFujiDemoTransfer(input: {
@@ -109,58 +124,134 @@ export async function recordFujiDemoTransfer(input: {
   transactionHash: string;
 }) {
   if (!HASH.test(input.transactionHash)) throw new Error("invalid_transaction_hash");
-  const [row] = await getDb().select({
-    metadata: agentActivities.metadata,
-  }).from(agentActivities).where(and(
-    eq(agentActivities.id, input.previewId),
-    eq(agentActivities.userId, input.userId),
-  )).limit(1);
-  if (!row) throw new Error("fuji_preview_not_found");
-  const preview = row.metadata;
-const existingHash = typeof preview.transactionHash === "string"
-    ? preview.transactionHash
+  const transactionHash = input.transactionHash.toLowerCase();
+  const db = getDb();
+  const loadPreview = async () => {
+    const [row] = await db.select({ metadata: agentActivities.metadata })
+      .from(agentActivities)
+      .where(and(
+        eq(agentActivities.id, input.previewId),
+        eq(agentActivities.userId, input.userId),
+      ))
+      .limit(1);
+    if (!row) throw new Error("fuji_preview_not_found");
+    return row.metadata;
+  };
+
+  let preview = await loadPreview();
+  const currentHash = () => typeof preview.transactionHash === "string"
+    ? preview.transactionHash.toLowerCase()
     : null;
-  if (existingHash && existingHash !== input.transactionHash) {
+  if (currentHash() && currentHash() !== transactionHash) {
     throw new Error("fuji_preview_already_consumed");
   }
-  if (preview.status === "confirmed" && existingHash === input.transactionHash) {
-    return { ...preview, replayProtected: true };
-  }
-  const isSubmittedRetry = preview.status === "submitted" &&
-    existingHash === input.transactionHash;
-  if (!isSubmittedRetry && (
-    typeof preview.expiresAt !== "string" ||
-    new Date(preview.expiresAt).getTime() <= Date.now()
-  )) throw new Error("fuji_preview_expired");
+  if (
+    (preview.status === "confirmed" || preview.status === "failed") &&
+    currentHash() === transactionHash
+  ) return { ...preview, replayProtected: true };
 
+  const explorerUrl = `${getWalletNetwork("avalanche:fuji").explorerUrl}/tx/${transactionHash}`;
+  let isSubmittedRetry = preview.status === "submitted" &&
+    currentHash() === transactionHash;
+
+  if (!isSubmittedRetry) {
+    const now = new Date().toISOString();
+    if (preview.status !== "prepared") {
+      throw new Error("fuji_preview_not_recordable");
+    }
+
+    const submittedMetadata = {
+      ...preview,
+      status: "submitted",
+      transactionHash,
+      explorerUrl,
+      submittedAt: now,
+      replayProtected: false,
+    };
+    const transitioned = await db.update(agentActivities).set({
+      eventType: "avalanche.transfer.submitted",
+      summary: "submitted 0.001 AVAX Fuji transfer",
+      metadata: submittedMetadata,
+    }).where(and(
+      eq(agentActivities.id, input.previewId),
+      eq(agentActivities.userId, input.userId),
+      sql`${agentActivities.metadata}->>'status' = 'prepared'`,
+      sql`COALESCE(${agentActivities.metadata}->>'transactionHash', '') = ''`,
+    )).returning({ metadata: agentActivities.metadata });
+
+    if (transitioned[0]) {
+      preview = transitioned[0].metadata;
+    } else {
+      preview = await loadPreview();
+      const persistedHash = typeof preview.transactionHash === "string"
+        ? preview.transactionHash.toLowerCase()
+        : null;
+      if (persistedHash !== transactionHash) {
+        throw new Error("fuji_preview_already_consumed");
+      }
+      if (preview.status === "confirmed" || preview.status === "failed") {
+        return { ...preview, replayProtected: true };
+      }
+      if (preview.status !== "submitted") {
+        throw new Error("fuji_preview_transition_failed");
+      }
+      isSubmittedRetry = true;
+    }
+  }
+
+  // The hash is durable before this network call. RPC propagation delays can
+  // now be retried after reload without ever authorizing another broadcast.
   const evidence = await getEvmTransactionEvidence(
     getWalletNetwork("avalanche:fuji"),
-    input.transactionHash,
+    transactionHash,
   );
   if (
+    evidence.chainId !== FUJI_CHAIN_ID ||
+    evidence.transactionChainId !== FUJI_CHAIN_ID ||
+    evidence.transactionHash !== transactionHash ||
     evidence.from.toLowerCase() !== String(preview.from).toLowerCase() ||
     evidence.to?.toLowerCase() !== String(preview.destination).toLowerCase() ||
-    evidence.valueWei !== preview.valueWei
+    evidence.valueWei !== preview.valueWei ||
+    evidence.nonce !== preview.nonce ||
+    evidence.gasLimit !== preview.gasLimit ||
+    evidence.gasPriceWei !== preview.gasPriceWei
   ) throw new Error("fuji_transaction_mismatch");
 
+  if (
+    evidence.receiptStatus !== null &&
+    evidence.receiptStatus !== "0x1" &&
+    evidence.receiptStatus !== "0x0"
+  ) throw new Error("fuji_receipt_status_invalid");
+  const status = evidence.receiptStatus === "0x1"
+    ? "confirmed"
+    : evidence.receiptStatus === "0x0"
+      ? "failed"
+      : "submitted";
   const metadata = {
     ...preview,
-    status: evidence.receiptStatus === "0x1" ? "confirmed" : "submitted",
-    transactionHash: input.transactionHash,
-    explorerUrl: `${getWalletNetwork("avalanche:fuji").explorerUrl}/tx/${input.transactionHash}`,
+    status,
+    transactionHash,
+    explorerUrl,
     blockNumber: evidence.blockNumber,
+    receiptStatus: evidence.receiptStatus,
     replayProtected: isSubmittedRetry,
   };
-  await getDb().update(agentActivities).set({
-    eventType: metadata.status === "confirmed"
-      ? "avalanche.transfer.confirmed"
-      : "avalanche.transfer.submitted",
-    summary: `${metadata.status} 0.001 AVAX Fuji transfer`,
+  const [updated] = await db.update(agentActivities).set({
+    eventType: `avalanche.transfer.${status}`,
+    summary: `${status} 0.001 AVAX Fuji transfer`,
     metadata,
   }).where(and(
     eq(agentActivities.id, input.previewId),
     eq(agentActivities.userId, input.userId),
-  ));
-  return metadata;
-}
+    sql`${agentActivities.metadata}->>'transactionHash' = ${transactionHash}`,
+    sql`${agentActivities.metadata}->>'status' = 'submitted'`,
+  )).returning({ metadata: agentActivities.metadata });
+  if (updated) return updated.metadata;
 
+  const terminal = await loadPreview();
+  const terminalHash = typeof terminal.transactionHash === "string"
+    ? terminal.transactionHash.toLowerCase()
+    : null;
+  if (terminalHash !== transactionHash) throw new Error("fuji_preview_already_consumed");
+  return { ...terminal, replayProtected: true };
+}
