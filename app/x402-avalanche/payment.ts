@@ -64,9 +64,11 @@ export function freezeAvalancheX402Payment(input: {
     throw new Error("avalanche_x402_invalid_address");
   }
   if (!BYTES32.test(input.nonce)) throw new Error("avalanche_x402_invalid_nonce");
-  if (!/^https:\/\//.test(input.resourceUrl)) {
-    throw new Error("avalanche_x402_https_resource_required");
-  }
+  const resource = new URL(input.resourceUrl);
+  const isHttps = resource.protocol === "https:";
+  const isLocalHttp = resource.protocol === "http:" &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(resource.hostname);
+  if (!isHttps && !isLocalHttp) throw new Error("avalanche_x402_secure_resource_required");
   if (!/^[a-f0-9]{64}$/.test(input.bodyHash)) {
     throw new Error("avalanche_x402_invalid_body_hash");
   }
@@ -93,13 +95,15 @@ export function freezeAvalancheX402Payment(input: {
     requirement.maxTimeoutSeconds,
     AVALANCHE_X402.maxAuthorizationSeconds,
   );
+  const method = input.method.toUpperCase();
+  if (method !== "POST") throw new Error("avalanche_x402_method_mismatch");
   const frozen = {
     x402Version: 2 as const,
     scheme: "exact" as const,
     network: "eip155:43113" as const,
     resource: {
       url: input.resourceUrl,
-      method: input.method.toUpperCase(),
+      method,
       bodyHash: input.bodyHash,
     },
     payer: input.payer.toLowerCase(),
