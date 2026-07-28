@@ -100,7 +100,7 @@ async function walletContext(userId: string) {
       network: agentWallets.network,
     })
     .from(agentWallets)
-    .where(eq(agentWallets.userId, userId))
+    .where(and(eq(agentWallets.userId, userId), eq(agentWallets.chainType, "stellar")))
     .limit(1);
 
   const wallet = rows[0];
