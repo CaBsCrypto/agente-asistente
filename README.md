@@ -4,9 +4,29 @@
   <img src="public/brand/carmelita-readme-cover.svg" alt="Carmelita connects people, agents, applications and payments through explicit permissions" width="100%" />
 </p>
 
+<p align="center">
+  <a href="https://agente-asistente.vercel.app"><img alt="Live" src="https://img.shields.io/badge/product-live-3fb950?style=for-the-badge&labelColor=0d1117"></a>
+  <img alt="Stellar Testnet" src="https://img.shields.io/badge/Stellar-Testnet-7D00FF?style=for-the-badge&labelColor=0d1117&logo=stellar&logoColor=white">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-126%2F126-2f81f7?style=for-the-badge&labelColor=0d1117">
+</p>
+
+<p align="center">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white">
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js%2016-000000?style=flat-square&logo=nextdotjs&logoColor=white">
+  <img alt="React" src="https://img.shields.io/badge/React%2019-61DAFB?style=flat-square&logo=react&logoColor=black">
+  <img alt="LangGraph" src="https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square&logo=langchain&logoColor=white">
+  <img alt="MCP" src="https://img.shields.io/badge/MCP-D97757?style=flat-square&logo=anthropic&logoColor=white">
+  <img alt="Privy" src="https://img.shields.io/badge/Privy-FF8271?style=flat-square&logoColor=white">
+  <img alt="Postgres" src="https://img.shields.io/badge/Neon%20Postgres-4169E1?style=flat-square&logo=postgresql&logoColor=white">
+</p>
+
 **Carmelita is a personal AI agent with memory, permissions and a user-owned wallet that safely executes real-world actions.**
 
 > **Knows you. Acts for you.**
+
+```
+freeze intent (SHA-256) → evaluate policy → exact approval → execute once → evidence
+```
 
 The public URL, GitHub repository and some protocol identifiers still use the legacy `agente-asistente` / `agent-assistant` name. They remain unchanged during the brand transition so existing integrations keep working; see [the brand transition guide](docs/brand-transition.md).
 
@@ -14,7 +34,14 @@ The product combines a simple chat for end users with MCP, WebMCP and API surfac
 
 > **Honest MVP boundary:** authentication, Stellar wallet creation, live market data, persistent user state, the commerce safety demo, a real UNBLCK hub booking and a Privy-signed DeFindex Testnet deposit are real. Notion is implemented and awaiting complete user acceptance. Merchant fulfillment and mainnet settlement are not live.
 
-Validated proof: a real UNBLCK booking and cancellation; a duplicate-resistant 0.01 USDC x402 payment on Stellar Testnet; a Privy-signed 1 XLM DeFindex Testnet deposit; and live read-only Travala hotel search.
+### Validated proof
+
+|  | What was proven | Where it was verified |
+| :--: | :-- | :-- |
+| 🏢 | Real hub day-pass **booked and cancelled** from a chat message | UNBLCK's own member portal, scannable QR pass; the cancellation refunded the credit |
+| 💸 | **0.01 USDC x402 payment**, duplicate-resistant | Stellar Testnet — a retry returns the original receipt, zero second debit |
+| ⛓️ | **1 XLM DeFindex deposit**, Privy-signed | On-chain, verifiable by transaction hash |
+| 🏨 | Live read-only **Travala hotel search** | External API, no funds moved |
 
 [Live product](https://agente-asistente.vercel.app) · [New user guide](https://agente-asistente.vercel.app/guide) · [Developer portal](https://agente-asistente.vercel.app/developers) · [Open the agent](https://agente-asistente.vercel.app/agent) · [Safety demo](https://agente-asistente.vercel.app/demo) · [Integration Lab](https://agente-asistente.vercel.app/connections) · [Waitlist](https://agente-asistente.vercel.app/waitlist)
 
