@@ -12,6 +12,8 @@ export type WalletNetwork = {
   testnet: true;
   rpcUrl: string;
   explorerUrl: string;
+  faucetUrl?: string;
+  testUsdcAddress?: `0x${string}`;
   chainId: number | null;
   rollout: "active" | "experimental" | "planned";
 };
@@ -28,7 +30,7 @@ export const WALLET_NETWORKS: Record<WalletNetworkId, WalletNetwork> = {
     id: "base:sepolia", family: "evm", name: "Base Sepolia",
     nativeAsset: "ETH", testnet: true, rpcUrl: "https://sepolia.base.org",
     explorerUrl: "https://sepolia.basescan.org", chainId: 84532,
-    rollout: "experimental",
+    rollout: "planned",
   },
   "solana:devnet": {
     id: "solana:devnet", family: "solana", name: "Solana Devnet",
@@ -40,8 +42,10 @@ export const WALLET_NETWORKS: Record<WalletNetworkId, WalletNetwork> = {
     id: "avalanche:fuji", family: "evm", name: "Avalanche Fuji",
     nativeAsset: "AVAX", testnet: true,
     rpcUrl: "https://api.avax-test.network/ext/bc/C/rpc",
-    explorerUrl: "https://testnet.snowtrace.io", chainId: 43113,
-    rollout: "planned",
+    explorerUrl: "https://subnets-test.avax.network/c-chain", chainId: 43113,
+    faucetUrl: "https://core.app/tools/testnet-faucet/?subnet=c&token=c",
+    testUsdcAddress: "0x5425890298aed601595a70AB815c96711a31Bc65",
+    rollout: "experimental",
   },
   "bnb:testnet": {
     id: "bnb:testnet", family: "evm", name: "BNB Smart Chain Testnet",

@@ -89,6 +89,8 @@ export async function POST(request: Request) {
         nativeAsset: network.nativeAsset,
         chainId: network.chainId,
         explorerUrl: network.explorerUrl,
+        faucetUrl: network.faucetUrl,
+        testUsdcAddress: network.testUsdcAddress,
         rollout: network.rollout,
       },
       fundsMoved: false,
