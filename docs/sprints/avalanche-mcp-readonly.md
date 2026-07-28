@@ -69,7 +69,7 @@ Pure suite command (runner borrowed only because this worktree's dependency inst
 ..\agente-asistente\node_modules\.bin\tsx.cmd tests\avalanche-mcp.test.ts
 ```
 
-Result before live flag: 6 passed, 1 intentionally skipped.
+Current-policy pure validation: 8 passed, 1 live smoke intentionally skipped.
 
 Live read-only smoke:
 
@@ -83,8 +83,9 @@ Observed behavior on 2026-07-28:
 1. Two consecutive live searches under the former 8-second boundary failed closed after approximately 8.6 seconds each.
 2. A later explicit invocation of the same read-only flow completed successfully in approximately 1 second with 7/7 tests passing.
 3. A separate direct probe returned two source-grounded `docs_search` matches in approximately 1.7 seconds.
+4. Final validation with the current 15-second policy produced 8 pure/read-only passes and 1 live failure: `docs_search` failed closed as `avalanche_mcp_timeout` after approximately 15.39 seconds.
 
-This independent evidence shows intermittent hosted-search latency near the old boundary. The operation boundary is therefore 15 seconds total for `tools/list` plus one `docs_search`: long enough to absorb the observed tail without allowing an unbounded request. There is no automatic retry. On timeout, Carmelita fails closed and the caller/UI may offer a clearly explicit new invocation. It must never silently retry, switch tools or broaden the allowlist.
+This evidence shows the hosted `docs_search` latency is currently not reliable enough to promise a result, even at the new boundary. The policy remains 15 seconds total for `tools/list` plus one `docs_search`; it will not be increased or retried automatically. On timeout, Carmelita returns no search result and the caller/UI may present a clearly explicit retry action. It must never claim an answer, silently retry, switch tools or broaden the allowlist.
 
 ## Covered failure cases
 
@@ -98,7 +99,7 @@ This independent evidence shows intermittent hosted-search latency near the old 
 - Oversized response.
 - JSON-RPC server error.
 - Authenticated route has no mutation/signing surface.
-- Live timeout under the former boundary and a later successful explicit invocation.
+- Live timeout under both the former 8-second boundary and the current 15-second total budget, plus separately observed successful invocations.
 - Timeout makes exactly one `docs_search` call; HTTP/RPC/schema/policy errors are never retried.
 
 ## Remaining acceptance
