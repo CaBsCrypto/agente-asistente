@@ -53,6 +53,13 @@ test("Privy checks confirmation, Fuji chain and requests typed-data v4", async (
   assert.equal(calls[1]?.params?.[0], payer);
   assert.match(String(calls[1]?.params?.[1]), /TransferWithAuthorization/);
   await assert.rejects(signAvalancheX402WithPrivy({ provider, payment, explicitUserConfirmation: false, nowSeconds: 1_800_000_001 }), /explicit_confirmation_required/);
+  await assert.rejects(signAvalancheX402WithPrivy({
+    provider,
+    payment,
+    explicitUserConfirmation: true,
+    nowSeconds: Number(payment.validBefore),
+  }), /authorization_expired/);
+  assert.equal(calls.length, 2);
 });
 
 test("one payment binds one signature and replays only that signature", () => {
