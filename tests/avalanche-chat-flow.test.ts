@@ -11,7 +11,6 @@ import {
   estimateEvmNativeTransfer,
   getEvmTransactionEvidence,
 } from "../app/wallets/evm-rpc";
-import { getWalletNetwork } from "../app/wallets/networks";
 
 const destination = `0x${"b".repeat(40)}` as const;
 const fujiNetwork = {

@@ -11,7 +11,8 @@ export const AVALANCHE_X402 = {
     eip712Name: "USD Coin",
     eip712Version: "2",
   },
-  maxAmountAtomic: 1_000_000n,
+  // BigInt literals are unavailable at the repo's ES2017 tsconfig target.
+  maxAmountAtomic: BigInt(1_000_000),
   maxAuthorizationSeconds: 300,
 } as const;
 

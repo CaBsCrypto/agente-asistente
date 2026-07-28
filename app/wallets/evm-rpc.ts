@@ -2,16 +2,20 @@ import type { WalletNetwork } from "@/app/wallets/networks";
 
 const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
 
+// BigInt literals (1n) are unavailable at the repo's ES2017 tsconfig target.
+const ZERO = BigInt(0);
+const WEI_PER_ETHER = BigInt("1000000000000000000");
+
 function formatEther(value: bigint) {
-  const whole = value / 10n ** 18n;
-  const fraction = (value % 10n ** 18n).toString().padStart(18, "0").replace(/0+$/, "");
+  const whole = value / WEI_PER_ETHER;
+  const fraction = (value % WEI_PER_ETHER).toString().padStart(18, "0").replace(/0+$/, "");
   return fraction ? `${whole}.${fraction}` : whole.toString();
 }
 
 function parseEther(value: string) {
   if (!/^\d+(?:\.\d{1,18})?$/.test(value)) throw new Error("invalid_evm_amount");
   const [whole, fraction = ""] = value.split(".");
-  return BigInt(whole) * 10n ** 18n + BigInt(fraction.padEnd(18, "0"));
+  return BigInt(whole) * WEI_PER_ETHER + BigInt(fraction.padEnd(18, "0"));
 }
 
 function hex(value: bigint) {
@@ -73,7 +77,7 @@ export async function diagnoseEvmWallet(
     nativeAsset: network.nativeAsset,
     gasPriceWei: BigInt(gasPriceHex).toString(),
     nonce: Number(BigInt(nonceHex)),
-    funded: balanceWei > 0n,
+    funded: balanceWei > ZERO,
     explorerUrl: `${network.explorerUrl}/address/${address}`,
     faucetUrl: network.faucetUrl,
   };
@@ -87,7 +91,7 @@ export async function estimateEvmNativeTransfer(
 ) {
   if (!EVM_ADDRESS.test(from) || !EVM_ADDRESS.test(to)) throw new Error("invalid_evm_address");
   const valueWei = parseEther(amount);
-  if (valueWei <= 0n) throw new Error("invalid_evm_amount");
+  if (valueWei <= ZERO) throw new Error("invalid_evm_amount");
   const valueHex = hex(valueWei);
   const [chainIdHex, gasLimitHex, gasPriceHex, nonceHex, balanceHex] = await Promise.all([
     rpc<string>(network, "eth_chainId", [], fetcher),

@@ -83,7 +83,10 @@ export default function AvalancheChatAction({
   const [notice, setNotice] = useState<string | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [submittedHash, setSubmittedHash] = useState<string | null>(null);
+  // The ref is the synchronous race guard; the state mirrors it for rendering,
+  // because refs must not be read during render.
   const submissionLock = useRef(false);
+  const [locked, setLocked] = useState(false);
 
   async function authorizedFetch(url: string, init?: RequestInit) {
     const token = await getAccessToken();
@@ -194,6 +197,7 @@ export default function AvalancheChatAction({
       throw new Error("fuji_preview_expired");
     }
     submissionLock.current = true;
+    setLocked(true);
     try {
       const wallet = wallets.find(
         (item) => item.walletClientType === "privy" &&
@@ -230,6 +234,7 @@ export default function AvalancheChatAction({
       await verifySubmittedTransaction(normalizedHash);
     } finally {
       submissionLock.current = false;
+      setLocked(false);
     }
   }
 
@@ -282,7 +287,7 @@ export default function AvalancheChatAction({
               </button>
             ) : <span>SUBMITTED HASH UNAVAILABLE · BROADCAST DISABLED</span>
           ) : preview.status === "prepared" ? (
-            <button type="button" disabled={busy || submissionLock.current} onClick={() => void run(approve)}>
+            <button type="button" disabled={busy || locked} onClick={() => void run(approve)}>
               {busy ? t.working : t.approve}
             </button>
           ) : null}

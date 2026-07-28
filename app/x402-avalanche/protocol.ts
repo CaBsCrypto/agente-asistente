@@ -68,7 +68,16 @@ export async function validateAvalanchePaymentSignature(input: { header: string;
   if (extension?.paymentId !== input.payment.paymentId || extension.method !== input.method || extension.resourceUrl !== input.resourceUrl || extension.bodyHash !== input.bodyHash) throw new Error("avalanche_x402_request_binding_mismatch");
   if (BigInt(input.payment.validAfter) > BigInt(input.nowSeconds) || BigInt(input.payment.validBefore) <= BigInt(input.nowSeconds)) throw new Error("avalanche_x402_authorization_expired");
   if (typeof value.signature !== "string" || !EVM_SIGNATURE.test(value.signature)) throw new Error("avalanche_x402_invalid_privy_signature");
-  const recovered = await recoverTypedDataAddress({ ...buildTransferWithAuthorizationTypedData(input.payment), signature: value.signature as `0x${string}` });
+  // Recover against the byte-identical object the wallet signed. The explicit
+  // EIP712Domain entry makes viem's generics demand a bigint chainId, but the
+  // wire format sent to `eth_signTypedData_v4` is a JSON number, so the
+  // parameter is asserted rather than reshaped. Runtime equivalence is covered
+  // by the signer-recovery and wrong-signer tests.
+  const typedData = buildTransferWithAuthorizationTypedData(input.payment);
+  const recovered = await recoverTypedDataAddress({
+    ...typedData,
+    signature: value.signature as `0x${string}`,
+  } as unknown as Parameters<typeof recoverTypedDataAddress>[0]);
   if (recovered.toLowerCase() !== input.payment.payer.toLowerCase()) throw new Error("avalanche_x402_invalid_signer");
   return { payload, signature: input.header, recoveredSigner: recovered.toLowerCase() };
 }

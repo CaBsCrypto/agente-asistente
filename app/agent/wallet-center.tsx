@@ -98,6 +98,12 @@ export default function WalletCenter({
   async function load() {
     setBusy("load");
     setError(null);
+    await refresh();
+  }
+
+  // Kept free of a synchronous state prelude so the mount effect can call it
+  // directly; `busy` already starts as "load".
+  async function refresh() {
     try {
       const listResponse = await authorizedFetch("/api/agent/wallets");
       const list = await listResponse.json();
@@ -150,7 +156,7 @@ export default function WalletCenter({
   }
 
   useEffect(() => {
-    void load();
+    void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 import { getDatabaseUrl } from "@/db";
 import type { PaymentRequirements, SettleResponse } from "@x402/core/types";
