@@ -1,4 +1,4 @@
-﻿import { access, lstat, readFile, realpath } from "node:fs/promises";
+import { access, lstat, readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
@@ -54,7 +54,13 @@ if (!(await exists("node_modules"))) {
   result("Required packages", missing.length ? "FAIL" : "PASS", missing.length ? `missing: ${missing.join(", ")}` : "Next.js, tsx and Privy installed");
 }
 
-const files = ["app/agent/page.tsx", "app/api/agent/wallets/route.ts", "app/wallets/networks.ts"];
+const files = [
+  "app/agent/page.tsx",
+  "app/api/agent/wallets/route.ts",
+  "app/wallets/networks.ts",
+  "app/wallets/avalanche-distributor.ts",
+  "app/api/agent/wallets/avalanche/fund/route.ts",
+];
 const missingFiles = [];
 for (const item of files) if (!(await exists(item))) missingFiles.push(item);
 result("Application files", missingFiles.length ? "FAIL" : "PASS", missingFiles.length ? `missing: ${missingFiles.join(", ")}` : "agent, wallet API and network registry present");
@@ -66,6 +72,38 @@ for (const [label, keys] of [
 ]) {
   const configured = keys.some((key) => Boolean(process.env[key]));
   result(`Environment: ${label}`, configured ? "PASS" : "WARN", configured ? "configured (value hidden)" : `not present (${keys.join(" or ")})`);
+}
+
+const distributorEnabled = process.env.FUJI_DISTRIBUTOR_ENABLED === "true";
+if (!distributorEnabled) {
+  result("Fuji distributor", "PASS", "disabled (safe default; no external request possible)");
+} else {
+  const distributorUrl = process.env.FUJI_DISTRIBUTOR_URL;
+  const distributorSecret = process.env.FUJI_DISTRIBUTOR_SECRET ?? "";
+  const dailyLimit = Number(process.env.FUJI_DISTRIBUTOR_DAILY_LIMIT ?? "100");
+  const timeoutMs = Number(process.env.FUJI_DISTRIBUTOR_TIMEOUT_MS ?? "5000");
+  let endpointValid = false;
+  try {
+    const url = new URL(distributorUrl ?? "");
+    const hostname = url.hostname.toLowerCase();
+    const forbiddenHost = ["localhost", "127.0.0.1", "::1", "0.0.0.0"].includes(hostname)
+      || hostname.endsWith(".localhost") || hostname.endsWith(".local")
+      || /^10\./.test(hostname) || /^192\.168\./.test(hostname)
+      || /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) || /^169\.254\./.test(hostname);
+    endpointValid = url.protocol === "https:"
+      && !url.username && !url.password && !url.search && !url.hash && !forbiddenHost;
+  } catch {}
+  const controlsValid = endpointValid
+    && distributorSecret.length >= 32
+    && Number.isInteger(dailyLimit) && dailyLimit >= 1 && dailyLimit <= 500
+    && Number.isInteger(timeoutMs) && timeoutMs >= 1_000 && timeoutMs <= 10_000;
+  result(
+    "Fuji distributor",
+    controlsValid ? "PASS" : "FAIL",
+    controlsValid
+      ? `enabled; HTTPS endpoint configured, dailyLimit=${dailyLimit}, timeoutMs=${timeoutMs}, secret hidden`
+      : "enabled but required HTTPS/secret/cap/timeout controls are incomplete",
+  );
 }
 
 try {
