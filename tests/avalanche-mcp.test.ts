@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   AVALANCHE_MCP_ALLOWED_TOOLS,
   AVALANCHE_MCP_ENDPOINT,
+  AVALANCHE_MCP_TIMEOUT_MS,
   AVALANCHE_MCP_MAX_RESPONSE_BYTES,
   assertAvalancheMcpToolAllowed,
   listAvalancheReadOnlyTools,
@@ -43,6 +44,7 @@ function toolsResult(id: string, extra: Record<string, unknown> = {}) {
 
 test("connector is pinned to the official endpoint and one local tool", () => {
   assert.equal(AVALANCHE_MCP_ENDPOINT, "https://build.avax.network/api/mcp");
+  assert.equal(AVALANCHE_MCP_TIMEOUT_MS, 15_000);
   assert.deepEqual(AVALANCHE_MCP_ALLOWED_TOOLS, ["docs_search"]);
   assert.throws(
     () => assertAvalancheMcpToolAllowed("blockchain_get_native_balance"),
@@ -101,6 +103,42 @@ test("docs search lists tools first and sends no credentials", async () => {
   assert.deepEqual(result.citations, ["https://build.avax.network/docs/primary-network"]);
 });
 
+function timeoutError() {
+  const error = new Error("mock timeout");
+  error.name = "TimeoutError";
+  return error;
+}
+
+test("timeout fails closed and one invocation makes only one docs_search call", async () => {
+  const methods: string[] = [];
+  const fetcher: typeof fetch = async (_url, init) => {
+    const body = JSON.parse(String(init?.body)) as RpcRequestBody;
+    methods.push(body.method);
+    if (body.method === "tools/list") return jsonResponse(toolsResult(body.id));
+    throw timeoutError();
+  };
+  await assert.rejects(
+    searchAvalancheDocs({ query: "terminal timeout" }, fetcher),
+    /avalanche_mcp_timeout/,
+  );
+  assert.deepEqual(methods, ["tools/list", "tools/call"]);
+  assert.equal(methods.filter((method) => method === "tools/call").length, 1);
+});
+
+test("HTTP failure is not retried", async () => {
+  const methods: string[] = [];
+  const fetcher: typeof fetch = async (_url, init) => {
+    const body = JSON.parse(String(init?.body)) as RpcRequestBody;
+    methods.push(body.method);
+    if (body.method === "tools/list") return jsonResponse(toolsResult(body.id));
+    return jsonResponse({ error: "upstream" }, { status: 503 });
+  };
+  await assert.rejects(
+    searchAvalancheDocs({ query: "no HTTP retry" }, fetcher),
+    /avalanche_mcp_http_503/,
+  );
+  assert.deepEqual(methods, ["tools/list", "tools/call"]);
+});
 test("strict JSON-RPC rejects ID mismatch and extra envelope fields", async () => {
   const mismatch: typeof fetch = async () => jsonResponse({
     jsonrpc: "2.0", id: "wrong-id", result: { tools: [] },

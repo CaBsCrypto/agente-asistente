@@ -27,7 +27,8 @@ Connector: `app/connectors/avalanche-mcp.ts`.
 - JSON-RPC version and response ID must match exactly.
 - Success/error envelopes and tool results are schema validated; unknown envelope fields fail closed.
 - Query length is `2..200`, no control characters, result limit is locally restricted to `1..5`.
-- Request timeout is 8 seconds.
+- One search operation has a strict 15-second total budget covering `tools/list` plus exactly one `docs_search` call.
+- The connector never retries automatically. A caller/UI may offer an explicit new invocation after a timeout.
 - Response is streamed and rejected above 256 KiB, including preflight `Content-Length` checks.
 - Response must be UTF-8 JSON with `application/json` content type.
 - Redirects are rejected; credentials/cookies are omitted; no authorization header or API key is sent.
@@ -79,11 +80,11 @@ $env:AVALANCHE_MCP_LIVE='1'
 
 Observed behavior on 2026-07-28:
 
-1. First run: `tools/list` succeeded, but `docs_search` exceeded the fixed 8-second boundary and failed closed as `avalanche_mcp_timeout` after about 8.5 seconds.
-2. One explicit retry with the same read-only query: 7/7 passed; `tools/list` plus `docs_search` completed in about 0.9 seconds.
-3. A direct pre-implementation probe also returned two source-grounded `docs_search` matches in about 1.7 seconds.
+1. Two consecutive live searches under the former 8-second boundary failed closed after approximately 8.6 seconds each.
+2. A later explicit invocation of the same read-only flow completed successfully in approximately 1 second with 7/7 tests passing.
+3. A separate direct probe returned two source-grounded `docs_search` matches in approximately 1.7 seconds.
 
-This confirms the hosted search latency is intermittent. The timeout was not increased or hidden. Product UI should present a retry option; a timeout must never silently change tools or call a broader surface.
+This independent evidence shows intermittent hosted-search latency near the old boundary. The operation boundary is therefore 15 seconds total for `tools/list` plus one `docs_search`: long enough to absorb the observed tail without allowing an unbounded request. There is no automatic retry. On timeout, Carmelita fails closed and the caller/UI may offer a clearly explicit new invocation. It must never silently retry, switch tools or broaden the allowlist.
 
 ## Covered failure cases
 
@@ -97,7 +98,8 @@ This confirms the hosted search latency is intermittent. The timeout was not inc
 - Oversized response.
 - JSON-RPC server error.
 - Authenticated route has no mutation/signing surface.
-- Live timeout and successful retry.
+- Live timeout under the former boundary and a later successful explicit invocation.
+- Timeout makes exactly one `docs_search` call; HTTP/RPC/schema/policy errors are never retried.
 
 ## Remaining acceptance
 

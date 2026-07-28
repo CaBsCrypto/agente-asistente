@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 export const AVALANCHE_MCP_ENDPOINT = "https://build.avax.network/api/mcp" as const;
-export const AVALANCHE_MCP_TIMEOUT_MS = 8_000;
+export const AVALANCHE_MCP_TIMEOUT_MS = 15_000;
 export const AVALANCHE_MCP_MAX_RESPONSE_BYTES = 256 * 1024;
 export const AVALANCHE_MCP_ALLOWED_TOOLS = ["docs_search"] as const;
 
@@ -98,6 +98,7 @@ async function callJsonRpc(input: {
   method: "tools/list" | "tools/call";
   params?: Record<string, unknown>;
   fetcher?: typeof fetch;
+  timeoutMs?: number;
 }) {
   const id = `carmelita-avalanche-${randomUUID()}`;
   let response: Response;
@@ -117,7 +118,7 @@ async function callJsonRpc(input: {
       cache: "no-store",
       credentials: "omit",
       redirect: "error",
-      signal: AbortSignal.timeout(AVALANCHE_MCP_TIMEOUT_MS),
+      signal: AbortSignal.timeout(input.timeoutMs ?? AVALANCHE_MCP_TIMEOUT_MS),
     });
   } catch (error) {
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
@@ -135,9 +136,12 @@ async function callJsonRpc(input: {
   return success.data.result;
 }
 
-export async function listAvalancheReadOnlyTools(fetcher: typeof fetch = fetch) {
+export async function listAvalancheReadOnlyTools(
+  fetcher: typeof fetch = fetch,
+  timeoutMs = AVALANCHE_MCP_TIMEOUT_MS,
+) {
   const parsed = toolsListResultSchema.safeParse(
-    await callJsonRpc({ method: "tools/list", fetcher }),
+    await callJsonRpc({ method: "tools/list", fetcher, timeoutMs }),
   );
   if (!parsed.success) throw new Error("avalanche_mcp_response_invalid");
   const result = parsed.data;
@@ -159,14 +163,25 @@ export async function searchAvalancheDocs(
   fetcher: typeof fetch = fetch,
 ) {
   const parsed = docsSearchInputSchema.parse(input);
-  await listAvalancheReadOnlyTools(fetcher);
+  const startedAt = Date.now();
+  const nextTimeout = () => {
+    const remaining = AVALANCHE_MCP_TIMEOUT_MS - (Date.now() - startedAt);
+    if (remaining <= 0) throw new Error("avalanche_mcp_timeout");
+    return Math.max(1, remaining);
+  };
+
+  await listAvalancheReadOnlyTools(fetcher, nextTimeout());
   assertAvalancheMcpToolAllowed("docs_search");
   const callResult = docsCallResultSchema.safeParse(await callJsonRpc({
     method: "tools/call",
     params: { name: "docs_search", arguments: parsed },
     fetcher,
+    timeoutMs: nextTimeout(),
   }));
   if (!callResult.success) throw new Error("avalanche_mcp_response_invalid");
+  if (Date.now() - startedAt > AVALANCHE_MCP_TIMEOUT_MS) {
+    throw new Error("avalanche_mcp_timeout");
+  }
   const result = callResult.data;
   if (result.isError === true) throw new Error("avalanche_mcp_tool_error");
   const text = result.content.map((item) => item.text).join("\n\n");
