@@ -52,6 +52,7 @@ import { createPersistedWorkflowRuntime } from "@/app/orchestration/runtime";
 import { createWorkflowState } from "@/app/orchestration/types";
 import { parseUnblckChatIntent } from "@/app/unblck-chat";
 import { handleUnblckChatIntent } from "@/app/unblck-chat-runtime";
+import { parseAvalancheChatIntent } from "@/app/wallets/avalanche-intents";
 
 export type StoredAgentMessage = {
   id: string;
@@ -63,6 +64,13 @@ export type StoredAgentMessage = {
     message?: string;
     href?: string;
     connect?: string;
+    walletAction?: {
+      type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send";
+      network: "avalanche:fuji";
+      amount?: "0.001";
+      destination?: `0x${string}`;
+      requestId?: string;
+    };
     popup?: {
       provider: string;
       url: string;
@@ -401,6 +409,7 @@ export async function sendAgentMessage(userId: string, content: string) {
   const local = (english: string, portuguese: string) =>
     language === "pt" ? portuguese : english;
   const setupIntent = parseTestnetSetupIntent(content);
+  const avalancheIntent = parseAvalancheChatIntent(content);
   const vaultCommand = parseVaultCommand(content);
   const unblckIntent = parseUnblckChatIntent(content);
 
@@ -462,6 +471,7 @@ export async function sendAgentMessage(userId: string, content: string) {
     vaultCommand ||
       unblckIntent ||
       setupIntent ||
+      avalancheIntent ||
       requestsNotionSearch ||
       requestsWatchlistAdd ||
       requestsWatchlist ||
@@ -905,7 +915,9 @@ export async function sendAgentMessage(userId: string, content: string) {
     role: "assistant",
     content: reply.content,
     metadata: {
-      actions: reply.actions,
+      actions: reply.actions.map((action) => action.walletAction
+        ? { ...action, walletAction: { ...action.walletAction, requestId: userMessage.id } }
+        : action),
       connection: reply.connection,
       defindexIntent: reply.defindexIntent
         ? { ...reply.defindexIntent, requestId: userMessage.id }

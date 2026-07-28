@@ -8,6 +8,16 @@ function formatEther(value: bigint) {
   return fraction ? `${whole}.${fraction}` : whole.toString();
 }
 
+function parseEther(value: string) {
+  if (!/^\d+(?:\.\d{1,18})?$/.test(value)) throw new Error("invalid_evm_amount");
+  const [whole, fraction = ""] = value.split(".");
+  return BigInt(whole) * 10n ** 18n + BigInt(fraction.padEnd(18, "0"));
+}
+
+function hex(value: bigint) {
+  return `0x${value.toString(16)}`;
+}
+
 type JsonRpcResponse<T> = {
   jsonrpc: "2.0";
   id: number;
@@ -66,5 +76,65 @@ export async function diagnoseEvmWallet(
     funded: balanceWei > 0n,
     explorerUrl: `${network.explorerUrl}/address/${address}`,
     faucetUrl: network.faucetUrl,
+  };
+}
+export async function estimateEvmNativeTransfer(
+  network: WalletNetwork,
+  from: string,
+  to: string,
+  amount: string,
+  fetcher: typeof fetch = fetch,
+) {
+  if (!EVM_ADDRESS.test(from) || !EVM_ADDRESS.test(to)) throw new Error("invalid_evm_address");
+  const valueWei = parseEther(amount);
+  if (valueWei <= 0n) throw new Error("invalid_evm_amount");
+  const valueHex = hex(valueWei);
+  const [chainIdHex, gasLimitHex, gasPriceHex, nonceHex, balanceHex] = await Promise.all([
+    rpc<string>(network, "eth_chainId", [], fetcher),
+    rpc<string>(network, "eth_estimateGas", [{ from, to, value: valueHex }], fetcher),
+    rpc<string>(network, "eth_gasPrice", [], fetcher),
+    rpc<string>(network, "eth_getTransactionCount", [from, "pending"], fetcher),
+    rpc<string>(network, "eth_getBalance", [from, "latest"], fetcher),
+  ]);
+  if (Number(BigInt(chainIdHex)) !== network.chainId) throw new Error("evm_chain_id_mismatch");
+  const gasLimit = BigInt(gasLimitHex);
+  const gasPrice = BigInt(gasPriceHex);
+  const maxGasCost = gasLimit * gasPrice;
+  if (BigInt(balanceHex) < valueWei + maxGasCost) throw new Error("insufficient_avax_for_value_and_gas");
+  return {
+    chainId: network.chainId, from, to, amount,
+    valueWei: valueWei.toString(), valueHex,
+    gasLimit: gasLimit.toString(), gasLimitHex: hex(gasLimit),
+    gasPriceWei: gasPrice.toString(), maxGasCostWei: maxGasCost.toString(),
+    nonce: Number(BigInt(nonceHex)),
+  };
+}
+
+export async function getEvmTransactionEvidence(
+  network: WalletNetwork,
+  transactionHash: string,
+  fetcher: typeof fetch = fetch,
+) {
+  const [chainIdHex, transaction] = await Promise.all([
+    rpc<string>(network, "eth_chainId", [], fetcher),
+    rpc<{
+      from: string; to: string | null; value: string; blockNumber: string | null;
+    } | null>(network, "eth_getTransactionByHash", [transactionHash], fetcher),
+  ]);
+  const observedChainId = Number(BigInt(chainIdHex));
+  if (observedChainId !== network.chainId) throw new Error("evm_chain_id_mismatch");
+  if (!transaction) throw new Error("evm_transaction_not_found");
+  const receipt = await rpc<{ status: string; blockNumber: string } | null>(
+    network, "eth_getTransactionReceipt", [transactionHash], fetcher,
+  );
+  return {
+    chainId: observedChainId,
+    from: transaction.from,
+    to: transaction.to,
+    valueWei: BigInt(transaction.value).toString(),
+    blockNumber: receipt?.blockNumber
+      ? Number(BigInt(receipt.blockNumber))
+      : transaction.blockNumber ? Number(BigInt(transaction.blockNumber)) : null,
+    receiptStatus: receipt?.status ?? null,
   };
 }

@@ -1,4 +1,5 @@
 import { connections, type Connection } from "@/app/connections/data";
+import { parseAvalancheChatIntent } from "@/app/wallets/avalanche-intents";
 
 export type AgentLanguage = "en" | "es" | "pt";
 
@@ -7,6 +8,13 @@ export type AgentChatAction = {
   message?: string;
   href?: string;
   connect?: string;
+  walletAction?: {
+    type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send";
+    network: "avalanche:fuji";
+    amount?: "0.001";
+    destination?: `0x${string}`;
+    requestId?: string;
+  };
   popup?: {
     provider: string;
     url: string;
@@ -343,6 +351,51 @@ export function buildAgentReply(message: string, context: AgentChatContext = {})
   const t = text[language];
   const connection = findRequestedConnection(message);
   const defindexIntent = parseDefindexIntent(message);
+  const avalancheIntent = parseAvalancheChatIntent(message);
+
+  if (avalancheIntent) {
+    const labels = {
+      en: { activate: "Activate Fuji", status: "Check Fuji wallet", fund: "Receive 0.005 Test AVAX", send: "Review and approve 0.001 AVAX" },
+      es: { activate: "Activar Fuji", status: "Revisar wallet Fuji", fund: "Recibir 0.005 AVAX de prueba", send: "Revisar y aprobar 0.001 AVAX" },
+      pt: { activate: "Ativar Fuji", status: "Verificar wallet Fuji", fund: "Receber 0.005 AVAX de teste", send: "Revisar e aprovar 0.001 AVAX" },
+    }[language];
+    const content = {
+      activate: {
+        en: "Avalanche Fuji is the EVM test network (chain 43113). Activation creates or recovers your user-owned Privy EVM wallet; it moves no funds and signs no transaction.",
+        es: "Avalanche Fuji es la red EVM de prueba (chain 43113). La activación crea o recupera tu wallet EVM de Privy bajo tu propiedad; no mueve fondos ni firma transacciones.",
+        pt: "Avalanche Fuji é a rede EVM de teste (chain 43113). A ativação cria ou recupera sua wallet EVM da Privy sob sua propriedade; não move fundos nem assina transações.",
+      },
+      status: {
+        en: "I can verify your Fuji wallet, live AVAX balance, nonce and explorer evidence without requesting a signature.",
+        es: "Puedo verificar tu wallet Fuji, saldo AVAX, nonce y evidencia del explorador sin solicitar una firma.",
+        pt: "Posso verificar sua wallet Fuji, saldo AVAX, nonce e evidência do explorer sem solicitar assinatura.",
+      },
+      fund: {
+        en: "Test funding is limited to 0.005 AVAX once per user. Automatic distribution remains disabled unless the server-side distributor, rate limit and secret are configured; the official faucet remains available.",
+        es: "El fondeo de prueba está limitado a 0.005 AVAX una vez por usuario. La distribución automática permanece deshabilitada hasta configurar el distribuidor, límite y secreto del servidor; el faucet oficial sigue disponible.",
+        pt: "O funding de teste é limitado a 0.005 AVAX uma vez por usuário. A distribuição automática permanece desativada até configurar distribuidor, limite e segredo do servidor; o faucet oficial segue disponível.",
+      },
+      send: {
+        en: `I will freeze a 0.001 AVAX Fuji transfer to ${avalancheIntent.operation === "send" ? avalancheIntent.destination : "the selected wallet"}. The in-chat card will show the exact nonce, value and maximum gas before Privy asks for transaction-specific approval.`,
+        es: `Congelaré una transferencia de 0.001 AVAX en Fuji hacia ${avalancheIntent.operation === "send" ? avalancheIntent.destination : "la wallet elegida"}. La tarjeta del chat mostrará nonce, valor y gas máximo exactos antes de que Privy solicite aprobación específica.`,
+        pt: `Vou congelar uma transferência de 0.001 AVAX na Fuji para ${avalancheIntent.operation === "send" ? avalancheIntent.destination : "a wallet escolhida"}. O cartão no chat mostrará nonce, valor e gas máximo exatos antes da aprovação específica da Privy.`,
+      },
+    }[avalancheIntent.operation][language];
+    return {
+      content,
+      actions: [{
+        label: labels[avalancheIntent.operation],
+        walletAction: {
+          type: `avalanche.${avalancheIntent.operation}`,
+          network: "avalanche:fuji",
+          ...(avalancheIntent.operation === "send" ? {
+            amount: avalancheIntent.amount,
+            destination: avalancheIntent.destination,
+          } : {}),
+        },
+      }],
+    };
+  }
 
   if (defindexIntent) {
     if (!context.wallet) {

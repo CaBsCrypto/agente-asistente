@@ -4,6 +4,7 @@ import { useSignRawHash } from "@privy-io/react-auth/extended-chains";
 import { useEffect, useRef, useState } from "react";
 import { summarizeX402Resource } from "../x402/resource-preview";
 import { useLocale } from "../language-toggle";
+import AvalancheChatAction, { type AvalancheWalletAction } from "./avalanche-chat-action";
 import {
   browserBridgePing,
   browserBridgeRequest,
@@ -106,6 +107,7 @@ type ChatAction = {
   message?: string;
   href?: string;
   connect?: string;
+  walletAction?: AvalancheWalletAction;
   popup?: {
     provider: string;
     url: string;
@@ -1427,7 +1429,15 @@ export default function AgentChat({
                 {message.actions?.length ? (
                   <div className="agent-message-actions">
                     {message.actions.map((action) =>
-                      action.popup ? (
+                      action.walletAction ? (
+                        <AvalancheChatAction
+                          key={action.label}
+                          action={action.walletAction}
+                          locale={locale}
+                          getAccessToken={getAccessToken}
+                          onReceipt={openReceipt}
+                        />
+                      ) : action.popup ? (
                         <button
                           key={action.label}
                           type="button"
