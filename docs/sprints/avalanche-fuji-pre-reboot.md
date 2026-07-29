@@ -2,7 +2,7 @@
 
 Branch: `feat/multichain-wallet-foundation`
 Scope: Fuji C-Chain only (`43113`)
-Production status: not pushed, not deployed, no funds moved.
+Production status: pushed as a backup branch only; not merged into `main`, not deployed, no funds moved.
 
 ## Objective
 
@@ -99,7 +99,7 @@ receipt before displaying success.
 - [x] Runtime doctor proves Fuji `43113`.
 - [ ] Localhost acceptance produces one real Fuji hash.
 - [ ] Reload returns the same hash without a second broadcast.
-- No changes exist in `main`, no push/deployment occurred and no real funds were
+- No changes exist in `main`, no deployment occurred and no real funds were
   used.
 ## Pre-reboot verification
 

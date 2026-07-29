@@ -4,7 +4,7 @@ Status: in progress
 Branch: `feat/multichain-wallet-foundation`  
 Workspace: `D:\00 CODEX - OPENIA\agente-asistente-multichain`  
 Environment: Avalanche Fuji C-Chain only (`chainId 43113`)  
-Production constraint: no push, merge, deployment, Mainnet transaction, or real funds.
+Production constraint: no merge into `main`, deployment, Mainnet transaction, or real funds. The branch is pushed for backup only.
 
 ## Sprint goal
 

@@ -1,6 +1,6 @@
 # Avalanche hosted MCP: read-only integration
 
-Status: implemented locally on `feat/multichain-wallet-foundation`; not committed, deployed, or exposed in production.
+Status: committed on `feat/multichain-wallet-foundation` and pushed as a backup branch; not merged into `main`, not deployed, and not exposed in production.
 
 ## Official evidence audited
 

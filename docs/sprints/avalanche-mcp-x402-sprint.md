@@ -158,4 +158,4 @@ No payment, settlement, delivery, mainnet action or fund movement is claimed.
 - Focused tests and `git diff --check` pass.
 - Localhost runs after dependency repair; any human signing/payment remains a
   clearly documented approval boundary.
-- Workstreams are committed separately; nothing is pushed or deployed.
+- Workstreams are committed separately; the branch is pushed for backup only and nothing is deployed.
