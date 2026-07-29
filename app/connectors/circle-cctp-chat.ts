@@ -143,6 +143,9 @@ export async function handleCctpBridgeIntent(input: {
   const pending = plan.blockers.map(
     (blocker) => blockerNames[blocker]?.[language] ?? blocker,
   );
+  const canStart = plan.blockers.every(
+    (blocker) => blocker === "stellar_circle_usdc_trustline_required",
+  );
   const standardFee = fees?.options.find(
     (option) => option.finalityThreshold >= 2000,
   )?.minimumFeeUsdc;
@@ -192,6 +195,19 @@ export async function handleCctpBridgeIntent(input: {
       priority: "P0",
     },
     actions: [
+      ...(canStart ? [{
+        label: language === "es"
+          ? "Iniciar bridge con confirmaciones"
+          : language === "pt"
+            ? "Iniciar ponte com confirmações"
+            : "Start bridge with confirmations",
+        walletAction: {
+          type: "cctp.bridge" as const,
+          network: "avalanche:fuji" as const,
+          destinationNetwork: "stellar:testnet" as const,
+          amount: plan.amount,
+        },
+      }] : []),
       { label: copy.review, message: readinessPrompts[language] },
       { label: "Circle CCTP docs", href: plan.docs },
     ],

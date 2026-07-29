@@ -14,6 +14,12 @@ export type AgentChatAction = {
     amount?: "0.001";
     destination?: `0x${string}`;
     requestId?: string;
+  } | {
+    type: "cctp.bridge";
+    network: "avalanche:fuji";
+    destinationNetwork: "stellar:testnet";
+    amount: string;
+    requestId?: string;
   };
   popup?: {
     provider: string;

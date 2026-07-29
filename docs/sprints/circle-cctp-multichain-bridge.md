@@ -1,7 +1,8 @@
 # Circle CCTP V2 multichain bridge
 
-Status: local Testnet planning and readiness on
-`feat/multichain-wallet-foundation`. Execution is intentionally disabled.
+Status: local Testnet planning, readiness and confirmation flow implemented on
+`feat/multichain-wallet-foundation`. The full bridge is not yet validated
+onchain end to end.
 
 ## Decision
 
@@ -44,7 +45,35 @@ Content-Type: application/json
 { "action": "plan", "amount": "1", "source": "avalanche:fuji", "destination": "stellar:testnet" }
 ```
 
-Every response states that no transaction was prepared and no funds moved.
+Every response from this planning endpoint states that no transaction was
+prepared and no funds moved.
+
+## Confirmation flow implemented locally
+
+The chat can now start a separate authenticated execution flow:
+
+```http
+POST /api/agent/bridge/cctp/execute
+Authorization: Bearer <Privy access token>
+Content-Type: application/json
+```
+
+It prepares one transaction at a time and requires a fresh user confirmation
+through Privy before each signature:
+
+1. Create the official Circle Testnet USDC trustline on Stellar when missing.
+2. Approve exactly the requested USDC amount on Avalanche Fuji when needed.
+3. Burn that amount through Circle CCTP V2 with the pinned Stellar forwarder.
+4. Check Circle Sandbox attestation only when the user requests it.
+5. Prepare and sign `mint_and_forward` on Stellar Testnet.
+
+Submitted hashes are stored before receipt verification. A timeout or
+ambiguous response remains resumable or moves to `reconciliation_required`;
+the server does not silently broadcast a replacement.
+
+The local UI exposes this as **Start bridge with confirmations** after the
+readiness checks pass. Implementation and automated acceptance tests are
+complete; a real Privy Fuji-to-Stellar run remains the final proof.
 
 ## Safety invariant for Stellar
 
@@ -65,17 +94,17 @@ Stellar uses seven decimal places for account balances, while CCTP messages
 always represent USDC with six decimals. Carmelita accepts at most six decimal
 places for a bridge amount.
 
-## Future execution state machine
+## Execution state machine
 
 ```text
 draft
-  -> source_review
-  -> source_approved
+  -> approve_prepared
   -> approve_submitted
+  -> approve_confirmed
+  -> burn_prepared
   -> burn_submitted
   -> attesting
-  -> destination_review
-  -> destination_approved
+  -> mint_prepared
   -> mint_submitted
   -> completed
 ```
@@ -93,8 +122,10 @@ approval for every on-chain write:
 2. EVM CCTP burn with hook on Avalanche Fuji.
 3. Soroban `mint_and_forward` on Stellar Testnet.
 
-The normal first run therefore needs three confirmations; later runs may need
-two when the source allowance is already sufficient.
+The normal first run needs three confirmations when the Stellar trustline
+already exists. It needs four when the trustline must also be created. Later
+runs may need only two when both the trustline and source allowance are
+already sufficient.
 
 A relayer may later submit the public mint call, but it must not weaken source
 authorization, alter the final recipient or introduce Carmelita custody.
@@ -113,6 +144,12 @@ authorization, alter the final recipient or introduce Carmelita custody.
   protocol fee.
 - Both transaction hashes and final balance evidence are persisted.
 - Duplicate execution and ambiguous-result retries are rejected.
+
+The automated suite currently covers preparation, exact allowance, ABI
+invariants, explicit confirmations, durable state, idempotency, bounded
+attestation checks and hash persistence. The destination balance delta and a
+complete pair of live transaction hashes must still be captured in the manual
+onchain run.
 
 ## Sources
 

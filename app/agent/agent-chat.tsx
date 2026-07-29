@@ -6,6 +6,7 @@ import { summarizeX402Resource } from "../x402/resource-preview";
 import { useLocale } from "../language-toggle";
 import AvalancheChatAction, { type AvalancheWalletAction } from "./avalanche-chat-action";
 import AvalancheX402Action, { type AvalancheX402Action as AvalancheX402WalletAction } from "./avalanche-x402-action";
+import CctpBridgeAction, { type CctpBridgeWalletAction } from "./cctp-bridge-action";
 import ContextWalletSelector from "./context-wallet-selector";
 import {
   browserBridgePing,
@@ -109,7 +110,7 @@ type ChatAction = {
   message?: string;
   href?: string;
   connect?: string;
-  walletAction?: AvalancheWalletAction | AvalancheX402WalletAction;
+  walletAction?: AvalancheWalletAction | AvalancheX402WalletAction | CctpBridgeWalletAction;
   popup?: {
     provider: string;
     url: string;
@@ -1432,7 +1433,15 @@ export default function AgentChat({
                 {message.actions?.length ? (
                   <div className="agent-message-actions">
                     {message.actions.map((action) =>
-                      action.walletAction?.type === "avalanche.x402" ? (
+                      action.walletAction?.type === "cctp.bridge" ? (
+                        <CctpBridgeAction
+                          key={action.label}
+                          action={action.walletAction}
+                          locale={locale}
+                          getAccessToken={getAccessToken}
+                          onReceipt={openReceipt}
+                        />
+                      ) : action.walletAction?.type === "avalanche.x402" ? (
                         <AvalancheX402Action
                           key={action.label}
                           action={action.walletAction}
