@@ -59,7 +59,6 @@ const copy = {
     pilots: [
       ["READY TO VALIDATE", "DeFindex", "Prepare XLM and USDC vault actions, sign through Privy and verify on Stellar Testnet."],
       ["PARTNER PILOT", "UNBLCK", "Discover programs, request access and complete assisted onboarding."],
-      ["PARTNER PILOT", "ArcusX", "Turn a brief and budget into a trackable job with delivery evidence."],
       ["READ-ONLY LIVE", "Travala", "Search real travel inventory through MCP before enabling paid booking."],
     ],
     walletEyebrow: "NON-CUSTODIAL BY DESIGN",
@@ -126,7 +125,6 @@ const copy = {
     pilots: [
       ["LISTO PARA VALIDAR", "DeFindex", "Preparar acciones XLM y USDC, firmar mediante Privy y verificar en Stellar Testnet."],
       ["PILOTO CON PARTNER", "UNBLCK", "Descubrir programas, solicitar acceso y completar onboarding asistido."],
-      ["PILOTO CON PARTNER", "ArcusX", "Convertir un brief y presupuesto en un trabajo con evidencia de entrega."],
       ["LECTURA EN VIVO", "Travala", "Buscar inventario real de viajes mediante MCP antes de habilitar reservas pagadas."],
     ],
     walletEyebrow: "NO CUSTODIAL POR DISEÑO",
@@ -193,7 +191,6 @@ const copy = {
     pilots: [
       ["PRONTO PARA VALIDAR", "DeFindex", "Preparar ações XLM e USDC, assinar com Privy e verificar na Stellar Testnet."],
       ["PILOTO COM PARCEIRO", "UNBLCK", "Descobrir programas, solicitar acesso e concluir onboarding assistido."],
-      ["PILOTO COM PARCEIRO", "ArcusX", "Transformar um briefing e orçamento em um trabalho rastreável com evidência de entrega."],
       ["LEITURA AO VIVO", "Travala", "Pesquisar inventário real de viagens via MCP antes de habilitar reservas pagas."],
     ],
     walletEyebrow: "NÃO CUSTODIAL POR DESIGN",
