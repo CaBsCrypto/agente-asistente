@@ -80,6 +80,12 @@ Recovery is durable across page reloads:
 - The signed Stellar XDR and deterministic hash are stored before submission.
   A retry checks Stellar first and can only resubmit that exact payload.
 
+Before any Stellar mint is prepared, Carmelita decodes the raw CCTP V2
+message and binds it to the persisted plan: versions, domains, source
+TokenMessenger, destination TokenMessenger, forwarder, finality, official
+Fuji USDC, source wallet, amount, maximum fee and destination hook must all
+match. Circle's onchain attestation verification remains the final authority.
+
 The local UI exposes this as **Start bridge with confirmations** after the
 readiness checks pass. Implementation and automated acceptance tests are
 complete; a real Privy Fuji-to-Stellar run remains the final proof.

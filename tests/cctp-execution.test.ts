@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { decodeFunctionData } from "viem";
+import { StrKey } from "@stellar/stellar-sdk";
 import {
   CCTP_APPROVE_ABI,
   CCTP_BURN_ABI,
@@ -10,7 +11,10 @@ import {
   encodeCctpApprove,
   encodeCctpBurn,
 } from "../app/cctp/evm";
-import { getCctpAttestation } from "../app/cctp/attestation";
+import {
+  assertCctpAttestedMessage,
+  getCctpAttestation,
+} from "../app/cctp/attestation";
 import {
   buildCctpFujiToStellarPlan,
   CCTP_TESTNET,
@@ -103,6 +107,27 @@ test("Circle complete attestation is normalized without automatic mint", async (
   assert.match(result.message ?? "", /^0x22/);
 });
 
+test("Circle attestation rejects malformed JSON and partial hex bytes", async () => {
+  await assert.rejects(
+    getCctpAttestation(
+      `0x${"11".repeat(32)}`,
+      async () => new Response("{", {
+        headers: { "content-type": "application/json" },
+      }),
+    ),
+    /cctp_attestation_json_invalid/,
+  );
+  await assert.rejects(
+    getCctpAttestation(
+      `0x${"11".repeat(32)}`,
+      async () => new Response(JSON.stringify({
+        messages: [{ message: "0x1", attestation: "0x22", status: "complete" }],
+      })),
+    ),
+    /cctp_attestation_payload_invalid/,
+  );
+});
+
 test("CCTP execution API is authenticated, capped and confirmation-scoped", async () => {
   const source = await readFile(
     new URL("../app/api/agent/bridge/cctp/execute/route.ts", import.meta.url),
@@ -114,6 +139,10 @@ test("CCTP execution API is authenticated, capped and confirmation-scoped", asyn
   assert.match(source, /explicitUserConfirmation: z\.literal\(true\)/);
   assert.match(source, /evaluateUserAction/);
   assert.match(source, /quarantineCctpTransfer/);
+  assert.ok(
+    source.indexOf("assertCctpAttestedMessage({") <
+      source.indexOf("row = await saveCctpAttestation({"),
+  );
   assert.doesNotMatch(source, /privateKey|secretKey|process\.env.*KEY/i);
 });
 
@@ -194,4 +223,79 @@ test("expired EVM previews refresh only before a hash is broadcast", async () =>
   assert.match(store, /refresh_after_broadcast_rejected/);
   assert.match(store, /AND \$\{hashColumn\} IS NULL/);
   assert.match(client, /action: "refresh_evm"/);
+});
+
+function uint256(value: bigint) {
+  return Buffer.from(value.toString(16).padStart(64, "0"), "hex");
+}
+
+function bytes32Evm(value: string) {
+  return Buffer.from(value.slice(2).padStart(64, "0"), "hex");
+}
+
+function validAttestedMessage() {
+  const current = plan();
+  const header = Buffer.alloc(148);
+  header.writeUInt32BE(1, 0);
+  header.writeUInt32BE(CCTP_TESTNET.avalanche.domain, 4);
+  header.writeUInt32BE(CCTP_TESTNET.stellar.domain, 8);
+  Buffer.alloc(32, 1).copy(header, 12);
+  bytes32Evm(CCTP_TESTNET.avalanche.tokenMessengerV2).copy(header, 44);
+  Buffer.from(
+    StrKey.decodeContract(CCTP_TESTNET.stellar.tokenMessengerMinter),
+  ).copy(header, 76);
+  Buffer.from(current.safety.destinationCaller.slice(2), "hex").copy(header, 108);
+  header.writeUInt32BE(CCTP_STANDARD_FINALITY, 140);
+  header.writeUInt32BE(CCTP_STANDARD_FINALITY, 144);
+
+  const hook = Buffer.from(current.safety.hookData.slice(2), "hex");
+  const body = Buffer.alloc(228 + hook.length);
+  body.writeUInt32BE(1, 0);
+  bytes32Evm(CCTP_TESTNET.avalanche.usdc).copy(body, 4);
+  Buffer.from(current.safety.mintRecipient.slice(2), "hex").copy(body, 36);
+  uint256(BigInt(current.amountAtomic)).copy(body, 68);
+  bytes32Evm(EVM).copy(body, 100);
+  uint256(CCTP_MAX_FEE_ATOMIC).copy(body, 132);
+  uint256(BigInt(0)).copy(body, 164);
+  uint256(BigInt(123456)).copy(body, 196);
+  hook.copy(body, 228);
+  return `0x${Buffer.concat([header, body]).toString("hex")}` as const;
+}
+
+function assertValidMessage(overrides: Partial<{
+  amountAtomic: string;
+  hookData: string;
+}> = {}) {
+  const current = plan();
+  return assertCctpAttestedMessage({
+    message: validAttestedMessage(),
+    amountAtomic: overrides.amountAtomic ?? current.amountAtomic,
+    sourceAddress: EVM,
+    mintRecipient: current.safety.mintRecipient,
+    destinationCaller: current.safety.destinationCaller,
+    hookData: overrides.hookData ?? current.safety.hookData,
+    maxFeeAtomic: CCTP_MAX_FEE_ATOMIC,
+    finalityThreshold: CCTP_STANDARD_FINALITY,
+  });
+}
+
+test("attested CCTP message is bound to domains, wallets, amount and hook", () => {
+  const decoded = assertValidMessage();
+  assert.equal(decoded.sourceDomain, 1);
+  assert.equal(decoded.destinationDomain, 27);
+  assert.equal(decoded.body.amount, BigInt(plan().amountAtomic));
+});
+
+test("attested CCTP message rejects a different amount before mint", () => {
+  assert.throws(
+    () => assertValidMessage({ amountAtomic: "999999" }),
+    /cctp_attested_message_amount_mismatch/,
+  );
+});
+
+test("attested CCTP message rejects a different destination hook before mint", () => {
+  assert.throws(
+    () => assertValidMessage({ hookData: `0x${"00".repeat(32)}` }),
+    /cctp_attested_message_hook_data_mismatch/,
+  );
 });

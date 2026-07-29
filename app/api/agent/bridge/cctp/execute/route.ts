@@ -5,8 +5,14 @@ import { buildCctpFujiToStellarPlan, CCTP_TESTNET } from "@/app/connectors/circl
 import { getCctpFujiToStellarContext } from "@/app/connectors/circle-cctp-context";
 import { listPersistedUserWallets } from "@/app/multichain-account";
 import { verifyPrivyAccessToken } from "@/app/privy-stellar";
-import { getCctpAllowance, prepareCctpEvmPreview, verifyCctpEvmTransaction } from "@/app/cctp/evm";
-import { getCctpAttestation } from "@/app/cctp/attestation";
+import {
+  CCTP_MAX_FEE_ATOMIC,
+  CCTP_STANDARD_FINALITY,
+  getCctpAllowance,
+  prepareCctpEvmPreview,
+  verifyCctpEvmTransaction,
+} from "@/app/cctp/evm";
+import { assertCctpAttestedMessage, getCctpAttestation } from "@/app/cctp/attestation";
 import {
   prepareCctpMintAndForward,
   signCctpMintAndForward,
@@ -308,6 +314,17 @@ export async function POST(request: Request) {
           attestationStatus: "pending",
         }, { status: 202 });
       }
+      const plan = row.plan as ReturnType<typeof buildCctpFujiToStellarPlan>;
+      assertCctpAttestedMessage({
+        message: result.message as `0x${string}`,
+        amountAtomic: row.amount_atomic,
+        sourceAddress: row.source_address,
+        mintRecipient: plan.safety.mintRecipient,
+        destinationCaller: plan.safety.destinationCaller,
+        hookData: plan.safety.hookData,
+        maxFeeAtomic: CCTP_MAX_FEE_ATOMIC,
+        finalityThreshold: CCTP_STANDARD_FINALITY,
+      });
       row = await saveCctpAttestation({
         userId,
         transferId: row.id,
