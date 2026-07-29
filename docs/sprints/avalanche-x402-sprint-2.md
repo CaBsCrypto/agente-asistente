@@ -74,8 +74,11 @@ Persistence is isolated from the existing Stellar x402 flow.
 - A different signature for the same payment is rejected.
 - Only one worker can claim settlement.
 - Failed or reverted settlement becomes terminal.
-- An ambiguous timeout becomes `reconciliation_required`; it is never retried
-  automatically.
+- Any ambiguous settle outcome (facilitator 5xx, network failure,
+  timeout/abort, malformed or mismatched success payload, or a record conflict
+  after settle) becomes `reconciliation_required`; it is never retried
+  automatically. Only an explicit facilitator 4xx rejection (400/402/422) is
+  terminal `failed`.
 - One settled payment creates one delivery. Replays return the stored delivery
   byte-for-byte.
 

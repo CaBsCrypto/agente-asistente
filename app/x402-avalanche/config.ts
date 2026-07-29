@@ -3,7 +3,7 @@ export const AVALANCHE_X402 = {
   scheme: "exact",
   network: "eip155:43113",
   chainId: 43113,
-  facilitatorUrl: "https://facilitator.ultravioletadao.xyz",
+  facilitatorUrl: "https://x402.0xgasless.com",
   asset: {
     symbol: "USDC",
     address: "0x5425890298aed601595a70AB815c96711a31Bc65",

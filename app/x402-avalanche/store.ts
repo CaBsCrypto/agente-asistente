@@ -52,7 +52,7 @@ export type AvalancheX402DeliveryRow = {
 };
 
 type QueryResult<T> = { rows: T[] };
-type SqlClient = {
+export type SqlClient = {
   query<T = Record<string, unknown>>(
     query: string,
     params?: unknown[],
@@ -64,7 +64,7 @@ let schemaPromise: Promise<void> | null = null;
 function client(): SqlClient {
   const url = getDatabaseUrl();
   if (!url) throw new Error("database_not_configured");
-  return neon(url) as unknown as SqlClient;
+  return neon(url, { fullResults: true }) as unknown as SqlClient;
 }
 
 export async function ensureAvalancheX402Schema(sql: SqlClient = client()) {

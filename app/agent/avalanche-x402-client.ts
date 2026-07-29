@@ -8,6 +8,7 @@ export const AVALANCHE_X402_CLIENT = {
   amountAtomic: "10000",
   amountDisplay: "0.01",
   bodyHash: "6a0c7603b7673730abfe3dd8fc0581256232110fbb4d0a3ce87b204e092db893",
+  reportDescription: "Carmelita Avalanche Fuji deterministic report",
   reportBody: { report: "avalanche-agent-readiness", version: 1 },
 } as const;
 
@@ -49,7 +50,7 @@ export type PreparedAvalancheX402 = {
   };
   paymentRequired: {
     x402Version: number;
-    resource: { url: string };
+    resource: { url: string; description?: string; mimeType?: string };
     accepts: PaymentRequirements[];
   };
 };
@@ -70,6 +71,8 @@ export function validatePreparedAvalancheX402(
     resource.origin !== expectedOrigin ||
     resource.pathname !== "/api/demo/avalanche-report" ||
     prepared.paymentRequired.resource?.url !== payment.resourceUrl ||
+    prepared.paymentRequired.resource.description !== AVALANCHE_X402_CLIENT.reportDescription ||
+    prepared.paymentRequired.resource.mimeType !== "application/json" ||
     payment.network !== AVALANCHE_X402_CLIENT.network ||
     payment.asset !== "USDC" ||
     payment.assetContract?.toLowerCase() !== AVALANCHE_X402_CLIENT.asset.toLowerCase() ||
@@ -105,7 +108,11 @@ export function encodePreparedAvalancheX402Signature(input: {
   const payment = input.prepared.payment;
   const payload: PaymentPayload = {
     x402Version: 2,
-    resource: { url: payment.resourceUrl, mimeType: "application/json" },
+    resource: {
+      url: payment.resourceUrl,
+      description: AVALANCHE_X402_CLIENT.reportDescription,
+      mimeType: "application/json",
+    },
     accepted: input.prepared.paymentRequired.accepts[0],
     payload: {
       signature: input.signature.toLowerCase(),
@@ -147,6 +154,12 @@ function stableJson(value: unknown): string {
 }
 
 export function canonicalAvalancheX402Delivery(body: unknown) {
+  // A delivered report is always a JSON object. Hashing anything else (an
+  // empty, scalar or array body) fails closed instead of producing a digest
+  // that a substituted body could be checked against.
+  if (body === null || typeof body !== "object" || Array.isArray(body)) {
+    throw new Error("avalanche_x402_delivery_mismatch");
+  }
   return stableJson(body);
 }
 

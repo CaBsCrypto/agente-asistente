@@ -145,3 +145,24 @@ test("the chat routes the x402 action to its own card", () => {
     "the x402 branch must be matched before the generic wallet action",
   );
 });
+test("expired approvals are refreshed only inside the previously reviewed scope", () => {
+  const component = source("app/agent/avalanche-x402-action.tsx");
+  assert.ok(component.includes("Date.now() + 5_000"));
+  assert.ok(component.includes("sameApprovalScope(current, refreshed)"));
+  assert.ok(component.includes("avalanche_x402_refreshed_scope_changed"));
+  assert.ok(component.includes("crypto.randomUUID()"));
+  assert.ok(
+    component.indexOf("sameApprovalScope(current, refreshed)") <
+      component.indexOf("signWithPrivy(current)"),
+    "a refreshed payment must be scope-checked before Privy is opened",
+  );
+});
+test("fresh chat mode clears only the visible session", () => {
+  const chat = source("app/agent/agent-chat.tsx");
+  assert.ok(chat.includes('params.get("fresh") === "1"'));
+  assert.ok(chat.includes("setMessages(freshSession ? [] : body.messages)"));
+  assert.ok(
+    !chat.includes('fetch("/api/agent/chat", { method: "DELETE"'),
+    "fresh mode must not delete persisted conversation history",
+  );
+});

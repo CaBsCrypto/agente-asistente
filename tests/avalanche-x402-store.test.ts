@@ -98,6 +98,7 @@ const requirement: PaymentRequirements = {
   amount: "10000",
   payTo: `0x${"b".repeat(40)}`,
   maxTimeoutSeconds: 60,
+  extra: { name: "USD Coin", version: "2" },
 };
 const payment: FrozenAvalancheX402Payment = {
   paymentId: "avax_x402_fixture",

@@ -2,7 +2,7 @@ import { decodePaymentSignatureHeader } from "@x402/core/http";
 import { NextResponse } from "next/server";
 import { verifyPrivyAccessToken } from "@/app/privy-stellar";
 import { getAvalancheX402LiveConfig } from "@/app/x402-avalanche/config";
-import { createAvalancheX402Facilitator } from "@/app/x402-avalanche/facilitator";
+import { AvalancheX402FacilitatorHttpError, createAvalancheX402Facilitator } from "@/app/x402-avalanche/facilitator";
 import {
   buildAvalancheX402Requirement,
   createAvalanchePaymentRequired,
@@ -10,13 +10,12 @@ import {
   validateAvalanchePaymentSignature,
 } from "@/app/x402-avalanche/protocol";
 import { avalancheReportBodyHash, avalancheReportUrl } from "@/app/x402-avalanche/resource";
+import { executeAvalancheX402Settlement } from "@/app/x402-avalanche/settlement";
 import {
   bindAvalancheX402Signature,
-  claimAvalancheX402Settlement,
   deliverAvalancheX402Report,
   findAvalancheX402Payment,
   markAvalancheX402Terminal,
-  recordAvalancheX402Settlement,
 } from "@/app/x402-avalanche/store";
 
 export const runtime = "nodejs";
@@ -84,36 +83,12 @@ export async function POST(request: Request) {
     if (payment.status !== "settled" && payment.status !== "delivered") {
       const facilitator = createAvalancheX402Facilitator();
       const payload = decodePaymentSignatureHeader(signatureHeader);
-      const verification = await facilitator.verify(payload, requirement);
-      if (!verification.isValid) {
-        await markAvalancheX402Terminal({
-          userId,
-          paymentId,
-          status: "failed",
-          error: verification.invalidReason ?? "avalanche_x402_verification_failed",
-        });
-        return challenge(resourceUrl, config.payTo);
-      }
-      payment = await claimAvalancheX402Settlement(userId, paymentId);
-      if (payment.status === "settling") {
-        const settlement = await facilitator.settle(payload, requirement);
-        if (!settlement.success || !settlement.transaction) {
-          const reason = settlement.errorReason ?? "avalanche_x402_settlement_failed";
-          await markAvalancheX402Terminal({
-            userId,
-            paymentId,
-            status: reason.toLowerCase().includes("revert") ? "reverted" : "failed",
-            error: reason,
-          });
-          throw new Error(reason);
-        }
-        payment = await recordAvalancheX402Settlement({
-          userId,
-          paymentId,
-          settlement,
-          transactionHash: settlement.transaction,
-        });
-      }
+      const outcome = await executeAvalancheX402Settlement(
+        { userId, paymentId, payload, requirement },
+        { facilitator },
+      );
+      if (outcome.kind === "verification_failed") return challenge(resourceUrl, config.payTo);
+      payment = outcome.payment;
     }
 
     const delivery = await deliverAvalancheX402Report(userId, paymentId);
@@ -130,7 +105,9 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "avalanche_x402_resource_failed";
+    const message = error instanceof AvalancheX402FacilitatorHttpError && error.reason
+      ? `${error.message}:${error.reason}`
+      : error instanceof Error ? error.message : "avalanche_x402_resource_failed";
     if (userId && paymentId && message.includes("ambiguous")) {
       await markAvalancheX402Terminal({
         userId,
@@ -140,9 +117,10 @@ export async function POST(request: Request) {
       }).catch(() => undefined);
     }
     const status = message.includes("settlement_in_progress") ? 409
-      : message.includes("token") ? 401
-        : message.includes("not_found") ? 404
-          : message.includes("ambiguous") ? 503 : 400;
+      : message.includes("reconciliation_required") ? 409
+        : message.includes("token") ? 401
+          : message.includes("not_found") ? 404
+            : message.includes("ambiguous") ? 503 : 400;
     return NextResponse.json({ error: message }, {
       status,
       headers: { "Cache-Control": "no-store" },

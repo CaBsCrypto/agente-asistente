@@ -4,7 +4,7 @@ import { decodePaymentRequiredHeader, decodePaymentSignatureHeader } from "@x402
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { getAvalancheX402LiveConfig } from "../app/x402-avalanche/config";
 import { createAvalancheX402Facilitator } from "../app/x402-avalanche/facilitator";
-import { buildTransferWithAuthorizationTypedData, freezeAvalancheX402Payment } from "../app/x402-avalanche/payment";
+import { buildTransferWithAuthorizationTypedData, type FrozenAvalancheX402Payment, freezeAvalancheX402Payment } from "../app/x402-avalanche/payment";
 import { buildAvalancheX402Requirement, createAvalanchePaymentRequired, encodeAvalanchePaymentSignature, validateAvalanchePaymentSignature } from "../app/x402-avalanche/protocol";
 
 const payTo = `0x${"b".repeat(40)}`;
@@ -12,11 +12,31 @@ const resourceUrl = "http://localhost:3001/api/demo/avalanche-report?intent=req_
 const bodyHash = "e".repeat(64);
 const nowSeconds = 1_800_000_000;
 
+// The persisted typed data keeps the JSON wire forms (number chainId, string
+// uint256); viem's generics type the EIP712Domain chainId and uint256 message
+// fields as bigint. The encoded domain and message are identical, so the
+// signature and recovery are unchanged.
+function signableTypedData(payment: FrozenAvalancheX402Payment) {
+  const typedData = buildTransferWithAuthorizationTypedData(payment);
+  return {
+    ...typedData,
+    domain: { ...typedData.domain, chainId: BigInt(typedData.domain.chainId) },
+    message: {
+      from: payment.payer as `0x${string}`,
+      to: payment.payTo as `0x${string}`,
+      value: BigInt(payment.amount),
+      validAfter: BigInt(payment.validAfter),
+      validBefore: BigInt(payment.validBefore),
+      nonce: payment.nonce,
+    },
+  };
+}
+
 async function signedFixture() {
   const account = privateKeyToAccount(generatePrivateKey());
   const requirement = buildAvalancheX402Requirement(payTo);
   const payment = freezeAvalancheX402Payment({ requirement, resourceUrl, method: "POST", bodyHash, payer: account.address, nonce: `0x${"c".repeat(64)}`, nowSeconds });
-  const signature = await account.signTypedData(buildTransferWithAuthorizationTypedData(payment));
+  const signature = await account.signTypedData(signableTypedData(payment));
   const header = encodeAvalanchePaymentSignature({ payment, requirement, signature });
   return { account, payment, requirement, signature, header };
 }
@@ -51,7 +71,7 @@ test("request and requirement mutations fail closed", async () => {
 test("signature from another wallet is rejected", async () => {
   const fixture = await signedFixture();
   const attacker = privateKeyToAccount(generatePrivateKey());
-  const attackerSignature = await attacker.signTypedData(buildTransferWithAuthorizationTypedData(fixture.payment));
+  const attackerSignature = await attacker.signTypedData(signableTypedData(fixture.payment));
   const header = encodeAvalanchePaymentSignature({ payment: fixture.payment, requirement: fixture.requirement, signature: attackerSignature });
   await assert.rejects(validateAvalanchePaymentSignature({ header, payment: fixture.payment, requirement: fixture.requirement, method: "POST", resourceUrl, bodyHash, nowSeconds: nowSeconds + 1 }), /invalid_signer/);
 });
@@ -74,5 +94,5 @@ test("facilitator is injectable and never contacts remote services in tests", as
   const payload = decodePaymentSignatureHeader(fixture.header);
   const facilitator = createAvalancheX402Facilitator(fetcher);
   assert.equal((await facilitator.verify(payload, fixture.requirement)).isValid, true);
-  assert.deepEqual(calls, ["https://facilitator.ultravioletadao.xyz/verify:POST"]);
+  assert.deepEqual(calls, ["https://x402.0xgasless.com/verify:POST"]);
 });

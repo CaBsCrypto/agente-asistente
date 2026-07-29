@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { listPersistedUserWallets } from "@/app/multichain-account";
 import { verifyPrivyAccessToken } from "@/app/privy-stellar";
-import { diagnoseEvmWallet } from "@/app/wallets/evm-rpc";
+import { diagnoseEvmWallet, getErc20Balance } from "@/app/wallets/evm-rpc";
 import { getWalletNetwork } from "@/app/wallets/networks";
+import { AVALANCHE_X402 } from "@/app/x402-avalanche/config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,11 +31,27 @@ export async function GET(request: Request) {
         { status: 409 },
       );
     }
-    const diagnostics = await diagnoseEvmWallet(
-      getWalletNetwork("avalanche:fuji"),
-      wallet.address,
-    );
-    return NextResponse.json(diagnostics, {
+    const network = getWalletNetwork("avalanche:fuji");
+    const [diagnostics, usdc] = await Promise.all([
+      diagnoseEvmWallet(network, wallet.address),
+      getErc20Balance(
+        network,
+        AVALANCHE_X402.asset.address,
+        wallet.address,
+        AVALANCHE_X402.asset.decimals,
+      ),
+    ]);
+    return NextResponse.json({
+      ...diagnostics,
+      balances: {
+        native: { asset: diagnostics.nativeAsset, balance: diagnostics.balance },
+        usdc: {
+          asset: AVALANCHE_X402.asset.symbol,
+          balance: usdc.balance,
+          contract: AVALANCHE_X402.asset.address,
+        },
+      },
+    }, {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {

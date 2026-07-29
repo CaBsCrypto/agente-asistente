@@ -6,6 +6,16 @@ const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
 const ZERO = BigInt(0);
 const WEI_PER_ETHER = BigInt("1000000000000000000");
 
+function formatUnits(value: bigint, decimals: number) {
+  const divisor = BigInt(10) ** BigInt(decimals);
+  const whole = value / divisor;
+  const fraction = (value % divisor)
+    .toString()
+    .padStart(decimals, "0")
+    .replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}` : whole.toString();
+}
+
 function formatEther(value: bigint) {
   const whole = value / WEI_PER_ETHER;
   const fraction = (value % WEI_PER_ETHER).toString().padStart(18, "0").replace(/0+$/, "");
@@ -80,6 +90,36 @@ export async function diagnoseEvmWallet(
     funded: balanceWei > ZERO,
     explorerUrl: `${network.explorerUrl}/address/${address}`,
     faucetUrl: network.faucetUrl,
+  };
+}
+export async function getErc20Balance(
+  network: WalletNetwork,
+  tokenAddress: string,
+  walletAddress: string,
+  decimals: number,
+  fetcher: typeof fetch = fetch,
+) {
+  if (!EVM_ADDRESS.test(tokenAddress) || !EVM_ADDRESS.test(walletAddress)) {
+    throw new Error("invalid_evm_address");
+  }
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 36) {
+    throw new Error("invalid_erc20_decimals");
+  }
+  const balanceOfSelector = "70a08231";
+  const encodedWallet = walletAddress.slice(2).toLowerCase().padStart(64, "0");
+  const result = await rpc<string>(
+    network,
+    "eth_call",
+    [{ to: tokenAddress, data: `0x${balanceOfSelector}${encodedWallet}` }, "latest"],
+    fetcher,
+  );
+  const atomic = BigInt(result);
+  return {
+    tokenAddress,
+    walletAddress,
+    atomic: atomic.toString(),
+    balance: formatUnits(atomic, decimals),
+    decimals,
   };
 }
 export async function estimateEvmNativeTransfer(

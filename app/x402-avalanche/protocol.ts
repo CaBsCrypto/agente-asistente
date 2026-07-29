@@ -10,6 +10,8 @@ import { AVALANCHE_X402, EVM_SIGNATURE } from "./config";
 import { buildTransferWithAuthorizationTypedData, type FrozenAvalancheX402Payment } from "./payment";
 
 export const AVALANCHE_REPORT_AMOUNT = "10000";
+export const AVALANCHE_REPORT_DESCRIPTION =
+  "Carmelita Avalanche Fuji deterministic report";
 
 export function buildAvalancheX402Requirement(payTo: string): PaymentRequirements {
   return {
@@ -28,7 +30,7 @@ export function createAvalanchePaymentRequired(input: { resourceUrl: string; pay
   const paymentRequired: PaymentRequired = {
     x402Version: 2,
     error: "PAYMENT-SIGNATURE header is required",
-    resource: { url: input.resourceUrl, description: "Carmelita Avalanche Fuji deterministic report", mimeType: "application/json" },
+    resource: { url: input.resourceUrl, description: AVALANCHE_REPORT_DESCRIPTION, mimeType: "application/json" },
     accepts: [requirement],
   };
   return { requirement, paymentRequired, header: encodePaymentRequiredHeader(paymentRequired) };
@@ -38,7 +40,11 @@ export function createAvalanchePaymentPayload(input: { payment: FrozenAvalancheX
   if (!EVM_SIGNATURE.test(input.signature)) throw new Error("avalanche_x402_invalid_privy_signature");
   return {
     x402Version: 2,
-    resource: { url: input.payment.resource.url, mimeType: "application/json" },
+    resource: {
+      url: input.payment.resource.url,
+      description: AVALANCHE_REPORT_DESCRIPTION,
+      mimeType: "application/json",
+    },
     accepted: input.requirement,
     payload: {
       signature: input.signature.toLowerCase(),

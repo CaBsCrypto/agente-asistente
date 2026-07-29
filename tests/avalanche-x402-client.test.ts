@@ -23,6 +23,7 @@ function preparedFixture(): PreparedAvalancheX402 {
     amount: AVALANCHE_X402_CLIENT.amountAtomic,
     payTo: PAY_TO,
     maxTimeoutSeconds: 60,
+    extra: { name: "USD Coin", version: "2", primaryType: "TransferWithAuthorization", decimals: 6 },
   };
   return {
     replayed: false,
@@ -77,7 +78,11 @@ function preparedFixture(): PreparedAvalancheX402 {
     },
     paymentRequired: {
       x402Version: 2,
-      resource: { url: RESOURCE_URL },
+      resource: {
+        url: RESOURCE_URL,
+        description: AVALANCHE_X402_CLIENT.reportDescription,
+        mimeType: "application/json",
+      },
       accepts: [requirement],
     },
   };
@@ -106,6 +111,7 @@ test("rejects wrong origin, chain, token, amount, payTo or resource binding", ()
     ["token", mutated((value) => { value.payment.assetContract = `0x${"d".repeat(40)}`; })],
     ["amount", mutated((value) => { value.payment.amountAtomic = "10001"; })],
     ["payTo", mutated((value) => { value.payment.typedData.message.to = `0x${"e".repeat(40)}`; })],
+    ["description", mutated((value) => { value.paymentRequired.resource.description = undefined; })],
     ["resource", mutated((value) => {
       value.paymentRequired.resource.url = `${ORIGIN}/api/demo/other-report`;
     })],
@@ -149,6 +155,8 @@ test("PAYMENT-SIGNATURE binds payment, method, resource and canonical body hash"
 
   assert.equal(payload.x402Version, 2);
   assert.equal(payload.accepted.network, "eip155:43113");
+  assert.equal(payload.resource?.description, AVALANCHE_X402_CLIENT.reportDescription);
+  assert.equal(payload.resource?.mimeType, "application/json");
   assert.equal(extension.paymentId, prepared.payment.id);
   assert.equal(extension.method, "POST");
   assert.equal(extension.resourceUrl, prepared.payment.resourceUrl);

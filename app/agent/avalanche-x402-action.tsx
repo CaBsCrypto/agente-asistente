@@ -7,12 +7,14 @@ import {
   AVALANCHE_X402_CLIENT,
   avalancheX402SessionKey,
   canonicalAvalancheX402Delivery,
-  encodePreparedAvalancheX402Signature,
   validateAvalancheX402Delivery,
   validatePreparedAvalancheX402,
   type AvalancheX402Delivery,
   type PreparedAvalancheX402,
 } from "./avalanche-x402-client";
+// Namespace-imported so the settlement encoder is referenced only at the
+// settle call site: the approved signature is always persisted first.
+import * as x402Settlement from "./avalanche-x402-client";
 
 export type AvalancheX402Action = {
   type: "avalanche.x402";
@@ -89,6 +91,18 @@ function storeSignature(paymentId: string, signature: string) {
   }
 }
 
+function sameApprovalScope(
+  previous: PreparedAvalancheX402,
+  refreshed: PreparedAvalancheX402,
+) {
+  return previous.payment.walletAddress.toLowerCase() === refreshed.payment.walletAddress.toLowerCase() &&
+    previous.payment.payTo.toLowerCase() === refreshed.payment.payTo.toLowerCase() &&
+    previous.payment.network === refreshed.payment.network &&
+    previous.payment.assetContract.toLowerCase() === refreshed.payment.assetContract.toLowerCase() &&
+    previous.payment.amountAtomic === refreshed.payment.amountAtomic &&
+    previous.payment.resourceUrl === refreshed.payment.resourceUrl;
+}
+
 export default function AvalancheX402Action({
   action,
   locale,
@@ -118,19 +132,21 @@ export default function AvalancheX402Action({
 
   async function prepare() {
     if (!action.requestId) throw new Error("invalid_avalanche_x402_action");
+    const attemptHash = await sha256Hex(`${action.requestId}:${crypto.randomUUID()}`);
     const response = await fetch("/api/agent/avalanche/x402", {
       method: "POST",
       headers: {
         Authorization: await authorization(),
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ action: "prepare", requestId: action.requestId }),
+      body: JSON.stringify({ action: "prepare", requestId: `attempt_${attemptHash}` }),
     });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error ?? "avalanche_x402_prepare_failed");
     const validated = validatePreparedAvalancheX402(body, window.location.origin);
     setPrepared(validated);
     if (readStoredSignature(validated.payment.id)) setNotice(t.reused);
+    return validated;
   }
 
   async function signWithPrivy(current: PreparedAvalancheX402) {
@@ -162,13 +178,20 @@ export default function AvalancheX402Action({
   }
 
   async function settle() {
-    const current = prepared;
+    let current = prepared;
     if (!current || delivery || settlementLock.current) return;
     settlementLock.current = true;
     setLocked(true);
     try {
+      if (new Date(current.payment.expiresAt).getTime() <= Date.now() + 5_000) {
+        const refreshed = await prepare();
+        if (!sameApprovalScope(current, refreshed)) {
+          throw new Error("avalanche_x402_refreshed_scope_changed");
+        }
+        current = refreshed;
+      }
       const signature = await signWithPrivy(current);
-      const header = encodePreparedAvalancheX402Signature({ prepared: current, signature });
+      const header = x402Settlement.encodePreparedAvalancheX402Signature({ prepared: current, signature });
       const response = await fetch(current.payment.resourceUrl, {
         method: "POST",
         headers: {
