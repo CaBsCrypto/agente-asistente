@@ -2,6 +2,7 @@ export type AvalancheChatIntent =
   | { operation: "activate" }
   | { operation: "status" }
   | { operation: "fund" }
+  | { operation: "x402" }
   | { operation: "send"; amount: "0.001"; destination: `0x${string}` };
 
 const EVM_ADDRESS = /0x[a-fA-F0-9]{40}/;
@@ -29,6 +30,15 @@ export function parseAvalancheChatIntent(message: string): AvalancheChatIntent |
       ? { operation: "send", amount: "0.001", destination }
       : null;
   }
+
+  // The x402 report is the only paid resource, so it is matched before the
+  // funding and status keywords that also mention balances.
+  const wantsPaidReport = query.includes("x402") || (
+    ["report", "reporte", "relatorio"].some((term) => query.includes(term)) &&
+    ["buy", "purchase", "pay", "compra", "comprar", "paga", "pagar", "pague"]
+      .some((term) => query.includes(term))
+  );
+  if (wantsPaidReport) return { operation: "x402" };
 
   const wantsFunding = [
     "fund", "faucet", "top up", "recarga", "recargar", "fondea", "fondear",

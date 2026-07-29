@@ -126,3 +126,55 @@ export function encodePreparedAvalancheX402Signature(input: {
 export function avalancheX402SessionKey(paymentId: string) {
   return `carmelita:avalanche-x402:${paymentId}`;
 }
+
+export type AvalancheX402Delivery = {
+  deliveryId: string;
+  report: string;
+  network: string;
+  paid: { asset: string; amountAtomic: string };
+  transactionHash: string;
+  paymentId: string;
+};
+
+/** Mirrors the server's canonical serialization used to hash a delivery. */
+function stableJson(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  const object = value as Record<string, unknown>;
+  return `{${Object.keys(object).sort().map((key) =>
+    `${JSON.stringify(key)}:${stableJson(object[key])}`
+  ).join(",")}}`;
+}
+
+export function canonicalAvalancheX402Delivery(body: unknown) {
+  return stableJson(body);
+}
+
+/**
+ * Independently re-checks a delivered report against the payment the user
+ * approved, so a settled payment cannot deliver another payment's report.
+ * The caller supplies the SHA-256 of `canonicalAvalancheX402Delivery(body)`,
+ * which the browser computes with WebCrypto.
+ */
+export function validateAvalancheX402Delivery(input: {
+  body: unknown;
+  paymentId: string;
+  deliveryIdHeader: string | null;
+  bodyHashHeader: string | null;
+  computedBodyHash: string;
+}): AvalancheX402Delivery {
+  const delivery = input.body as AvalancheX402Delivery;
+  if (
+    !delivery ||
+    typeof delivery.deliveryId !== "string" ||
+    delivery.paymentId !== input.paymentId ||
+    delivery.network !== AVALANCHE_X402_CLIENT.network ||
+    delivery.paid?.asset !== "USDC" ||
+    delivery.paid.amountAtomic !== AVALANCHE_X402_CLIENT.amountAtomic ||
+    !/^0x[a-fA-F0-9]{64}$/.test(delivery.transactionHash ?? "") ||
+    input.deliveryIdHeader !== delivery.deliveryId ||
+    input.bodyHashHeader !== input.computedBodyHash ||
+    !/^[a-f0-9]{64}$/.test(input.computedBodyHash)
+  ) throw new Error("avalanche_x402_delivery_mismatch");
+  return delivery;
+}

@@ -9,7 +9,7 @@ export type AgentChatAction = {
   href?: string;
   connect?: string;
   walletAction?: {
-    type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send";
+    type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send" | "avalanche.x402";
     network: "avalanche:fuji";
     amount?: "0.001";
     destination?: `0x${string}`;
@@ -355,9 +355,9 @@ export function buildAgentReply(message: string, context: AgentChatContext = {})
 
   if (avalancheIntent) {
     const labels = {
-      en: { activate: "Activate Fuji", status: "Check Fuji wallet", fund: "Receive 0.005 Test AVAX", send: "Review and approve 0.001 AVAX" },
-      es: { activate: "Activar Fuji", status: "Revisar wallet Fuji", fund: "Recibir 0.005 AVAX de prueba", send: "Revisar y aprobar 0.001 AVAX" },
-      pt: { activate: "Ativar Fuji", status: "Verificar wallet Fuji", fund: "Receber 0.005 AVAX de teste", send: "Revisar e aprovar 0.001 AVAX" },
+      en: { activate: "Activate Fuji", status: "Check Fuji wallet", fund: "Receive 0.005 Test AVAX", send: "Review and approve 0.001 AVAX", x402: "Review the 0.01 USDC x402 payment" },
+      es: { activate: "Activar Fuji", status: "Revisar wallet Fuji", fund: "Recibir 0.005 AVAX de prueba", send: "Revisar y aprobar 0.001 AVAX", x402: "Revisar el pago x402 de 0.01 USDC" },
+      pt: { activate: "Ativar Fuji", status: "Verificar wallet Fuji", fund: "Receber 0.005 AVAX de teste", send: "Revisar e aprovar 0.001 AVAX", x402: "Revisar o pagamento x402 de 0.01 USDC" },
     }[language];
     const content = {
       activate: {
@@ -379,6 +379,11 @@ export function buildAgentReply(message: string, context: AgentChatContext = {})
         en: `I will freeze a 0.001 AVAX Fuji transfer to ${avalancheIntent.operation === "send" ? avalancheIntent.destination : "the selected wallet"}. The in-chat card will show the exact nonce, value and maximum gas before Privy asks for transaction-specific approval.`,
         es: `Congelaré una transferencia de 0.001 AVAX en Fuji hacia ${avalancheIntent.operation === "send" ? avalancheIntent.destination : "la wallet elegida"}. La tarjeta del chat mostrará nonce, valor y gas máximo exactos antes de que Privy solicite aprobación específica.`,
         pt: `Vou congelar uma transferência de 0.001 AVAX na Fuji para ${avalancheIntent.operation === "send" ? avalancheIntent.destination : "a wallet escolhida"}. O cartão no chat mostrará nonce, valor e gas máximo exatos antes da aprovação específica da Privy.`,
+      },
+      x402: {
+        en: "The readiness report is a paid resource: exactly 0.01 USDC on Fuji over x402 v2. I freeze the recipient, amount, nonce and expiry first; Privy then asks you to sign that exact authorization once, and the report is delivered only after the facilitator settles it.",
+        es: "El reporte de readiness es un recurso pago: exactamente 0.01 USDC en Fuji vía x402 v2. Primero congelo destinatario, monto, nonce y expiración; luego Privy te pide firmar esa autorización exacta una sola vez, y el reporte se entrega solo después de que el facilitador la liquide.",
+        pt: "O relatório de readiness é um recurso pago: exatamente 0.01 USDC na Fuji via x402 v2. Primeiro congelo destinatário, valor, nonce e expiração; depois a Privy pede que você assine essa autorização exata uma única vez, e o relatório é entregue apenas após o facilitador liquidá-la.",
       },
     }[avalancheIntent.operation][language];
     return {

@@ -65,7 +65,7 @@ export type StoredAgentMessage = {
     href?: string;
     connect?: string;
     walletAction?: {
-      type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send";
+      type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send" | "avalanche.x402";
       network: "avalanche:fuji";
       amount?: "0.001";
       destination?: `0x${string}`;
