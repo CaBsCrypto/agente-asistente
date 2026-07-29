@@ -62,6 +62,8 @@ import {
   getDexalotTestnetQuote,
   listDexalotTestnetPairs,
 } from "@/app/connectors/dexalot";
+import { parseCctpBridgeIntent } from "@/app/connectors/circle-cctp-intents";
+import { handleCctpBridgeIntent } from "@/app/connectors/circle-cctp-chat";
 
 export type StoredAgentMessage = {
   id: string;
@@ -421,6 +423,7 @@ export async function sendAgentMessage(userId: string, content: string) {
   const avalancheIntent = parseAvalancheChatIntent(content);
   const avalancheKnowledgeIntent = parseAvalancheKnowledgeIntent(content);
   const dexalotReadIntent = parseDexalotReadIntent(content);
+  const cctpBridgeIntent = parseCctpBridgeIntent(content);
   const vaultCommand = parseVaultCommand(content);
   const unblckIntent = parseUnblckChatIntent(content);
 
@@ -554,7 +557,9 @@ export async function sendAgentMessage(userId: string, content: string) {
       memoryUpdated: true,
     };
   } else
-  if (unblckIntent) {
+  if (cctpBridgeIntent) {
+    reply = await handleCctpBridgeIntent({ userId, intent: cctpBridgeIntent, language });
+  } else if (unblckIntent) {
     reply = await handleUnblckChatIntent({
       intent: unblckIntent,
       userId,
