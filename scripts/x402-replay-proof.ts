@@ -71,9 +71,39 @@ async function status() {
   return payload;
 }
 
-async function balance() {
+const HORIZON_TESTNET = "https://horizon-testnet.stellar.org";
+
+let cachedWalletAddress = "";
+
+async function walletAddress() {
+  if (cachedWalletAddress) return cachedWalletAddress;
   const payload = await status();
-  return string(object(payload.x402Usdc, "x402_usdc").balance, "x402_usdc_balance");
+  const address = string(object(payload.wallet, "x402_wallet").address, "x402_wallet_address");
+  invariant(/^G[A-Z2-7]{55}$/.test(address), "x402_replay_wallet_address_invalid");
+  cachedWalletAddress = address;
+  return address;
+}
+
+// The app names the account; Horizon states the balance. Reading the balance
+// through the app's own status endpoint would make the replay proof depend on
+// the code it exists to falsify, so it is read from the ledger directly.
+async function balance() {
+  const address = await walletAddress();
+  const response = await fetch(`${HORIZON_TESTNET}/accounts/${address}`, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(20_000),
+  });
+  invariant(response.ok, `x402_replay_horizon_account_http_${response.status}`);
+  const payload = object(await response.json(), "horizon_account");
+  const balances = Array.isArray(payload.balances)
+    ? payload.balances.map((entry) => object(entry, "horizon_balance"))
+    : [];
+  const usdc = balances.find(
+    (entry) =>
+      entry.asset_code === "USDC" && entry.asset_issuer === X402_TESTNET_USDC.issuer,
+  );
+  invariant(usdc, "x402_replay_horizon_usdc_trustline_missing");
+  return string(usdc.balance, "x402_replay_horizon_usdc_balance");
 }
 
 async function postExact(serializedBody: string) {
@@ -88,7 +118,7 @@ async function postExact(serializedBody: string) {
 async function verifyTestnetReceipt(transactionHash: string) {
   invariant(/^[0-9a-f]{64}$/i.test(transactionHash), "x402_replay_transaction_hash_invalid");
   const response = await fetch(
-    `https://horizon-testnet.stellar.org/transactions/${transactionHash}`,
+    `${HORIZON_TESTNET}/transactions/${transactionHash}`,
     { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(20_000) },
   );
   invariant(response.ok, `x402_replay_horizon_http_${response.status}`);
