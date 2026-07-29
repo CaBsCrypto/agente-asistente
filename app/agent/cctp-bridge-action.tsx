@@ -131,6 +131,7 @@ export default function CctpBridgeAction({
   const t = copy[locale];
   const { wallets } = useWallets();
   const { signRawHash } = useSignRawHash();
+  const storageKey = `carmelita:cctp:${action.requestId ?? "missing"}`;
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [transfer, setTransfer] = useState<Transfer | null>(null);
@@ -165,9 +166,67 @@ export default function CctpBridgeAction({
     return result;
   }
 
+  function readPending(): {
+    transferId: string;
+    kind: "approve" | "burn";
+    hash: `0x${string}`;
+  } | null {
+    try {
+      const value = window.localStorage.getItem(storageKey);
+      if (!value) return null;
+      const parsed = JSON.parse(value) as Record<string, unknown>;
+      if (
+        typeof parsed.transferId !== "string" ||
+        (parsed.kind !== "approve" && parsed.kind !== "burn") ||
+        typeof parsed.hash !== "string" ||
+        !/^0x[a-fA-F0-9]{64}$/.test(parsed.hash)
+      ) return null;
+      return {
+        transferId: parsed.transferId,
+        kind: parsed.kind,
+        hash: parsed.hash.toLowerCase() as `0x${string}`,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   function apply(result: { transfer: Transfer; nextAction: string | null }) {
     setTransfer(result.transfer);
     setNextAction(result.nextAction);
+    const local = readPending();
+    const localMatchesServer = local?.transferId === result.transfer.id &&
+      (
+        result.transfer.status === `${local.kind}_prepared` ||
+        result.transfer.status === `${local.kind}_submitted`
+      );
+    if (localMatchesServer && local) {
+      setSubmitted({ kind: local.kind, hash: local.hash });
+    } else if (local?.transferId === result.transfer.id) {
+      window.localStorage.removeItem(storageKey);
+      setSubmitted(null);
+    } else if (
+      result.transfer.status === "approve_submitted" &&
+      result.transfer.approveTransactionHash
+    ) {
+      setSubmitted({
+        kind: "approve",
+        hash: result.transfer.approveTransactionHash as `0x${string}`,
+      });
+    } else if (
+      result.transfer.status === "burn_submitted" &&
+      result.transfer.burnTransactionHash
+    ) {
+      setSubmitted({
+        kind: "burn",
+        hash: result.transfer.burnTransactionHash as `0x${string}`,
+      });
+    } else {
+      setSubmitted(null);
+    }
+    if (result.nextAction === "reconciliation") {
+      setNotice(result.transfer.error ?? "cctp_reconciliation_required");
+    }
     return result.transfer;
   }
 
@@ -232,6 +291,7 @@ export default function CctpBridgeAction({
       kind,
       transactionHash: hash,
     });
+    window.localStorage.removeItem(storageKey);
     setSubmitted(null);
     apply(result);
   }
@@ -244,7 +304,13 @@ export default function CctpBridgeAction({
       return;
     }
     if (new Date(preview.expiresAt).getTime() <= Date.now()) {
-      throw new Error("cctp_evm_preview_expired");
+      const refreshed = await post("/api/agent/bridge/cctp/execute", {
+        action: "refresh_evm",
+        transferId: transfer.id,
+      });
+      apply(refreshed);
+      setNotice("Transaction preview refreshed. Review it before confirming.");
+      return;
     }
     const wallet = wallets.find(
       (candidate) =>
@@ -275,6 +341,11 @@ export default function CctpBridgeAction({
       if (typeof hash !== "string" || !/^0x[a-fA-F0-9]{64}$/.test(hash)) {
         throw new Error("cctp_privy_transaction_hash_missing");
       }
+      window.localStorage.setItem(storageKey, JSON.stringify({
+        transferId: transfer.id,
+        kind: preview.kind,
+        hash: hash.toLowerCase(),
+      }));
       const submittedAction = {
         kind: preview.kind,
         hash: hash.toLowerCase() as `0x${string}`,
@@ -355,6 +426,7 @@ export default function CctpBridgeAction({
             : nextAction === "mint" ? confirmMint
               : prepare;
 
+  const requiresReconciliation = nextAction === "reconciliation";
   return (
     <section className="defindex-approval prepared" aria-label="Circle CCTP bridge approval">
       <span>{t.risk}</span>
@@ -369,7 +441,7 @@ export default function CctpBridgeAction({
           {transfer.mint && <div><dt>{t.contract}</dt><dd>{transfer.mint.contract}</dd></div>}
         </dl>
       )}
-      {transfer?.status !== "completed" && (
+      {transfer?.status !== "completed" && !requiresReconciliation && (
         <button type="button" disabled={busy} onClick={() => void run(task)}>
           {busy ? t.working : label}
         </button>

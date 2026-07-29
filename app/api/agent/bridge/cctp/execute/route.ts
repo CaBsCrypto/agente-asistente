@@ -7,18 +7,23 @@ import { listPersistedUserWallets } from "@/app/multichain-account";
 import { verifyPrivyAccessToken } from "@/app/privy-stellar";
 import { getCctpAllowance, prepareCctpEvmPreview, verifyCctpEvmTransaction } from "@/app/cctp/evm";
 import { getCctpAttestation } from "@/app/cctp/attestation";
-import { prepareCctpMintAndForward, submitCctpMintAndForward } from "@/app/cctp/stellar";
+import {
+  prepareCctpMintAndForward,
+  signCctpMintAndForward,
+  submitCctpMintAndForward,
+} from "@/app/cctp/stellar";
 import {
   bindCctpEvmHash,
-  claimCctpMint,
   completeCctpMint,
   confirmCctpEvm,
   findCctpTransfer,
   prepareCctpTransfer,
   quarantineCctpTransfer,
+  refreshCctpEvmPreview,
   saveCctpAttestation,
   saveCctpEvmPreview,
   saveCctpMintPreview,
+  stageCctpMintSubmission,
   type CctpTransferRow,
 } from "@/app/cctp/store";
 
@@ -36,6 +41,10 @@ const requestSchema = z.discriminatedUnion("action", [
   }).strict(),
   z.object({
     action: z.literal("prepare_next"),
+    transferId: z.string().startsWith("cctp_"),
+  }).strict(),
+  z.object({
+    action: z.literal("refresh_evm"),
     transferId: z.string().startsWith("cctp_"),
   }).strict(),
   z.object({
@@ -84,7 +93,9 @@ function publicTransfer(row: CctpTransferRow) {
     approveTransactionHash: row.approve_tx_hash,
     burnTransactionHash: row.burn_tx_hash,
     mintTransactionHash: row.mint_tx_hash,
-    mint: row.status === "mint_prepared" ? {
+    mint: row.status === "mint_prepared" ||
+      row.status === "mint_submitted"
+      ? {
       signingHash: row.mint_signing_hash,
       signingAddress: row.destination_address,
       network: "stellar:testnet",
@@ -93,6 +104,25 @@ function publicTransfer(row: CctpTransferRow) {
     } : null,
     error: row.error,
   };
+}
+
+function nextActionFor(row: CctpTransferRow): string | null {
+  switch (row.status) {
+    case "approve_prepared": return "approve";
+    case "approve_submitted": return row.approve_tx_hash ? "verify_approve" : "reconciliation";
+    case "approve_confirmed": return "prepare_next";
+    case "burn_prepared": return "burn";
+    case "burn_submitted": return row.burn_tx_hash ? "verify_burn" : "reconciliation";
+    case "attesting": return "attestation";
+    case "mint_prepared": return "mint";
+    case "mint_submitted": return "mint";
+    case "completed": return null;
+    case "reconciliation_required":
+    case "failed":
+      return "reconciliation";
+    default:
+      return "prepare_next";
+  }
 }
 
 async function prepareNext(userId: string, row: CctpTransferRow) {
@@ -196,10 +226,13 @@ export async function POST(request: Request) {
           replayed: prepared.replayed,
         });
       }
-      const next = await prepareNext(userId, prepared.row);
+      const next = prepared.row.status === "draft" ||
+        prepared.row.status === "approve_confirmed"
+        ? await prepareNext(userId, prepared.row)
+        : prepared.row;
       return NextResponse.json({
         transfer: publicTransfer(next),
-        nextAction: next.evm_preview?.kind ?? null,
+        nextAction: nextActionFor(next),
         replayed: prepared.replayed,
       });
     }
@@ -210,7 +243,33 @@ export async function POST(request: Request) {
       row = await prepareNext(userId, row);
       return NextResponse.json({
         transfer: publicTransfer(row),
-        nextAction: row.evm_preview?.kind ?? null,
+        nextAction: nextActionFor(row),
+      });
+    }
+    if (parsed.action === "refresh_evm") {
+      if (
+        !row.evm_preview ||
+        (row.status !== "approve_prepared" && row.status !== "burn_prepared")
+      ) {
+        throw new Error(`cctp_evm_refresh_not_allowed:${row.status}`);
+      }
+      const plan = row.plan as ReturnType<typeof buildCctpFujiToStellarPlan>;
+      const preview = await prepareCctpEvmPreview({
+        kind: row.evm_preview.kind,
+        walletAddress: row.source_address as `0x${string}`,
+        amountAtomic: row.amount_atomic,
+        mintRecipient: plan.safety.mintRecipient,
+        destinationCaller: plan.safety.destinationCaller,
+        hookData: plan.safety.hookData,
+      });
+      row = await refreshCctpEvmPreview({
+        userId,
+        transferId: row.id,
+        preview,
+      });
+      return NextResponse.json({
+        transfer: publicTransfer(row),
+        nextAction: nextActionFor(row),
       });
     }
     if (parsed.action === "record_evm") {
@@ -231,7 +290,7 @@ export async function POST(request: Request) {
       if (parsed.kind === "approve") row = await prepareNext(userId, row);
       return NextResponse.json({
         transfer: publicTransfer(row),
-        nextAction: parsed.kind === "approve" ? "burn" : "attestation",
+        nextAction: nextActionFor(row),
       });
     }
     if (parsed.action === "attestation") {
@@ -279,22 +338,28 @@ export async function POST(request: Request) {
         replayed: true,
       });
     }
-    if (row.status !== "mint_prepared" || !row.mint_xdr || !row.mint_signing_hash) {
+    if (
+      (row.status !== "mint_prepared" && row.status !== "mint_submitted") ||
+      !row.mint_xdr ||
+      !row.mint_signing_hash
+    ) {
       throw new Error(`cctp_mint_not_prepared:${row.status}`);
     }
-    const claimed = await claimCctpMint({ userId, transferId: row.id });
-    if (claimed.status === "completed") {
-      return NextResponse.json({
-        transfer: publicTransfer(claimed),
-        nextAction: null,
-        replayed: true,
-      });
-    }
+    const signed = signCctpMintAndForward({
+      preparedXdr: row.mint_xdr,
+      walletAddress: row.destination_address,
+      signature: parsed.signature,
+    });
+    row = await stageCctpMintSubmission({
+      userId,
+      transferId: row.id,
+      signedXdr: signed.signedXdr,
+      expectedHash: signed.expectedHash,
+    });
     try {
       const result = await submitCctpMintAndForward({
-        preparedXdr: row.mint_xdr,
-        walletAddress: row.destination_address,
-        signature: parsed.signature,
+        signedXdr: row.mint_signed_xdr!,
+        expectedHash: row.mint_expected_hash!,
       });
       row = await completeCctpMint({
         userId,
@@ -309,7 +374,9 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       const code = error instanceof Error ? error.message : "cctp_mint_failed";
-      await quarantineCctpTransfer({ userId, transferId: row.id, error: code });
+      if (code === "cctp_mint_failed_onchain") {
+        await quarantineCctpTransfer({ userId, transferId: row.id, error: code });
+      }
       throw error;
     }
   } catch (error) {

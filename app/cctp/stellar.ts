@@ -8,7 +8,7 @@ import {
 import { CCTP_TESTNET } from "@/app/connectors/circle-cctp";
 import {
   attachStellarSignature,
-  submitPreparedDefindexTransaction,
+  transactionFromXdr,
 } from "@/app/connectors/defindex";
 import { stellarClientSignatureBytes } from "@/app/x402/client-authorization";
 
@@ -48,7 +48,7 @@ export async function prepareCctpMintAndForward(input: {
   };
 }
 
-export async function submitCctpMintAndForward(input: {
+export function signCctpMintAndForward(input: {
   preparedXdr: string;
   walletAddress: string;
   signature: string;
@@ -58,8 +58,47 @@ export async function submitCctpMintAndForward(input: {
     input.walletAddress,
     stellarClientSignatureBytes(input.signature),
   );
-  return submitPreparedDefindexTransaction({
-    action: "deposit",
+  return {
     signedXdr: signed.toXDR(),
+    expectedHash: signed.hash().toString("hex"),
+  };
+}
+
+export async function submitCctpMintAndForward(input: {
+  signedXdr: string;
+  expectedHash: string;
+}) {
+  const transaction = transactionFromXdr(input.signedXdr);
+  const actualHash = transaction.hash().toString("hex");
+  if (actualHash !== input.expectedHash) {
+    throw new Error("cctp_mint_signed_xdr_hash_mismatch");
+  }
+  const server = new rpc.Server(STELLAR_RPC_URL);
+  const existing = await server.getTransaction(input.expectedHash);
+  if (existing.status === rpc.Api.GetTransactionStatus.SUCCESS) {
+    return {
+      hash: input.expectedHash,
+      status: "SUCCESS" as const,
+      ledger: existing.ledger,
+      replayed: true,
+    };
+  }
+  if (existing.status === rpc.Api.GetTransactionStatus.FAILED) {
+    throw new Error("cctp_mint_failed_onchain");
+  }
+  const send = await server.sendTransaction(transaction);
+  if (send.status === "ERROR") throw new Error("cctp_mint_submission_failed");
+  const result = await server.pollTransaction(input.expectedHash, {
+    sleepStrategy: rpc.LinearSleepStrategy,
+    attempts: 30,
   });
+  if (result.status !== rpc.Api.GetTransactionStatus.SUCCESS) {
+    throw new Error("cctp_mint_not_confirmed");
+  }
+  return {
+    hash: input.expectedHash,
+    status: "SUCCESS" as const,
+    ledger: result.ledger,
+    replayed: false,
+  };
 }

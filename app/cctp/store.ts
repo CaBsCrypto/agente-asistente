@@ -34,6 +34,8 @@ export type CctpTransferRow = {
   attestation: { message: `0x${string}`; attestation: `0x${string}` } | null;
   mint_xdr: string | null;
   mint_signing_hash: string | null;
+  mint_signed_xdr: string | null;
+  mint_expected_hash: string | null;
   mint_tx_hash: string | null;
   error: string | null;
   created_at: string;
@@ -76,11 +78,16 @@ export async function ensureCctpSchema(sql: CctpSqlClient = client()) {
       attestation jsonb,
       mint_xdr text,
       mint_signing_hash text,
+      mint_signed_xdr text,
+      mint_expected_hash text,
       mint_tx_hash text UNIQUE,
       error text,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     )`);
+    await sql.query(
+      "ALTER TABLE agent_cctp_transfers ADD COLUMN IF NOT EXISTS mint_signed_xdr text, ADD COLUMN IF NOT EXISTS mint_expected_hash text",
+    );
     await sql.query(
       "CREATE INDEX IF NOT EXISTS agent_cctp_user_created_idx ON agent_cctp_transfers(user_id, created_at)",
     );
@@ -189,6 +196,35 @@ export async function saveCctpEvmPreview(input: {
   throw new Error(`cctp_${input.preview.kind}_prepare_not_allowed:${row.status}`);
 }
 
+export async function refreshCctpEvmPreview(input: {
+  userId: string;
+  transferId: string;
+  preview: CctpEvmPreview;
+}, sql: CctpSqlClient = client()) {
+  const status = `${input.preview.kind}_prepared`;
+  const hashColumn = input.preview.kind === "approve"
+    ? "approve_tx_hash"
+    : "burn_tx_hash";
+  const result = await sql.query<CctpTransferRow>(`UPDATE agent_cctp_transfers
+    SET evm_preview=$1::jsonb,error=NULL,updated_at=now()
+    WHERE id=$2 AND user_id=$3 AND status=$4 AND ${hashColumn} IS NULL
+    RETURNING *`, [
+    JSON.stringify(input.preview),
+    input.transferId,
+    input.userId,
+    status,
+  ]);
+  if (result.rows[0]) return result.rows[0];
+  const row = await findCctpTransfer(input.userId, input.transferId, sql);
+  if (row.status !== status) {
+    throw new Error(`cctp_${input.preview.kind}_refresh_not_allowed:${row.status}`);
+  }
+  if (row[hashColumn]) {
+    throw new Error(`cctp_${input.preview.kind}_refresh_after_broadcast_rejected`);
+  }
+  throw new Error(`cctp_${input.preview.kind}_refresh_failed`);
+}
+
 export async function bindCctpEvmHash(input: {
   userId: string;
   transferId: string;
@@ -282,22 +318,33 @@ export async function saveCctpMintPreview(input: {
   throw new Error(`cctp_mint_prepare_not_allowed:${row.status}`);
 }
 
-export async function claimCctpMint(input: {
+export async function stageCctpMintSubmission(input: {
   userId: string;
   transferId: string;
+  signedXdr: string;
+  expectedHash: string;
 }, sql: CctpSqlClient = client()) {
   const result = await sql.query<CctpTransferRow>(`UPDATE agent_cctp_transfers
-    SET status='mint_submitted',updated_at=now()
-    WHERE id=$1 AND user_id=$2 AND status='mint_prepared' RETURNING *`, [
-    input.transferId, input.userId,
+    SET mint_signed_xdr=$1,mint_expected_hash=$2,status='mint_submitted',updated_at=now()
+    WHERE id=$3 AND user_id=$4 AND status='mint_prepared'
+      AND mint_signed_xdr IS NULL AND mint_expected_hash IS NULL
+    RETURNING *`, [
+    input.signedXdr, input.expectedHash, input.transferId, input.userId,
   ]);
   if (result.rows[0]) return result.rows[0];
   const row = await findCctpTransfer(input.userId, input.transferId, sql);
-  if (row.status === "mint_submitted") {
-    throw new Error("cctp_mint_submission_in_progress");
+  if (
+    row.status === "mint_submitted" &&
+    row.mint_signed_xdr === input.signedXdr &&
+    row.mint_expected_hash === input.expectedHash
+  ) {
+    return row;
   }
   if (row.status === "completed") return row;
-  throw new Error(`cctp_mint_not_allowed:${row.status}`);
+  if (row.status === "mint_submitted") {
+    throw new Error("cctp_mint_payload_replacement_rejected");
+  }
+  throw new Error(`cctp_mint_stage_not_allowed:${row.status}`);
 }
 
 export async function completeCctpMint(input: {

@@ -117,6 +117,24 @@ test("CCTP execution API is authenticated, capped and confirmation-scoped", asyn
   assert.doesNotMatch(source, /privateKey|secretKey|process\.env.*KEY/i);
 });
 
+test("CCTP execution resumes submitted hashes instead of requesting a new signature", async () => {
+  const route = await readFile(
+    new URL("../app/api/agent/bridge/cctp/execute/route.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(route, /case "approve_submitted": return row\.approve_tx_hash \? "verify_approve"/);
+  assert.match(route, /case "burn_submitted": return row\.burn_tx_hash \? "verify_burn"/);
+  assert.match(
+    route,
+    /prepared\.row\.status === "draft" \|\|\s*prepared\.row\.status === "approve_confirmed"/,
+  );
+  assert.match(route, /case "mint_submitted": return "mint"/);
+  assert.match(route, /stageCctpMintSubmission/);
+  assert.doesNotMatch(route, /claimCctpMint/);
+  assert.match(route, /action: z\.literal\("refresh_evm"\)/);
+  assert.match(route, /refreshCctpEvmPreview/);
+});
+
 test("CCTP client persists a broadcast hash before server verification", async () => {
   const source = await readFile(
     new URL("../app/agent/cctp-bridge-action.tsx", import.meta.url),
@@ -125,8 +143,11 @@ test("CCTP client persists a broadcast hash before server verification", async (
   assert.match(source, /useWallets/);
   assert.match(source, /useSignRawHash/);
   assert.match(source, /eth_sendTransaction/);
+  assert.match(source, /window\.localStorage\.setItem\(storageKey/);
+  assert.match(source, /window\.localStorage\.removeItem\(storageKey/);
+  assert.match(source, /localMatchesServer/);
   assert.ok(
-    source.indexOf("setSubmitted(submittedAction)") <
+    source.indexOf("window.localStorage.setItem(storageKey") <
       source.indexOf("await recordEvm(submittedAction.kind"),
   );
   assert.doesNotMatch(source, /setInterval|privateKey|secretKey/i);
@@ -143,4 +164,34 @@ test("CCTP durable store rejects replacement hashes and quarantines ambiguity", 
   assert.match(source, /mint_tx_hash text UNIQUE/);
   assert.match(source, /hash_replacement_rejected/);
   assert.match(source, /reconciliation_required/);
+});
+
+test("CCTP Stellar mint stores one signed payload and checks chain before replay", async () => {
+  const store = await readFile(
+    new URL("../app/cctp/store.ts", import.meta.url),
+    "utf8",
+  );
+  const stellar = await readFile(
+    new URL("../app/cctp/stellar.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(store, /mint_signed_xdr text/);
+  assert.match(store, /mint_expected_hash text/);
+  assert.match(store, /cctp_mint_payload_replacement_rejected/);
+  assert.ok(stellar.indexOf("getTransaction") < stellar.indexOf("sendTransaction"));
+  assert.match(stellar, /cctp_mint_signed_xdr_hash_mismatch/);
+});
+
+test("expired EVM previews refresh only before a hash is broadcast", async () => {
+  const store = await readFile(
+    new URL("../app/cctp/store.ts", import.meta.url),
+    "utf8",
+  );
+  const client = await readFile(
+    new URL("../app/agent/cctp-bridge-action.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(store, /refresh_after_broadcast_rejected/);
+  assert.match(store, /AND \$\{hashColumn\} IS NULL/);
+  assert.match(client, /action: "refresh_evm"/);
 });

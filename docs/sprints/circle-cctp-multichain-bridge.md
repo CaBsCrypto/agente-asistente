@@ -71,6 +71,15 @@ Submitted hashes are stored before receipt verification. A timeout or
 ambiguous response remains resumable or moves to `reconciliation_required`;
 the server does not silently broadcast a replacement.
 
+Recovery is durable across page reloads:
+
+- The EVM hash is written locally immediately after Privy broadcasts it and
+  is reconciled with the server before any new signature can be requested.
+- Submitted approve and burn hashes are verified again, never replaced.
+- An expired EVM preview can be regenerated only when no hash was broadcast.
+- The signed Stellar XDR and deterministic hash are stored before submission.
+  A retry checks Stellar first and can only resubmit that exact payload.
+
 The local UI exposes this as **Start bridge with confirmations** after the
 readiness checks pass. Implementation and automated acceptance tests are
 complete; a real Privy Fuji-to-Stellar run remains the final proof.
