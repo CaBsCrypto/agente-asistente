@@ -52,11 +52,23 @@ Demo only: no wallet signatures, no funds moved, 100 USDC demo cap.
 | --- | --- | --- |
 | `search_offers` | Search public agent-ready offers | No |
 | `get_offer` | Read an offer | No |
-| `create_intent` | Prepare an intent (idempotent by `idempotencyKey`) | Prepare-only |
-| `evaluate_policy` | Apply expiry / network / demo spend limit | No |
+| `create_intent` | Prepare an intent (idempotent by `actorId` + `idempotencyKey`) | Prepare-only |
+| `evaluate_policy` | Apply expiry / network / demo spend limit | Yes — sets `policy_approved` or `rejected`, and refuses once the intent is authorized, executed or rejected |
 | `demo_authorize_intent` | Demo confirmation (`explicitUserConfirmation: true`) | Demo token |
 | `execute_authorized_intent` | Execute the authorized demo intent (idempotent receipt) | Yes (demo) |
 | `get_receipt` | Fetch execution evidence | No |
+
+Every tool except `search_offers` and `get_offer` requires `actorId`. The sandbox has no
+authenticated principal, so the caller-asserted `actorId` is the only boundary between two
+callers: intents, policy decisions, authorizations and receipts are all scoped to it, and a
+caller who knows another actor's `intentId` gets `intent_not_found`. The value is never
+persisted verbatim — it is hashed to `sandbox:<24 hex>` before it reaches the database, so a
+caller cannot write a real `did:privy:…` string into `audit_events.actor_id`. The same
+`actorId` requirement applies to every `POST /api/commerce` action.
+
+Errors are returned as a fixed set of codes (`app/mcp/respond.ts`); anything unrecognised
+becomes `internal_error` and is logged server-side only. Setting `MCP_SANDBOX_ENABLED=false`
+takes the sandbox offline without a deploy.
 
 ### `/api/mcp/agent` — personal agent (`agent-assistant-personal`)
 Privy bearer → scopes `agent:read`, `agent:chat`; subject `user`. **Payment signing is never exposed.**

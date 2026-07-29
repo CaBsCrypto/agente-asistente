@@ -71,6 +71,13 @@ function makeKey() {
   return `demo-${crypto.randomUUID()}`;
 }
 
+// One actor per browser session. The demo is public and unauthenticated, so a
+// shared constant actor would put every simultaneous visitor inside the same
+// scope and let each of them read the others' intents.
+function makeActor() {
+  return `demo-actor-${crypto.randomUUID()}`;
+}
+
 function pretty(value: string) {
   return value.replaceAll("_", " ").replaceAll("-", " ");
 }
@@ -86,6 +93,7 @@ export default function ActionConsole() {
   const [error, setError] = useState("");
   const [persistence, setPersistence] = useState("checking");
   const [idempotencyKey, setIdempotencyKey] = useState(makeKey);
+  const [actorId] = useState(makeActor);
 
   useEffect(() => {
     fetch("/api/commerce")
@@ -118,7 +126,7 @@ export default function ActionConsole() {
       const response = await fetch("/api/commerce", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ actorId, ...payload }),
       });
       const result = (await response.json()) as T & { error?: string };
       if (!response.ok || result.error) throw new Error(result.error || "request_failed");
@@ -137,7 +145,6 @@ export default function ActionConsole() {
     const result = await call<{ intent: Intent; replayed: boolean; persistence: string }>({
       action: "create_intent",
       offerId: selected.id,
-      actorId: "public-product-demo",
       idempotencyKey,
     });
     if (!result) return;

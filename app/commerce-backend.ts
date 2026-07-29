@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import {
   commerce,
+  FINAL_STATUSES,
   offers,
   publicIntent,
   type Intent,
@@ -32,12 +33,14 @@ async function resolveOffer(id: string): Promise<Offer> {
   throw new Error("offer_not_found");
 }
 
-const toIntent = async (id: string): Promise<Intent> => {
+// Scoped by actorId, always. An unscoped lookup let any caller who learned an
+// intent id read, authorize and execute an intent belonging to someone else.
+const toIntent = async (id: string, actorId: string): Promise<Intent> => {
   const db = getDb();
   const [row] = await db
     .select()
     .from(commerceIntents)
-    .where(eq(commerceIntents.id, id));
+    .where(and(eq(commerceIntents.id, id), eq(commerceIntents.actorId, actorId)));
   if (!row) throw new Error("intent_not_found");
   const [policy] = await db
     .select()
@@ -148,27 +151,42 @@ export const backend = {
         idempotencyKey: input.idempotencyKey,
         expiresAt: new Date(now + 900000),
       })
-      .onConflictDoNothing({ target: commerceIntents.idempotencyKey })
+      .onConflictDoNothing({
+        target: [commerceIntents.actorId, commerceIntents.idempotencyKey],
+      })
       .returning({ id: commerceIntents.id });
 
     if (!inserted.length) {
+      // Re-select under the caller's own actor. If nothing comes back, the key
+      // belongs to a different actor under the old global unique index, and the
+      // caller must not learn anything about that intent.
       const [existing] = await db
         .select({ id: commerceIntents.id })
         .from(commerceIntents)
-        .where(eq(commerceIntents.idempotencyKey, input.idempotencyKey));
-      return { intent: await toIntent(existing.id), replayed: true };
+        .where(
+          and(
+            eq(commerceIntents.actorId, input.actorId),
+            eq(commerceIntents.idempotencyKey, input.idempotencyKey),
+          ),
+        );
+      if (!existing) throw new Error("intent_conflict");
+      return { intent: await toIntent(existing.id, input.actorId), replayed: true };
     }
 
     await audit(id, "intent.created", input.actorId, {
       offerId: offer.id,
     });
-    return { intent: await toIntent(id), replayed: false };
+    return { intent: await toIntent(id, input.actorId), replayed: false };
   },
 
-  async evaluatePolicy(id: string) {
-    if (!hasDatabase()) return commerce.evaluatePolicy(id);
+  async evaluatePolicy(id: string, actorId: string) {
+    if (!hasDatabase()) return commerce.evaluatePolicy(id, actorId);
     const db = getDb();
-    const intent = await toIntent(id);
+    const intent = await toIntent(id, actorId);
+    // Monotonic: re-evaluating must never walk an intent back from authorized,
+    // executed or rejected. It used to reset an executed intent to
+    // policy_approved, which contradicts the exactly-once guarantee.
+    if (FINAL_STATUSES.has(intent.status)) throw new Error("intent_already_final");
     const reasons: string[] = [];
     if (Date.parse(intent.expiresAt) <= Date.now()) {
       reasons.push("intent_expired");
@@ -199,19 +217,19 @@ export const backend = {
         status: allowed ? "policy_approved" : "rejected",
         updatedAt: new Date(),
       })
-      .where(eq(commerceIntents.id, id));
+      .where(and(eq(commerceIntents.id, id), eq(commerceIntents.actorId, actorId)));
     await audit(id, "policy.evaluated", intent.actorId, {
       allowed,
       reasons: finalReasons,
     });
-    return toIntent(id);
+    return toIntent(id, actorId);
   },
 
-  async authorize(id: string, confirmed: boolean) {
-    if (!hasDatabase()) return commerce.authorize(id, confirmed);
+  async authorize(id: string, actorId: string, confirmed: boolean) {
+    if (!hasDatabase()) return commerce.authorize(id, actorId, confirmed);
     if (!confirmed) throw new Error("explicit_confirmation_required");
     const db = getDb();
-    const intent = await toIntent(id);
+    const intent = await toIntent(id, actorId);
     if (!intent.policy?.allowed || intent.status !== "policy_approved") {
       throw new Error("policy_approval_required");
     }
@@ -238,15 +256,15 @@ export const backend = {
     await db
       .update(commerceIntents)
       .set({ status: "authorized", updatedAt: new Date() })
-      .where(eq(commerceIntents.id, id));
+      .where(and(eq(commerceIntents.id, id), eq(commerceIntents.actorId, actorId)));
     await audit(id, "intent.authorized", intent.actorId);
-    return { intent: await toIntent(id), token };
+    return { intent: await toIntent(id, actorId), token };
   },
 
-  async execute(id: string, token: string) {
-    if (!hasDatabase()) return commerce.execute(id, token);
+  async execute(id: string, actorId: string, token: string) {
+    if (!hasDatabase()) return commerce.execute(id, actorId, token);
     const db = getDb();
-    const intent = await toIntent(id);
+    const intent = await toIntent(id, actorId);
     const [authorization] = await db
       .select()
       .from(authorizations)
@@ -293,19 +311,19 @@ export const backend = {
     await db
       .update(commerceIntents)
       .set({ status: "executed", updatedAt: new Date() })
-      .where(eq(commerceIntents.id, id));
+      .where(and(eq(commerceIntents.id, id), eq(commerceIntents.actorId, actorId)));
     if (inserted.length) {
       await audit(id, "execution.simulated", intent.actorId, {
         transactionRef: receipt.transactionRef,
       });
     }
-    const latest = await toIntent(id);
+    const latest = await toIntent(id, actorId);
     return { ...latest.receipt!, replayed: !inserted.length };
   },
 
-  async getReceipt(id: string) {
-    if (!hasDatabase()) return commerce.getReceipt(id);
-    return (await toIntent(id)).receipt ?? null;
+  async getReceipt(id: string, actorId: string) {
+    if (!hasDatabase()) return commerce.getReceipt(id, actorId);
+    return (await toIntent(id, actorId)).receipt ?? null;
   },
 };
 
