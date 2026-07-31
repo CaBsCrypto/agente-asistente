@@ -92,6 +92,18 @@ export const connections: Connection[] = [
     updated: "Jul 17, 2026",
   },
   {
+    name: "Circle CCTP V2",
+    focus: "Native USDC multichain bridge",
+    category: "Cross-chain infrastructure",
+    stage: "Ready to test",
+    priority: "P0",
+    route: "Privy EVM wallet -> CCTP burn on Fuji -> Circle attestation -> Privy Stellar mint_and_forward",
+    proof: "Authenticated readiness, live Sandbox fee lookup and a noncustodial Fuji-to-Stellar plan are implemented. Execution remains deliberately disabled.",
+    nextAction: "Fund both Testnet wallets, activate the official Stellar Circle USDC trustline and implement the two transaction-specific Privy approvals.",
+    href: "https://developers.circle.com/cctp/quickstarts/transfer-usdc-stellar-arc",
+    updated: "Jul 29, 2026",
+  },
+  {
     name: "MPP Router",
     focus: "Paid API discovery",
     category: "Agent payments",

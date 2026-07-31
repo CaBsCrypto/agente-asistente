@@ -165,7 +165,7 @@ async function userWallet(userId: string) {
   const rows = await getDb()
     .select({ id: agentWallets.id, address: agentWallets.address, network: agentWallets.network })
     .from(agentWallets)
-    .where(eq(agentWallets.userId, userId))
+    .where(and(eq(agentWallets.userId, userId), eq(agentWallets.chainType, "stellar")))
     .limit(1);
   if (!rows[0] || rows[0].network !== "stellar:testnet") {
     throw new Error("stellar_wallet_not_ready");

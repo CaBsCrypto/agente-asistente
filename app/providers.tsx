@@ -1,6 +1,7 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
+import { avalancheFuji, baseSepolia } from "viem/chains";
 
 export default function Providers({
   children,
@@ -19,6 +20,8 @@ export default function Providers({
       clientId={clientId || undefined}
       config={{
         loginMethods: ["email", "google", "passkey"],
+        defaultChain: avalancheFuji,
+        supportedChains: [avalancheFuji, baseSepolia],
         appearance: {
           theme: "light",
           accentColor: "#ff5b3a",

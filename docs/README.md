@@ -122,3 +122,5 @@ Passing one stage never implies that a later stage works.
 - Never call settlement proof fulfillment proof.
 - Keep secrets, real tokens and private user data out of documentation.
 - Run the repository validation commands before publishing code-related claims.
+
+- [Avalanche x402 Merchant SDK](developer/avalanche-x402-merchant-sdk.md)

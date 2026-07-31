@@ -5,6 +5,7 @@
 import { usePrivy, useUser } from "@privy-io/react-auth";
 import AgentChat from "./agent-chat";
 import AgentMemoryVault from "./agent-memory-vault";
+import WalletCenter from "./wallet-center";
 import { useEffect, useRef, useState } from "react";
 import { type Locale, useLocale } from "../language-toggle";
 
@@ -338,6 +339,15 @@ function PrivyAgent({
           getAccessToken={getAccessToken}
         />
         <AgentMemoryVault getAccessToken={getAccessToken} />
+
+        <WalletCenter
+          locale={locale}
+          stellarAddress={result.wallet.address}
+          stellarBalance={
+            result.account.balances.find((balance) => balance.asset === "XLM")?.balance ?? "0"
+          }
+          getAccessToken={getAccessToken}
+        />
 
 
         <div className="agent-wallet-grid">

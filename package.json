@@ -11,6 +11,7 @@
         "start": "next start",
         "test": "tsx --test tests/*.test.ts",
         "x402:signing:doctor": "tsx --env-file=.env.local scripts/x402-signing-doctor.ts",
+        "x402:avalanche:doctor": "tsx scripts/avalanche-x402-doctor.ts",
         "x402:replay:confirmed": "tsx scripts/x402-replay-proof.ts confirmed",
         "x402:replay:execute": "tsx scripts/x402-replay-proof.ts execute",
         "acceptance:doctor": "tsx scripts/acceptance.ts doctor",
@@ -37,7 +38,8 @@
         "graph:doctor": "graphify hook status",
         "graph:rebuild": "graphify extract . --code-only --force",
         "graph:mcp:smoke": "tsx scripts/graphify-mcp-smoke.ts",
-        "langchain:smoke": "tsx --env-file=.env.local scripts/langchain-planner-smoke.ts"
+        "langchain:smoke": "tsx --env-file=.env.local scripts/langchain-planner-smoke.ts",
+        "runtime:doctor": "node scripts/runtime-doctor.mjs"
     },
     "dependencies": {
         "@langchain/langgraph": "^1.4.8",
@@ -59,6 +61,7 @@
         "react": "19.2.6",
         "react-dom": "19.2.6",
         "react-loading-skeleton": "3.5.0",
+        "viem": "^2.52.0",
         "zod": "^4.4.3"
     },
     "devDependencies": {
@@ -80,5 +83,6 @@
         "vite": "8.0.13",
         "wrangler": "4.92.0"
     },
-    "type": "module"
+    "type": "module",
+    "packageManager": "npm@11.6.1"
 }

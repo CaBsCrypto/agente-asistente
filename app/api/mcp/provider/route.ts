@@ -111,7 +111,7 @@ function getHandler() {
             ]),
             amount: z.number().nonnegative().max(1_000_000),
             currency: z.literal("USDC"),
-            network: z.enum(["stellar-testnet", "base-sepolia", "offchain-demo"]),
+            network: z.enum(["stellar-testnet", "base-sepolia", "avalanche-fuji", "offchain-demo"]),
             metadata: z.record(z.string(), z.unknown()).optional(),
           },
           annotations: {
