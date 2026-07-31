@@ -263,6 +263,7 @@ export default function AvalancheX402Action({
             <div><dt>{t.from}</dt><dd>{prepared.payment.walletAddress}</dd></div>
             <div><dt>{t.to}</dt><dd>{prepared.payment.payTo}</dd></div>
             <div><dt>{t.amount}</dt><dd>{prepared.payment.amountDisplay} USDC</dd></div>
+            <div><dt>x402</dt><dd>0xGasless &middot; EIP-3009 &middot; sponsored gas</dd></div>
             <div><dt>{t.resource}</dt><dd>{prepared.payment.resourceUrl}</dd></div>
             <div><dt>{t.expires}</dt><dd>{prepared.payment.expiresAt}</dd></div>
           </dl>

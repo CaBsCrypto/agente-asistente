@@ -81,6 +81,10 @@ export async function handleCctpBridgeIntent(input: {
         ? blockerNames.stellar_circle_usdc_trustline_required[language]
         : null,
     ].filter((value): value is string => Boolean(value));
+    const needsFujiGas = Boolean(
+      readiness.sourceAddress &&
+      readiness.sourceGasReady !== true,
+    );
     const copy = {
       en: {
         title: "**Circle CCTP V2 bridge readiness · Fuji → Stellar Testnet**",
@@ -125,6 +129,17 @@ export async function handleCctpBridgeIntent(input: {
       ].join("\n\n"),
       connection: { name: "Circle CCTP V2", stage: "Read-only connected", priority: "P0" },
       actions: [
+        ...(needsFujiGas ? [{
+          label: language === "es"
+            ? "Resolver gas Fuji en Carmelita"
+            : language === "pt"
+              ? "Resolver gas Fuji na Carmelita"
+              : "Resolve Fuji gas in Carmelita",
+          walletAction: {
+            type: "avalanche.fund" as const,
+            network: "avalanche:fuji" as const,
+          },
+        }] : []),
         { label: copy.plan, message: copy.message },
         { label: "Circle CCTP docs", href: docs },
       ],
@@ -146,6 +161,7 @@ export async function handleCctpBridgeIntent(input: {
   const canStart = plan.blockers.every(
     (blocker) => blocker === "stellar_circle_usdc_trustline_required",
   );
+  const needsFujiGas = plan.blockers.includes("fuji_avax_required");
   const standardFee = fees?.options.find(
     (option) => option.finalityThreshold >= 2000,
   )?.minimumFeeUsdc;
@@ -156,7 +172,7 @@ export async function handleCctpBridgeIntent(input: {
       stages: "Controlled stages",
       pending: "Blockers before execution",
       ready: "The plan is ready for the future transaction builder.",
-      boundary: "No transaction was prepared and no funds moved. Execution remains disabled until separate source and destination Privy approvals are implemented.",
+      boundary: "No transaction was prepared and no funds moved. Execution starts only after you review the plan and Privy separately confirms each source and destination action.",
       review: "Check readiness",
     },
     es: {
@@ -165,7 +181,7 @@ export async function handleCctpBridgeIntent(input: {
       stages: "Etapas controladas",
       pending: "Bloqueos antes de ejecutar",
       ready: "El plan está listo para el futuro constructor de transacciones.",
-      boundary: "No se preparó ninguna transacción ni se movieron fondos. La ejecución sigue deshabilitada hasta implementar aprobaciones Privy separadas en origen y destino.",
+      boundary: "No se preparó ninguna transacción ni se movieron fondos. La ejecución comienza solo después de revisar el plan y confirmar por separado en Privy cada acción de origen y destino.",
       review: "Revisar preparación",
     },
     pt: {
@@ -174,7 +190,7 @@ export async function handleCctpBridgeIntent(input: {
       stages: "Etapas controladas",
       pending: "Bloqueios antes da execução",
       ready: "O plano está pronto para o futuro construtor de transações.",
-      boundary: "Nenhuma transação foi preparada e nenhum saldo foi movimentado. A execução continua desabilitada até implementar aprovações Privy separadas na origem e no destino.",
+      boundary: "Nenhuma transação foi preparada e nenhum saldo foi movimentado. A execução começa somente após revisar o plano e confirmar separadamente na Privy cada ação de origem e destino.",
       review: "Verificar preparação",
     },
   }[language];
@@ -195,6 +211,17 @@ export async function handleCctpBridgeIntent(input: {
       priority: "P0",
     },
     actions: [
+      ...(needsFujiGas ? [{
+        label: language === "es"
+          ? "Resolver gas Fuji en Carmelita"
+          : language === "pt"
+            ? "Resolver gas Fuji na Carmelita"
+            : "Resolve Fuji gas in Carmelita",
+        walletAction: {
+          type: "avalanche.fund" as const,
+          network: "avalanche:fuji" as const,
+        },
+      }] : []),
       ...(canStart ? [{
         label: language === "es"
           ? "Iniciar bridge con confirmaciones"

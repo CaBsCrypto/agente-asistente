@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyPrivyAccessToken } from "@/app/privy-stellar";
 import { getAvalancheX402LiveConfig } from "@/app/x402-avalanche/config";
+import { discoverAvalancheX402 } from "@/app/x402-avalanche/discovery";
 import { freezeAvalancheX402Payment, buildTransferWithAuthorizationTypedData } from "@/app/x402-avalanche/payment";
 import { buildAvalancheX402Requirement, createAvalanchePaymentRequired } from "@/app/x402-avalanche/protocol";
 import { avalancheReportBodyHash, avalancheReportUrl } from "@/app/x402-avalanche/resource";
@@ -89,6 +90,13 @@ export async function POST(request: Request) {
     if (!config.enabled || !config.payTo) {
       return NextResponse.json({ error: config.reason }, { status: 503 });
     }
+    const facilitator = await discoverAvalancheX402();
+    if (!facilitator.ready || !facilitator.evidence) {
+      return NextResponse.json({
+        error: "avalanche_x402_facilitator_not_ready",
+        blockers: facilitator.blockers,
+      }, { status: 503 });
+    }
     const wallet = await avalancheWallet(userId);
     const resourceUrl = avalancheReportUrl(new URL(request.url).origin);
     const requirement = buildAvalancheX402Requirement(config.payTo);
@@ -120,6 +128,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({
       replayed: prepared.replayed,
+      facilitator: facilitator.evidence,
       requiresExplicitApproval: true,
       payment: publicPayment(prepared.row),
       paymentRequired: challenge.paymentRequired,

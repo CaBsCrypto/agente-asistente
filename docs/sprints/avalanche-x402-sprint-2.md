@@ -1,6 +1,6 @@
 # Sprint 2: Avalanche x402 on Fuji
 
-Status: implementation in progress  
+Status: implemented; authenticated regression acceptance pending
 Branch: `feat/multichain-wallet-foundation`  
 Runtime target: localhost and Avalanche Fuji only
 
@@ -14,9 +14,10 @@ The controlled resource is `POST /api/demo/avalanche-report`, priced at exactly
 `0.01 USDC` (`10000` atomic units, 6 decimals) on `eip155:43113`. Delivery is
 deterministic JSON with a stable delivery ID and body hash.
 
-This sprint does not send funds. Real settlement stays fail-closed until a human
-chooses and configures `AVALANCHE_X402_PAY_TO`, then explicitly approves a live
-test.
+Settlement stays fail-closed until a human configures
+`AVALANCHE_X402_PAY_TO` and explicitly approves the exact Privy authorization.
+The facilitator pays gas; the user's wallet pays only the authorized USDC
+amount.
 
 ## Fixed decisions
 
@@ -24,7 +25,7 @@ test.
 - Network: Avalanche Fuji C-Chain (`eip155:43113`).
 - Asset: Fuji USDC `0x5425890298aed601595a70AB815c96711a31Bc65`.
 - Price: `0.01 USDC`, no dynamic pricing.
-- Facilitator: UV DAO behind an internal interface; tests use deterministic mocks.
+- Facilitator: public 0xGasless adapter; tests use deterministic mocks.
 - Wallet: the authenticated user's Privy EVM wallet.
 - Consent: one visible Privy approval per payment.
 - Resource: local controlled report endpoint.
@@ -142,8 +143,8 @@ Terminal alternatives:
 ## Non-goals
 
 - Selecting or funding a production receiver.
-- Live facilitator settlement.
+- Automatic settlement without explicit user authorization.
 - Mainnet support.
-- Gas sponsorship.
+- Custody of user or facilitator keys.
 - Production deployment.
 - Refactoring the existing Stellar x402 implementation.

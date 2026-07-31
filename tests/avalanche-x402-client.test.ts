@@ -28,6 +28,23 @@ function preparedFixture(): PreparedAvalancheX402 {
   return {
     replayed: false,
     requiresExplicitApproval: true,
+    facilitator: {
+      provider: "0xgasless",
+      discoveryEndpoint: "/tokens",
+      protocolVersion: 2,
+      scheme: "exact",
+      network: AVALANCHE_X402_CLIENT.network,
+      chainId: AVALANCHE_X402_CLIENT.chainId,
+      tokenAddress: AVALANCHE_X402_CLIENT.asset,
+      tokenDecimals: 6,
+      settlement: "eip3009",
+      approveRequired: false,
+      gasSponsored: true,
+      eip712Domain: {
+        name: "USD Coin",
+        version: "2",
+      },
+    },
     payment: {
       id: "avax_x402_fixture_payment",
       walletAddress: WALLET,
@@ -102,6 +119,8 @@ test("accepts only the exact prepared Fuji payment requiring explicit approval",
   assert.equal(prepared.requiresExplicitApproval, true);
   assert.equal(prepared.payment.network, "eip155:43113");
   assert.equal(prepared.payment.amountDisplay, "0.01");
+  assert.equal(prepared.facilitator.settlement, "eip3009");
+  assert.equal(prepared.facilitator.gasSponsored, true);
 });
 
 test("rejects wrong origin, chain, token, amount, payTo or resource binding", () => {
@@ -115,6 +134,8 @@ test("rejects wrong origin, chain, token, amount, payTo or resource binding", ()
     ["resource", mutated((value) => {
       value.paymentRequired.resource.url = `${ORIGIN}/api/demo/other-report`;
     })],
+    ["facilitator", mutated((value) => { value.facilitator.provider = "other" as "0xgasless"; })],
+    ["settlement", mutated((value) => { value.facilitator.settlement = "a402" as "eip3009"; })],
   ];
 
   for (const [label, prepared] of cases) {

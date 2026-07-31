@@ -15,6 +15,23 @@ export const AVALANCHE_X402_CLIENT = {
 export type PreparedAvalancheX402 = {
   replayed: boolean;
   requiresExplicitApproval: true;
+  facilitator: {
+    provider: "0xgasless";
+    discoveryEndpoint: "/tokens";
+    protocolVersion: 2;
+    scheme: "exact";
+    network: "eip155:43113";
+    chainId: 43113;
+    tokenAddress: string;
+    tokenDecimals: 6;
+    settlement: "eip3009";
+    approveRequired: false;
+    gasSponsored: true;
+    eip712Domain: {
+      name: "USD Coin";
+      version: "2";
+    };
+  };
   payment: {
     id: string;
     walletAddress: string;
@@ -66,6 +83,19 @@ export function validatePreparedAvalancheX402(
   const payTo = payment?.payTo?.toLowerCase();
   if (
     prepared?.requiresExplicitApproval !== true ||
+    prepared.facilitator?.provider !== "0xgasless" ||
+    prepared.facilitator.discoveryEndpoint !== "/tokens" ||
+    prepared.facilitator.protocolVersion !== 2 ||
+    prepared.facilitator.scheme !== "exact" ||
+    prepared.facilitator.network !== AVALANCHE_X402_CLIENT.network ||
+    prepared.facilitator.chainId !== AVALANCHE_X402_CLIENT.chainId ||
+    prepared.facilitator.tokenAddress?.toLowerCase() !== AVALANCHE_X402_CLIENT.asset.toLowerCase() ||
+    prepared.facilitator.tokenDecimals !== 6 ||
+    prepared.facilitator.settlement !== "eip3009" ||
+    prepared.facilitator.approveRequired !== false ||
+    prepared.facilitator.gasSponsored !== true ||
+    prepared.facilitator.eip712Domain?.name !== "USD Coin" ||
+    prepared.facilitator.eip712Domain.version !== "2" ||
     prepared.paymentRequired?.x402Version !== 2 ||
     prepared.paymentRequired.accepts.length !== 1 ||
     resource.origin !== expectedOrigin ||

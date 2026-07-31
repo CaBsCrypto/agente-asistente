@@ -419,3 +419,16 @@
   .integration-demand-list>header{display:none}
   .integration-demand-list>article{grid-template-columns:1fr;padding:22px;gap:11px}
 }
+
+/* In-chat Avalanche Fuji funding center */
+.fuji-funding-backdrop{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:20px;background:rgba(16,46,37,.58);backdrop-filter:blur(7px)}
+.fuji-funding-modal{width:min(680px,100%);max-height:min(760px,calc(100vh - 32px));overflow:auto;padding:25px;border:1px solid #d3c7b6;border-radius:24px;background:#fffaf0;box-shadow:0 24px 80px rgba(9,39,30,.32),9px 9px 0 var(--amber)}
+.fuji-funding-modal>header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding-bottom:17px;border-bottom:1px solid var(--line)}.fuji-funding-modal>header span{color:var(--coral-dark);font:850 9px "SFMono-Regular",Consolas,monospace;letter-spacing:.09em}.fuji-funding-modal>header h3{margin:8px 0 0;font-size:27px;letter-spacing:-.045em}
+.fuji-funding-modal>p{color:var(--muted);font-size:13px;line-height:1.55}.fuji-funding-close{border:1px solid var(--line);border-radius:999px;padding:8px 11px;background:transparent;color:var(--muted);font-weight:800;cursor:pointer}
+.fuji-funding-status{display:grid;grid-template-columns:1.45fr .75fr .75fr;gap:10px;margin:20px 0}.fuji-funding-status article{min-width:0;padding:15px;border:1px solid var(--line);border-radius:15px;background:white;display:grid;gap:7px}
+.fuji-funding-status span,.fuji-funding-status small{color:var(--muted);font-size:9px;font-weight:750}.fuji-funding-status strong{font-size:15px}.fuji-funding-status code{overflow:hidden;text-overflow:ellipsis;font-size:10px}.fuji-funding-status article button{justify-self:start;border:0;padding:0;background:transparent;color:var(--coral-dark);font-size:9px;font-weight:850;cursor:pointer}
+.fuji-funding-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.fuji-funding-actions>button{border:1px solid var(--forest);border-radius:999px;padding:11px 14px;background:transparent;color:var(--forest);font-size:10px;font-weight:850;cursor:pointer}
+.fuji-funding-actions>button.primary{grid-column:1/-1;border-color:var(--forest);background:var(--forest);color:white}.fuji-funding-actions>button:disabled{opacity:.42;cursor:not-allowed}.fuji-funding-actions>small{grid-column:1/-1;color:#7a5613;font-size:9px}
+.fuji-funding-receipt{display:block;margin-top:14px;padding:11px;border-radius:11px;background:var(--forest-soft);color:var(--forest);font:750 9px "SFMono-Regular",Consolas,monospace;text-decoration:none;overflow-wrap:anywhere}
+.fuji-funding-safety{margin-bottom:0;padding:10px 12px;border-radius:11px;background:#f3ead9}.fuji-funding-notice{margin:10px 0 0;padding:10px 12px;border-radius:11px;background:#fff0c7;color:#6f4e0d!important}
+@media(max-width:640px){.fuji-funding-backdrop{padding:8px;align-items:end}.fuji-funding-modal{max-height:88vh;padding:19px;border-radius:22px 22px 12px 12px;box-shadow:0 16px 54px rgba(9,39,30,.32)}.fuji-funding-status{grid-template-columns:1fr 1fr}.fuji-funding-status article:first-child{grid-column:1/-1}.fuji-funding-actions{grid-template-columns:1fr}.fuji-funding-actions>button.primary,.fuji-funding-actions>small{grid-column:auto}}

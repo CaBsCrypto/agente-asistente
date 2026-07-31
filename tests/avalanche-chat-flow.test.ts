@@ -175,6 +175,31 @@ test("client action is locked to preview nonce/value and does not enable sponsor
   assert.match(source, /walletClientType === "privy"/);
   assert.match(source, /method: "eth_chainId"/);
 });
+
+test("Fuji funding stays inside Carmelita and fails over to a secure popup", async () => {
+  const source = await readFile(
+    new URL("../app/agent/avalanche-chat-action.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /role="dialog"/);
+  assert.match(source, /fuji-funding-modal/);
+  assert.match(source, /\/api\/agent\/wallets\/avalanche\/fund/);
+  assert.match(source, /explicitUserConfirmation: true/);
+  assert.match(source, /carmelita-fuji-faucet/);
+  assert.match(source, /popup=yes,width=560,height=760/);
+  assert.match(source, /navigator\.clipboard\.writeText/);
+  assert.match(source, /automaticEnabled/);
+});
+
+test("CCTP gas blocker offers the in-chat Fuji funding action", async () => {
+  const source = await readFile(
+    new URL("../app/connectors/circle-cctp-chat.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /needsFujiGas/);
+  assert.match(source, /type: "avalanche\.fund"/);
+  assert.doesNotMatch(source, /Execution remains disabled until separate source and destination Privy approvals are implemented/);
+});
 test("submitted receipt retries re-query the same hash instead of returning stale evidence", async () => {
   const source = await readFile(
     new URL("../app/wallets/avalanche-transfer.ts", import.meta.url),

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { AVALANCHE_X402 } from "../app/x402-avalanche/config";
-import { validateAvalancheX402Supported } from "../app/x402-avalanche/discovery";
+import { discoverAvalancheX402, validateAvalancheX402Supported } from "../app/x402-avalanche/discovery";
 import { buildTransferWithAuthorizationTypedData, freezeAvalancheX402Payment } from "../app/x402-avalanche/payment";
 import { bindAvalancheX402Signature, signAvalancheX402WithPrivy } from "../app/x402-avalanche/privy";
 
@@ -15,11 +15,57 @@ function prepare(overrides: Partial<Parameters<typeof freezeAvalancheX402Payment
   return freezeAvalancheX402Payment({ requirement, resourceUrl: "https://merchant.example/report", method: "POST", bodyHash: "e".repeat(64), payer, nonce, nowSeconds: 1_800_000_000, ...overrides });
 }
 
-test("discovery requires exact Fuji v2 and verified USDC", () => {
-  const good = validateAvalancheX402Supported({ kinds: [{ x402Version: 2, scheme: "exact", network: "eip155:43113", extra: { tokens: [{ token: "usdc", address: AVALANCHE_X402.asset.address, decimals: 6 }] } }] });
+function gaslessTokens(overrides: Record<string, unknown> = {}) {
+  return {
+    service: "x402-facilitator",
+    chains: [{
+      network: "avalanche-fuji",
+      chainId: 43113,
+      isTestnet: true,
+      tokens: [{
+        symbol: "USDC",
+        address: AVALANCHE_X402.asset.address,
+        decimals: 6,
+        settlement: "eip3009",
+        approveRequired: false,
+        eip712Domain: { name: "USD Coin", version: "2" },
+        ...overrides,
+      }],
+    }],
+  };
+}
+
+test("discovery requires the live 0xGasless Fuji EIP-3009 contract", () => {
+  const good = validateAvalancheX402Supported(gaslessTokens());
   assert.equal(good.ready, true);
-  assert.equal(validateAvalancheX402Supported({ kinds: [] }).ready, false);
-  assert.equal(validateAvalancheX402Supported({ kinds: [{ x402Version: 2, scheme: "exact", network: "eip155:43114", extra: { tokens: [] } }] }).ready, false);
+  assert.equal(good.evidence?.provider, "0xgasless");
+  assert.equal(good.evidence?.gasSponsored, true);
+  assert.equal(good.evidence?.approveRequired, false);
+  assert.equal(good.evidence?.eip712Domain.name, "USD Coin");
+  assert.equal(validateAvalancheX402Supported({ service: "other", chains: [] }).ready, false);
+  assert.equal(validateAvalancheX402Supported(gaslessTokens({
+    settlement: "a402",
+    approveRequired: true,
+  })).ready, false);
+  assert.equal(validateAvalancheX402Supported(gaslessTokens({
+    eip712Domain: { name: "Fake USD", version: "2" },
+  })).ready, false);
+});
+
+test("runtime discovery calls /tokens and fails closed on an HTTP error", async () => {
+  const calls: string[] = [];
+  const ready = await discoverAvalancheX402(async (input) => {
+    calls.push(String(input));
+    return Response.json(gaslessTokens());
+  });
+  assert.equal(ready.ready, true);
+  assert.deepEqual(calls, ["https://x402.0xgasless.com/tokens"]);
+
+  const unavailable = await discoverAvalancheX402(async () =>
+    Response.json({ error: "maintenance" }, { status: 503 })
+  );
+  assert.equal(unavailable.ready, false);
+  assert.deepEqual(unavailable.blockers, ["facilitator_http_503"]);
 });
 
 test("freezes exact EIP-3009 authorization and stable payment identity", () => {

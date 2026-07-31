@@ -3,6 +3,11 @@ import { listPersistedUserWallets } from "@/app/multichain-account";
 import { verifyPrivyAccessToken } from "@/app/privy-stellar";
 import { diagnoseEvmWallet, getErc20Balance } from "@/app/wallets/evm-rpc";
 import { getWalletNetwork } from "@/app/wallets/networks";
+import {
+  FUJI_DISTRIBUTION_AMOUNT,
+  fujiClaimWindow,
+  getFujiDistributorConfig,
+} from "@/app/wallets/avalanche-policy";
 import { AVALANCHE_X402 } from "@/app/x402-avalanche/config";
 
 export const runtime = "nodejs";
@@ -32,6 +37,7 @@ export async function GET(request: Request) {
       );
     }
     const network = getWalletNetwork("avalanche:fuji");
+    const distributor = getFujiDistributorConfig();
     const [diagnostics, usdc] = await Promise.all([
       diagnoseEvmWallet(network, wallet.address),
       getErc20Balance(
@@ -50,6 +56,16 @@ export async function GET(request: Request) {
           balance: usdc.balance,
           contract: AVALANCHE_X402.asset.address,
         },
+      },
+      faucetUrl: "https://faucets.chain.link/fuji",
+      funding: {
+        automaticEnabled: distributor.enabled,
+        automaticReason: distributor.enabled ? null : distributor.reason,
+        amount: FUJI_DISTRIBUTION_AMOUNT,
+        claimWindow: fujiClaimWindow(),
+        primaryFaucetUrl: "https://faucets.chain.link/fuji",
+        officialFaucetUrl: "https://core.app/tools/testnet-faucet",
+        network: "avalanche:fuji",
       },
     }, {
       headers: { "Cache-Control": "no-store" },

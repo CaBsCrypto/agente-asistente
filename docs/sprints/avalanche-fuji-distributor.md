@@ -18,6 +18,18 @@ The raw Privy user ID is never sent. Carmelita derives a stable HMAC-SHA256 `cla
 
 Carmelita does not trust service JSON alone. It queries Fuji RPC and accepts success only when RPC chain and transaction chain are `43113`, hash matches, `to` is the user's wallet, native value is exactly `5,000,000,000,000,000 wei`, and receipt status is `0x1`. Pending/not-found returns a retryable error using the same idempotency key. Failed or mismatched transactions are rejected.
 
+## In-chat funding experience
+
+The agent now exposes a Testnet funding center as a modal inside Carmelita:
+
+1. The CCTP readiness report turns `fuji_avax_required` into a direct **Resolve Fuji gas in Carmelita** action.
+2. The modal reads the authenticated user's persisted Privy Fuji wallet and live AVAX/USDC balances.
+3. When the reviewed distributor is enabled, the user can explicitly request the fixed `0.005 AVAX` drip without leaving the chat.
+4. While the distributor is disabled, Carmelita keeps the bridge context open and launches Chainlink's Fuji faucet in a named, size-bounded browser popup. The user accepts the faucet's own terms and wallet connection there.
+5. **Check balance** re-reads Fuji RPC and shows when the bridge gas blocker is resolved.
+
+The external faucet cannot be safely embedded in an iframe: wallet providers, CSP and anti-clickjacking controls are expected to block or isolate it. The popup fallback never receives the user's Privy key, and Carmelita never accepts external terms on the user's behalf.
+
 ## Server-only variables
 
 Keep the feature disabled until an independently reviewed service exists:

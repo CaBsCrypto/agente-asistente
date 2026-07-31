@@ -1,62 +1,113 @@
 import { AVALANCHE_X402 } from "./config";
 
-type SupportedKind = {
-  x402Version?: unknown;
-  scheme?: unknown;
-  network?: unknown;
-  extra?: {
-    tokens?: {
-      token?: unknown;
-      address?: unknown;
-      decimals?: unknown;
-    }[];
+type GaslessToken = {
+  symbol?: unknown;
+  address?: unknown;
+  decimals?: unknown;
+  settlement?: unknown;
+  approveRequired?: unknown;
+  eip712Domain?: {
+    name?: unknown;
+    version?: unknown;
   };
+};
+
+type GaslessChain = {
+  network?: unknown;
+  chainId?: unknown;
+  isTestnet?: unknown;
+  tokens?: GaslessToken[];
+};
+
+type GaslessTokensResponse = {
+  service?: unknown;
+  chains?: GaslessChain[];
 };
 
 export type AvalancheX402Discovery = {
   ready: boolean;
   facilitatorUrl: string;
   evidence: {
+    provider: "0xgasless";
+    discoveryEndpoint: "/tokens";
     protocolVersion: 2;
     scheme: "exact";
     network: "eip155:43113";
+    chainId: 43113;
     tokenAddress: string;
     tokenDecimals: 6;
+    settlement: "eip3009";
+    approveRequired: false;
+    gasSponsored: true;
+    eip712Domain: {
+      name: "USD Coin";
+      version: "2";
+    };
   } | null;
   blockers: string[];
 };
 
 export function validateAvalancheX402Supported(payload: unknown): AvalancheX402Discovery {
-  const kinds = payload && typeof payload === "object" &&
-    Array.isArray((payload as { kinds?: unknown }).kinds)
-    ? (payload as { kinds: SupportedKind[] }).kinds
+  const response = payload && typeof payload === "object"
+    ? payload as GaslessTokensResponse
+    : {};
+  const chains = Array.isArray(response.chains)
+    ? response.chains
     : [];
-  const match = kinds.find((kind) =>
-    kind.x402Version === AVALANCHE_X402.protocolVersion &&
-    kind.scheme === AVALANCHE_X402.scheme &&
-    kind.network === AVALANCHE_X402.network
+  const chain = chains.find((candidate) =>
+    candidate.network === "avalanche-fuji" &&
+    candidate.chainId === AVALANCHE_X402.chainId &&
+    candidate.isTestnet === true
   );
-  const tokens = match?.extra?.tokens;
+  const tokens = chain?.tokens;
   const token = Array.isArray(tokens)
     ? tokens.find((candidate) =>
-        candidate.token === "usdc" &&
-        typeof candidate.address === "string" &&
-        candidate.address.toLowerCase() === AVALANCHE_X402.asset.address.toLowerCase() &&
-        candidate.decimals === AVALANCHE_X402.asset.decimals
-      )
+      candidate.symbol === AVALANCHE_X402.asset.symbol &&
+      typeof candidate.address === "string" &&
+      candidate.address.toLowerCase() === AVALANCHE_X402.asset.address.toLowerCase() &&
+      candidate.decimals === AVALANCHE_X402.asset.decimals
+    )
     : undefined;
   const blockers: string[] = [];
-  if (!match) blockers.push("facilitator_missing_fuji_v2_exact");
-  if (match && !token) blockers.push("facilitator_missing_exact_fuji_usdc");
+  if (response.service !== "x402-facilitator") {
+    blockers.push("facilitator_identity_mismatch");
+  }
+  if (!chain) blockers.push("facilitator_missing_fuji");
+  if (chain && !token) blockers.push("facilitator_missing_fuji_usdc");
+  if (token && token.settlement !== "eip3009") {
+    blockers.push("facilitator_missing_fuji_usdc_eip3009");
+  }
+  if (token && token.approveRequired !== false) {
+    blockers.push("facilitator_requires_token_approval");
+  }
+  if (
+    token &&
+    (
+      token.eip712Domain?.name !== AVALANCHE_X402.asset.eip712Name ||
+      token.eip712Domain.version !== AVALANCHE_X402.asset.eip712Version
+    )
+  ) {
+    blockers.push("facilitator_eip712_domain_mismatch");
+  }
   return {
     ready: blockers.length === 0,
     facilitatorUrl: AVALANCHE_X402.facilitatorUrl,
     evidence: blockers.length === 0 ? {
+      provider: "0xgasless",
+      discoveryEndpoint: "/tokens",
       protocolVersion: 2,
       scheme: "exact",
       network: "eip155:43113",
+      chainId: 43113,
       tokenAddress: AVALANCHE_X402.asset.address,
       tokenDecimals: 6,
+      settlement: "eip3009",
+      approveRequired: false,
+      gasSponsored: true,
+      eip712Domain: {
+        name: "USD Coin",
+        version: "2",
+      },
     } : null,
     blockers,
   };
@@ -68,7 +119,7 @@ export async function discoverAvalancheX402(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5_000);
   try {
-    const response = await fetcher(`${AVALANCHE_X402.facilitatorUrl}/supported`, {
+    const response = await fetcher(`${AVALANCHE_X402.facilitatorUrl}/tokens`, {
       method: "GET",
       cache: "no-store",
       signal: controller.signal,

@@ -57,6 +57,9 @@ test("preparation exposes explicit approval and never signs server-side", () => 
   assert.match(prepareRoute, /requiresExplicitApproval:\s*true/);
   assert.match(client, /requiresExplicitApproval:\s*true/);
   assert.match(client, /prepared\?\.requiresExplicitApproval !== true/);
+  assert.match(prepareRoute, /discoverAvalancheX402\(\)/);
+  assert.match(prepareRoute, /avalanche_x402_facilitator_not_ready/);
+  assert.match(client, /prepared\.facilitator\.gasSponsored !== true/);
   assert.match(payment, /signature:\s*null/);
   assert.doesNotMatch(prepareRoute, /privateKey|secretKey|mnemonic|raw[_A-Z]?key/i);
   assert.doesNotMatch(payment, /privateKey|secretKey|mnemonic|raw[_A-Z]?key/i);
