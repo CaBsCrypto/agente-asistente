@@ -1,4 +1,9 @@
 import type { PaymentPayload, PaymentRequirements, SettleResponse } from "@x402/core/types";
+import {
+  type EvmErc20TransferConfirmation,
+  confirmEvmErc20Transfer,
+} from "@/app/wallets/evm-rpc";
+import { WALLET_NETWORKS } from "@/app/wallets/networks";
 import { BYTES32 } from "./config";
 import type { AvalancheX402Facilitator } from "./facilitator";
 import {
@@ -70,6 +75,57 @@ function settlementBindingProblem(
   return null;
 }
 
+/**
+ * Reads the chain until the transfer is decided.
+ *
+ * The facilitator's word is a claim, not evidence. Nothing is recorded as
+ * settled until the ERC-20 `Transfer` log for this exact payment is found in a
+ * mined receipt. A receipt that has not appeared before the attempts run out
+ * stays undecided — the caller quarantines it rather than guessing either way.
+ */
+async function confirmSettlementOnChain(
+  payment: AvalancheX402Row,
+  transactionHash: string,
+  chain: AvalancheX402ChainVerifier,
+): Promise<EvmErc20TransferConfirmation> {
+  const expected = {
+    token: payment.asset_contract,
+    from: payment.wallet_address,
+    to: payment.pay_to,
+    amountAtomic: payment.amount_atomic,
+  };
+  let confirmation: EvmErc20TransferConfirmation = { kind: "pending" };
+  for (let attempt = 0; attempt < chain.attempts; attempt += 1) {
+    if (attempt > 0) await chain.wait(chain.delayMs);
+    confirmation = await chain.confirm(transactionHash, expected);
+    if (confirmation.kind !== "pending") return confirmation;
+  }
+  return confirmation;
+}
+
+export type AvalancheX402ChainVerifier = {
+  confirm: (
+    transactionHash: string,
+    expected: { token: string; from: string; to: string; amountAtomic: string },
+  ) => Promise<EvmErc20TransferConfirmation>;
+  attempts: number;
+  delayMs: number;
+  wait: (ms: number) => Promise<void>;
+};
+
+export function createAvalancheX402ChainVerifier(
+  overrides: Partial<AvalancheX402ChainVerifier> = {},
+): AvalancheX402ChainVerifier {
+  return {
+    confirm: (transactionHash, expected) =>
+      confirmEvmErc20Transfer(WALLET_NETWORKS["avalanche:fuji"], transactionHash, expected),
+    attempts: 10,
+    delayMs: 1_500,
+    wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    ...overrides,
+  };
+}
+
 export async function executeAvalancheX402Settlement(
   input: {
     userId: string;
@@ -77,7 +133,11 @@ export async function executeAvalancheX402Settlement(
     payload: PaymentPayload;
     requirement: PaymentRequirements;
   },
-  deps: { facilitator: AvalancheX402Facilitator; sql?: SqlClient },
+  deps: {
+    facilitator: AvalancheX402Facilitator;
+    sql?: SqlClient;
+    chain?: AvalancheX402ChainVerifier;
+  },
 ): Promise<AvalancheX402SettlementOutcome> {
   const { userId, paymentId } = input;
   const verification = await deps.facilitator.verify(input.payload, input.requirement);
@@ -127,6 +187,37 @@ export async function executeAvalancheX402Settlement(
 
   const problem = settlementBindingProblem(settlement, payment);
   if (problem !== null) throw await quarantine({ userId, paymentId, cause: problem }, deps.sql);
+
+  // The facilitator says it settled. Ask the chain before believing it.
+  const chain = deps.chain ?? createAvalancheX402ChainVerifier();
+  let confirmation: EvmErc20TransferConfirmation;
+  try {
+    confirmation = await confirmSettlementOnChain(payment, settlement.transaction, chain);
+  } catch (error) {
+    throw await quarantine({
+      userId,
+      paymentId,
+      cause: errorMessage(error, "settlement_chain_unreachable"),
+    }, deps.sql);
+  }
+
+  if (confirmation.kind === "reverted") {
+    await markAvalancheX402Terminal({
+      userId,
+      paymentId,
+      status: "reverted",
+      error: "avalanche_x402_settlement_reverted_on_chain",
+    }, deps.sql);
+    throw new Error("avalanche_x402_settlement_reverted_on_chain");
+  }
+  // A facilitator success the chain contradicts, and a receipt that never
+  // arrived, are both unresolved by us — quarantine, never silently deliver.
+  if (confirmation.kind === "mismatch") {
+    throw await quarantine({ userId, paymentId, cause: confirmation.reason }, deps.sql);
+  }
+  if (confirmation.kind !== "confirmed") {
+    throw await quarantine({ userId, paymentId, cause: "settlement_unconfirmed_on_chain" }, deps.sql);
+  }
 
   try {
     payment = await recordAvalancheX402Settlement({

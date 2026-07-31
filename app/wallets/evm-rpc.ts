@@ -154,6 +154,82 @@ export async function estimateEvmNativeTransfer(
   };
 }
 
+/** keccak256("Transfer(address,address,uint256)") */
+const ERC20_TRANSFER_TOPIC =
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+
+function topicAddress(address: string) {
+  return `0x${address.slice(2).toLowerCase().padStart(64, "0")}`;
+}
+
+export type EvmErc20TransferConfirmation =
+  | { kind: "pending" }
+  | { kind: "reverted"; blockNumber: number | null }
+  | { kind: "mismatch"; reason: string; blockNumber: number | null }
+  | { kind: "confirmed"; blockNumber: number | null };
+
+/**
+ * Confirms that a mined transaction really moved an exact ERC-20 amount between
+ * two exact parties.
+ *
+ * This exists because a gas-sponsored EIP-3009 `transferWithAuthorization` is
+ * submitted by a facilitator, not by the payer: the transaction's own `from` is
+ * the relayer and its `to` is the token contract, so the transaction fields
+ * prove nothing about who paid whom. The only on-chain evidence that binds to a
+ * frozen payment intent is the ERC-20 `Transfer` log, so that is what we match.
+ */
+export async function confirmEvmErc20Transfer(
+  network: WalletNetwork,
+  transactionHash: string,
+  expected: { token: string; from: string; to: string; amountAtomic: string },
+  fetcher: typeof fetch = fetch,
+): Promise<EvmErc20TransferConfirmation> {
+  if (!/^0x[a-fA-F0-9]{64}$/.test(transactionHash)) {
+    throw new Error("invalid_evm_transaction_hash");
+  }
+  if (
+    !EVM_ADDRESS.test(expected.token) ||
+    !EVM_ADDRESS.test(expected.from) ||
+    !EVM_ADDRESS.test(expected.to)
+  ) throw new Error("invalid_evm_address");
+  if (!/^\d+$/.test(expected.amountAtomic)) throw new Error("invalid_erc20_amount");
+
+  const chainIdHex = await rpc<string>(network, "eth_chainId", [], fetcher);
+  if (Number(BigInt(chainIdHex)) !== network.chainId) {
+    throw new Error("evm_chain_id_mismatch");
+  }
+
+  const receipt = await rpc<{
+    status: string;
+    blockNumber: string | null;
+    logs: { address: string; topics: string[]; data: string }[];
+  } | null>(network, "eth_getTransactionReceipt", [transactionHash], fetcher);
+
+  // No receipt yet means undecided, never failed: the transfer may be in flight.
+  if (!receipt) return { kind: "pending" };
+
+  const blockNumber = receipt.blockNumber ? Number(BigInt(receipt.blockNumber)) : null;
+  if (receipt.status !== "0x1") return { kind: "reverted", blockNumber };
+  if (blockNumber === null) return { kind: "pending" };
+
+  const wantFrom = topicAddress(expected.from);
+  const wantTo = topicAddress(expected.to);
+  const wantValue = BigInt(expected.amountAtomic);
+  const logs = Array.isArray(receipt.logs) ? receipt.logs : [];
+
+  const matched = logs.some((log) =>
+    log.address?.toLowerCase() === expected.token.toLowerCase() &&
+    log.topics?.[0]?.toLowerCase() === ERC20_TRANSFER_TOPIC &&
+    log.topics[1]?.toLowerCase() === wantFrom &&
+    log.topics[2]?.toLowerCase() === wantTo &&
+    BigInt(log.data || "0x0") === wantValue,
+  );
+  if (!matched) {
+    return { kind: "mismatch", reason: "erc20_transfer_log_absent", blockNumber };
+  }
+  return { kind: "confirmed", blockNumber };
+}
+
 export async function getEvmTransactionEvidence(
   network: WalletNetwork,
   transactionHash: string,

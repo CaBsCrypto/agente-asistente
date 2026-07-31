@@ -7,7 +7,11 @@ import {
   createAvalancheX402Facilitator,
 } from "../app/x402-avalanche/facilitator";
 import type { FrozenAvalancheX402Payment } from "../app/x402-avalanche/payment";
-import { executeAvalancheX402Settlement } from "../app/x402-avalanche/settlement";
+import type { EvmErc20TransferConfirmation } from "../app/wallets/evm-rpc";
+import {
+  type AvalancheX402ChainVerifier,
+  executeAvalancheX402Settlement,
+} from "../app/x402-avalanche/settlement";
 import {
   bindAvalancheX402Signature,
   prepareAvalancheX402Payment,
@@ -187,10 +191,41 @@ function httpFacilitator(respond: (endpoint: string) => Promise<Response>) {
   return { calls, facilitator: createAvalancheX402Facilitator(fetcher) };
 }
 
-function execute(sql: MemorySql, facilitator: AvalancheX402Facilitator) {
+type ChainExpectation = { token: string; from: string; to: string; amountAtomic: string };
+
+/**
+ * Stands in for the Fuji RPC. Every settlement test runs against this so the
+ * suite never touches the network, and so the on-chain gate is exercised
+ * explicitly rather than skipped by default.
+ */
+function stubChain(
+  results: EvmErc20TransferConfirmation[] = [{ kind: "confirmed", blockNumber: 57475367 }],
+) {
+  const seen: ChainExpectation[] = [];
+  const waits: number[] = [];
+  let call = 0;
+  const chain: AvalancheX402ChainVerifier = {
+    confirm: async (_transactionHash, expected) => {
+      seen.push(expected);
+      const result = results[Math.min(call, results.length - 1)];
+      call += 1;
+      return result;
+    },
+    attempts: results.length > 1 ? results.length : 3,
+    delayMs: 0,
+    wait: async (ms) => { waits.push(ms); },
+  };
+  return { chain, seen, waits, calls: () => call };
+}
+
+function execute(
+  sql: MemorySql,
+  facilitator: AvalancheX402Facilitator,
+  chain: AvalancheX402ChainVerifier = stubChain().chain,
+) {
   return executeAvalancheX402Settlement(
     { userId: USER_ID, paymentId: payment.paymentId, payload, requirement },
-    { facilitator, sql },
+    { facilitator, sql, chain },
   );
 }
 
@@ -412,4 +447,122 @@ test("the route truthfully maps each settle outcome to the client", () => {
   assert.match(route, /message\.includes\("reconciliation_required"\) \? 409/);
   assert.match(route, /message\.includes\("ambiguous"\) \? 503/);
   assert.match(route, /status:\s*"reconciliation_required"/);
+});
+
+test("the on-chain gate is asked about the exact frozen payment, not the facilitator's claim", async () => {
+  const sql = new MemorySql();
+  await signedPayment(sql);
+  const { facilitator } = stubFacilitator();
+  const { chain, seen } = stubChain();
+
+  const outcome = await execute(sql, facilitator, chain);
+
+  assert.equal(outcome.kind, "settled");
+  assert.deepEqual(seen, [{
+    token: payment.asset,
+    from: payment.payer,
+    to: payment.payTo,
+    amountAtomic: payment.amount,
+  }]);
+});
+
+test("a facilitator success the chain never confirms is quarantined, not delivered", async () => {
+  const sql = new MemorySql();
+  await signedPayment(sql);
+  const { facilitator } = stubFacilitator();
+  const { chain, calls } = stubChain([{ kind: "pending" }]);
+
+  await assert.rejects(
+    execute(sql, facilitator, chain),
+    /avalanche_x402_settle_ambiguous:settlement_unconfirmed_on_chain/,
+  );
+
+  const row = sql.payments.get(payment.paymentId)!;
+  assert.equal(row.status, "reconciliation_required");
+  assert.equal(row.transaction_hash, null);
+  assert.equal(calls(), 3, "exhausts its attempts before giving up");
+});
+
+test("a receipt whose Transfer log does not match the frozen payment is quarantined", async () => {
+  const sql = new MemorySql();
+  await signedPayment(sql);
+  const { facilitator } = stubFacilitator();
+  const { chain } = stubChain([
+    { kind: "mismatch", reason: "erc20_transfer_log_absent", blockNumber: 57475367 },
+  ]);
+
+  await assert.rejects(
+    execute(sql, facilitator, chain),
+    /avalanche_x402_settle_ambiguous:erc20_transfer_log_absent/,
+  );
+
+  const row = sql.payments.get(payment.paymentId)!;
+  assert.equal(row.status, "reconciliation_required");
+  assert.equal(row.transaction_hash, null);
+});
+
+test("a reverted transaction is recorded as reverted even when the facilitator reported success", async () => {
+  const sql = new MemorySql();
+  await signedPayment(sql);
+  const { facilitator } = stubFacilitator();
+  const { chain } = stubChain([{ kind: "reverted", blockNumber: 57475367 }]);
+
+  await assert.rejects(
+    execute(sql, facilitator, chain),
+    /avalanche_x402_settlement_reverted_on_chain/,
+  );
+
+  const row = sql.payments.get(payment.paymentId)!;
+  assert.equal(row.status, "reverted");
+  assert.equal(row.transaction_hash, null);
+});
+
+test("a transfer that is pending and then confirms is settled without a second facilitator call", async () => {
+  const sql = new MemorySql();
+  await signedPayment(sql);
+  const { calls, facilitator } = stubFacilitator();
+  const { chain, waits } = stubChain([
+    { kind: "pending" },
+    { kind: "pending" },
+    { kind: "confirmed", blockNumber: 57475367 },
+  ]);
+
+  const outcome = await execute(sql, facilitator, chain);
+
+  assert.equal(outcome.kind, "settled");
+  assert.equal(outcome.payment.transaction_hash, TRANSACTION);
+  assert.deepEqual(calls, { verify: 1, settle: 1 }, "polling never re-settles");
+  assert.equal(waits.length, 2, "waits between polls, not before the first read");
+});
+
+test("an unreachable RPC is quarantined rather than treated as a successful delivery", async () => {
+  const sql = new MemorySql();
+  await signedPayment(sql);
+  const { facilitator } = stubFacilitator();
+  const chain: AvalancheX402ChainVerifier = {
+    confirm: async () => { throw new Error("evm_rpc_http_502"); },
+    attempts: 3,
+    delayMs: 0,
+    wait: async () => {},
+  };
+
+  await assert.rejects(
+    execute(sql, facilitator, chain),
+    /avalanche_x402_settle_ambiguous:evm_rpc_http_502/,
+  );
+
+  assert.equal(sql.payments.get(payment.paymentId)!.status, "reconciliation_required");
+});
+
+test("settlement.ts actually reads the chain instead of trusting a well-formed hash", () => {
+  const source = readFileSync(
+    new URL("../app/x402-avalanche/settlement.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /confirmEvmErc20Transfer/);
+  assert.match(source, /confirmSettlementOnChain\(payment, settlement\.transaction/);
+  const gate = source.indexOf("confirmSettlementOnChain(payment");
+  const record = source.indexOf("recordAvalancheX402Settlement({");
+  assert.ok(gate > 0 && record > gate, "the chain is consulted before anything is recorded");
 });
