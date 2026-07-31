@@ -413,6 +413,7 @@ Start at the [documentation index](docs/README.md).
 - [Architecture and flows](docs/architecture.md)
 - [Developer guide](docs/developer-guide.md)
 - [API & integration reference](docs/api-reference.md) — every route, MCP tool, connector, auth model and env var
+- [Avalanche x402 Merchant SDK](docs/developer/avalanche-x402-merchant-sdk.md) — public paid resources, durable idempotency and receipt verification
 - [Product status](docs/product-status.md)
 - [Personal Execution Vault](docs/personal-execution-vault.md)
 - [Graph memory and visual project map](docs/graph-memory.md)

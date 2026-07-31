@@ -52,6 +52,20 @@ import { createPersistedWorkflowRuntime } from "@/app/orchestration/runtime";
 import { createWorkflowState } from "@/app/orchestration/types";
 import { parseUnblckChatIntent } from "@/app/unblck-chat";
 import { handleUnblckChatIntent } from "@/app/unblck-chat-runtime";
+import { parseAvalancheChatIntent } from "@/app/wallets/avalanche-intents";
+import { searchAvalancheDocs } from "@/app/connectors/avalanche-mcp";
+import {
+  parseAvalancheCapabilitiesIntent,
+  parseAvalancheKnowledgeIntent,
+  parseDexalotReadIntent,
+} from "@/app/connectors/avalanche-read-intents";
+import {
+  getDexalotTestnetQuote,
+  listDexalotTestnetPairs,
+} from "@/app/connectors/dexalot";
+import { parseCctpBridgeIntent } from "@/app/connectors/circle-cctp-intents";
+import { handleCctpBridgeIntent } from "@/app/connectors/circle-cctp-chat";
+import { listAvalancheCapabilities } from "@/app/avalanche/capability-registry";
 
 export type StoredAgentMessage = {
   id: string;
@@ -63,6 +77,19 @@ export type StoredAgentMessage = {
     message?: string;
     href?: string;
     connect?: string;
+    walletAction?: {
+      type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send" | "avalanche.x402";
+      network: "avalanche:fuji";
+      amount?: "0.001";
+      destination?: `0x${string}`;
+      requestId?: string;
+    } | {
+      type: "cctp.bridge";
+      network: "avalanche:fuji";
+      destinationNetwork: "stellar:testnet";
+      amount: string;
+      requestId?: string;
+    };
     popup?: {
       provider: string;
       url: string;
@@ -100,7 +127,7 @@ async function walletContext(userId: string) {
       network: agentWallets.network,
     })
     .from(agentWallets)
-    .where(eq(agentWallets.userId, userId))
+    .where(and(eq(agentWallets.userId, userId), eq(agentWallets.chainType, "stellar")))
     .limit(1);
 
   const wallet = rows[0];
@@ -401,6 +428,11 @@ export async function sendAgentMessage(userId: string, content: string) {
   const local = (english: string, portuguese: string) =>
     language === "pt" ? portuguese : english;
   const setupIntent = parseTestnetSetupIntent(content);
+  const avalancheIntent = parseAvalancheChatIntent(content);
+  const avalancheCapabilitiesIntent = parseAvalancheCapabilitiesIntent(content);
+  const avalancheKnowledgeIntent = parseAvalancheKnowledgeIntent(content);
+  const dexalotReadIntent = parseDexalotReadIntent(content);
+  const cctpBridgeIntent = parseCctpBridgeIntent(content);
   const vaultCommand = parseVaultCommand(content);
   const unblckIntent = parseUnblckChatIntent(content);
 
@@ -462,6 +494,10 @@ export async function sendAgentMessage(userId: string, content: string) {
     vaultCommand ||
       unblckIntent ||
       setupIntent ||
+      avalancheIntent ||
+      avalancheCapabilitiesIntent ||
+      avalancheKnowledgeIntent ||
+      dexalotReadIntent ||
       requestsNotionSearch ||
       requestsWatchlistAdd ||
       requestsWatchlist ||
@@ -531,7 +567,9 @@ export async function sendAgentMessage(userId: string, content: string) {
       memoryUpdated: true,
     };
   } else
-  if (unblckIntent) {
+  if (cctpBridgeIntent) {
+    reply = await handleCctpBridgeIntent({ userId, intent: cctpBridgeIntent, language });
+  } else if (unblckIntent) {
     reply = await handleUnblckChatIntent({
       intent: unblckIntent,
       userId,
@@ -541,6 +579,182 @@ export async function sendAgentMessage(userId: string, content: string) {
     });
   } else if (setupIntent) {
     reply = await buildTestnetSetupReply(userId, setupIntent, wallet, language);
+  } else if (avalancheCapabilitiesIntent) {
+    const capabilities = listAvalancheCapabilities();
+    const live = capabilities.filter((item) => item.status === "live");
+    const pending = capabilities.filter((item) => item.status === "ready_to_test");
+    const labels = {
+      en: { heading: "**What Carmelita can do on Avalanche**", live: "Usable now", pending: "Built, pending live acceptance", boundary: "Discovery and planning never sign or move funds. Financial actions open a separate Privy approval.", details: "Plan x402", quote: "Quote on Dexalot" },
+      es: { heading: "**Lo que Carmelita puede hacer en Avalanche**", live: "Utilizable ahora", pending: "Construido, pendiente de validación en vivo", boundary: "Descubrir y planificar nunca firma ni mueve fondos. Las acciones financieras abren una aprobación Privy separada.", details: "Planificar x402", quote: "Cotizar en Dexalot" },
+      pt: { heading: "**O que Carmelita pode fazer na Avalanche**", live: "Utilizável agora", pending: "Construído, aguardando validação ao vivo", boundary: "Descoberta e planejamento nunca assinam nem movem fundos. Ações financeiras abrem uma aprovação Privy separada.", details: "Planejar x402", quote: "Cotar na Dexalot" },
+    }[language];
+    reply = {
+      content: [
+        labels.heading,
+        `**${labels.live} (${live.length})**\n${live.map((item) => `- ${item.title} · ${item.provider}`).join("\n")}`,
+        `**${labels.pending} (${pending.length})**\n${pending.map((item) => `- ${item.title} · approval: ${item.approval}`).join("\n")}`,
+        labels.boundary,
+      ].join("\n\n"),
+      connection: { name: "Avalanche Capability Registry", stage: "Connected", priority: "P0" },
+      actions: [
+        { label: labels.quote, message: language === "es" ? "Cotiza 1 AVAX a USDC en Dexalot" : language === "pt" ? "Cote 1 AVAX para USDC na Dexalot" : "Quote 1 AVAX to USDC on Dexalot" },
+        { label: labels.details, message: language === "es" ? "Prepara mi pago x402 en Avalanche" : language === "pt" ? "Prepare meu pagamento x402 na Avalanche" : "Prepare my Avalanche x402 payment" },
+      ],
+    };
+  } else if (avalancheKnowledgeIntent) {
+    try {
+      const result = await searchAvalancheDocs({
+        query: avalancheKnowledgeIntent.query,
+        source: "integrations",
+        limit: 5,
+      });
+      const copy = {
+        en: {
+          heading: "**Official Avalanche Builder Hub results**",
+          boundary: "Read-only documentation search. No wallet action or transaction was performed.",
+          retry: "Search Avalanche again",
+          retryMessage: "Search Avalanche integrations for agentic commerce",
+          source: "Open official source",
+        },
+        es: {
+          heading: "**Resultados oficiales de Avalanche Builder Hub**",
+          boundary: "Búsqueda de documentación en modo lectura. No se realizó ninguna acción de wallet ni transacción.",
+          retry: "Buscar otra vez",
+          retryMessage: "Busca integraciones de comercio agéntico en Avalanche",
+          source: "Abrir fuente oficial",
+        },
+        pt: {
+          heading: "**Resultados oficiais do Avalanche Builder Hub**",
+          boundary: "Pesquisa de documentação somente para leitura. Nenhuma ação de wallet ou transação foi realizada.",
+          retry: "Pesquisar novamente",
+          retryMessage: "Pesquise integrações de comércio agêntico na Avalanche",
+          source: "Abrir fonte oficial",
+        },
+      }[language];
+      reply = {
+        content: [
+          copy.heading,
+          result.text.slice(0, 6_000),
+          copy.boundary,
+        ].join("\n\n"),
+        connection: {
+          name: "Avalanche Builder Hub MCP",
+          stage: "Read-only connected",
+          priority: "P0",
+        },
+        actions: [
+          {
+            label: copy.retry,
+            message: copy.retryMessage,
+          },
+          ...result.citations.slice(0, 3).map((href, index) => ({
+            label: `${copy.source} ${index + 1}`,
+            href,
+          })),
+        ],
+      };
+    } catch (error) {
+      const code = error instanceof Error
+        ? error.message.split(":")[0]
+        : "avalanche_mcp_failed";
+      const copy = {
+        en: `The official Avalanche MCP did not complete (**${code}**). I did not invent or cache an answer. You can retry explicitly.`,
+        es: `El MCP oficial de Avalanche no completó la búsqueda (**${code}**). No inventé ni presenté una respuesta en caché. Puedes reintentar explícitamente.`,
+        pt: `O MCP oficial da Avalanche não concluiu a pesquisa (**${code}**). Não inventei nem apresentei uma resposta em cache. Você pode tentar novamente.`,
+      }[language];
+      reply = {
+        content: copy,
+        connection: {
+          name: "Avalanche Builder Hub MCP",
+          stage: "Read-only connected",
+          priority: "P0",
+        },
+        actions: [{
+          label: language === "es" ? "Reintentar búsqueda" : language === "pt" ? "Tentar novamente" : "Retry search",
+          message: content,
+        }],
+      };
+    }
+  } else if (dexalotReadIntent) {
+    try {
+      if (dexalotReadIntent.operation === "pairs") {
+        const result = await listDexalotTestnetPairs();
+        const enabled = result.pairs.filter((pair) => pair.allowswap);
+        const copy = {
+          en: {
+            heading: `**Dexalot Testnet markets (${enabled.length} swap-enabled)**`,
+            boundary: "This is the live public Testnet catalog. Reading it required no API key, signature or funds. No trade was prepared.",
+            quote: "Quote 1 AVAX to USDC on Dexalot",
+            quoteLabel: "Quote AVAX / USDC",
+          },
+          es: {
+            heading: `**Mercados de Dexalot Testnet (${enabled.length} con swap habilitado)**`,
+            boundary: "Este es el catálogo público en vivo de Testnet. Leerlo no requirió API key, firma ni saldo. No se preparó ningún trade.",
+            quote: "Cotiza 1 AVAX a USDC en Dexalot",
+            quoteLabel: "Cotizar AVAX / USDC",
+          },
+          pt: {
+            heading: `**Mercados da Dexalot Testnet (${enabled.length} com swap habilitado)**`,
+            boundary: "Este é o catálogo público ao vivo da Testnet. A leitura não exigiu API key, assinatura ou saldo. Nenhum trade foi preparado.",
+            quote: "Cote 1 AVAX para USDC na Dexalot",
+            quoteLabel: "Cotar AVAX / USDC",
+          },
+        }[language];
+        reply = {
+          content: [
+            copy.heading,
+            enabled.slice(0, 20).map((pair) =>
+              `- **${pair.pair}** · min ${pair.mintrade_amnt} ${pair.quote} · taker ${pair.taker_rate_bps} bps`,
+            ).join("\n"),
+            copy.boundary,
+          ].join("\n\n"),
+          connection: {
+            name: "Dexalot Testnet",
+            stage: "Read-only connected",
+            priority: "P0",
+          },
+          actions: [
+            { label: copy.quoteLabel, message: copy.quote },
+            { label: "Dexalot API docs", href: result.source },
+          ],
+        };
+      } else {
+        const result = await getDexalotTestnetQuote(dexalotReadIntent);
+        const copy = {
+          en: `Live non-firm Dexalot Testnet quote: **${result.amountIn} ${result.assetIn} → ${result.amountOut} ${result.assetOut}** at price **${result.price}**. Pair: **${result.pair}**; taker fee: **${result.takerFeeBps} bps**. This is read-only and reserves no liquidity. No approval, signature or trade was requested.`,
+          es: `Cotización no vinculante en vivo de Dexalot Testnet: **${result.amountIn} ${result.assetIn} → ${result.amountOut} ${result.assetOut}** a precio **${result.price}**. Par: **${result.pair}**; comisión taker: **${result.takerFeeBps} bps**. Es de solo lectura y no reserva liquidez. No se solicitó aprobación, firma ni trade.`,
+          pt: `Cotação ao vivo não vinculante da Dexalot Testnet: **${result.amountIn} ${result.assetIn} → ${result.amountOut} ${result.assetOut}** ao preço de **${result.price}**. Par: **${result.pair}**; taxa taker: **${result.takerFeeBps} bps**. É somente leitura e não reserva liquidez. Nenhuma aprovação, assinatura ou trade foi solicitado.`,
+        }[language];
+        reply = {
+          content: copy,
+          connection: {
+            name: "Dexalot Testnet",
+            stage: "Read-only connected",
+            priority: "P0",
+          },
+          actions: [
+            {
+              label: language === "es" ? "Ver otros mercados" : language === "pt" ? "Ver outros mercados" : "Show other markets",
+              message: language === "es" ? "Lista los pares de Dexalot Testnet" : language === "pt" ? "Liste os pares da Dexalot Testnet" : "List Dexalot Testnet pairs",
+            },
+            { label: "Dexalot API docs", href: result.source },
+          ],
+        };
+      }
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "dexalot_failed";
+      reply = {
+        content: {
+          en: `Dexalot Testnet could not return verified read-only data (**${code}**). No transaction was prepared and no funds moved.`,
+          es: `Dexalot Testnet no pudo devolver datos verificados de solo lectura (**${code}**). No se preparó ninguna transacción ni se movieron fondos.`,
+          pt: `A Dexalot Testnet não conseguiu retornar dados verificados somente para leitura (**${code}**). Nenhuma transação foi preparada e nenhum saldo foi movimentado.`,
+        }[language],
+        actions: [{
+          label: language === "es" ? "Reintentar" : language === "pt" ? "Tentar novamente" : "Retry",
+          message: content,
+        }],
+      };
+    }
   } else if (requestsNotionSearch) {
     try {
       const workflowId = "wf_notion_" + createHash("sha256")
@@ -905,7 +1119,9 @@ export async function sendAgentMessage(userId: string, content: string) {
     role: "assistant",
     content: reply.content,
     metadata: {
-      actions: reply.actions,
+      actions: reply.actions.map((action) => action.walletAction
+        ? { ...action, walletAction: { ...action.walletAction, requestId: userMessage.id } }
+        : action),
       connection: reply.connection,
       defindexIntent: reply.defindexIntent
         ? { ...reply.defindexIntent, requestId: userMessage.id }

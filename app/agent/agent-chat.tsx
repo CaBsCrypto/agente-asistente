@@ -4,6 +4,10 @@ import { useSignRawHash } from "@privy-io/react-auth/extended-chains";
 import { useEffect, useRef, useState } from "react";
 import { summarizeX402Resource } from "../x402/resource-preview";
 import { useLocale } from "../language-toggle";
+import AvalancheChatAction, { type AvalancheWalletAction } from "./avalanche-chat-action";
+import AvalancheX402Action, { type AvalancheX402Action as AvalancheX402WalletAction } from "./avalanche-x402-action";
+import CctpBridgeAction, { type CctpBridgeWalletAction } from "./cctp-bridge-action";
+import ContextWalletSelector from "./context-wallet-selector";
 import {
   browserBridgePing,
   browserBridgeRequest,
@@ -106,6 +110,7 @@ type ChatAction = {
   message?: string;
   href?: string;
   connect?: string;
+  walletAction?: AvalancheWalletAction | AvalancheX402WalletAction | CctpBridgeWalletAction;
   popup?: {
     provider: string;
     url: string;
@@ -354,11 +359,12 @@ export default function AgentChat({
         });
         const connectionsBody = await connectionsResponse.json();
         if (active) {
-          setMessages(body.messages);
+          const params = new URLSearchParams(window.location.search);
+          const freshSession = params.get("fresh") === "1";
+          setMessages(freshSession ? [] : body.messages);
           setConnections(
             connectionsResponse.ok ? connectionsBody.connections ?? [] : [],
           );
-          const params = new URLSearchParams(window.location.search);
           if (
             params.get("connection") === "notion" &&
             params.get("status") === "connected"
@@ -1427,7 +1433,31 @@ export default function AgentChat({
                 {message.actions?.length ? (
                   <div className="agent-message-actions">
                     {message.actions.map((action) =>
-                      action.popup ? (
+                      action.walletAction?.type === "cctp.bridge" ? (
+                        <CctpBridgeAction
+                          key={action.label}
+                          action={action.walletAction}
+                          locale={locale}
+                          getAccessToken={getAccessToken}
+                          onReceipt={openReceipt}
+                        />
+                      ) : action.walletAction?.type === "avalanche.x402" ? (
+                        <AvalancheX402Action
+                          key={action.label}
+                          action={action.walletAction}
+                          locale={locale}
+                          getAccessToken={getAccessToken}
+                          onReceipt={openReceipt}
+                        />
+                      ) : action.walletAction ? (
+                        <AvalancheChatAction
+                          key={action.label}
+                          action={action.walletAction}
+                          locale={locale}
+                          getAccessToken={getAccessToken}
+                          onReceipt={openReceipt}
+                        />
+                      ) : action.popup ? (
                         <button
                           key={action.label}
                           type="button"
@@ -2020,24 +2050,14 @@ export default function AgentChat({
         </div>
         <dl>
           <div><dt>{ui.identity}</dt><dd>{email}</dd></div>
-          <div><dt>Wallet</dt><dd>{walletAddress.slice(0, 8) + "..." + walletAddress.slice(-6)}</dd></div>
-          <div><dt>{ui.balance}</dt><dd>{liveWalletBalance} XLM</dd></div>
-          <div><dt>{xrui.balance}</dt><dd>{liveX402UsdcBalance === null ? "\u2014" : `${liveX402UsdcBalance} USDC`}</dd></div>
-          <div><dt>{ui.network}</dt><dd>Stellar Testnet</dd></div>
         </dl>
-        <button
-          type="button"
-          className="agent-verify-wallet"
-          onClick={() => openReceipt({
-            title: ui.verify,
-            network: "Stellar Testnet",
-            rows: [{ label: "Wallet", value: walletAddress }],
-            transactionHash: null,
-            explorerUrl: "https://stellar.expert/explorer/testnet/account/" + walletAddress,
-          })}
-        >
-          {ui.verify}
-        </button>
+        <ContextWalletSelector
+          locale={locale}
+          stellarAddress={walletAddress}
+          stellarXlmBalance={liveWalletBalance}
+          stellarUsdcBalance={liveX402UsdcBalance}
+          getAccessToken={getAccessToken}
+        />
         <div className="agent-connected-apps">
           <strong>{ui.capabilities}</strong>
           <span>

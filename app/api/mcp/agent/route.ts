@@ -1,5 +1,6 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
+import { avalancheCapabilityIdSchema, listAvalancheCapabilities, planAvalancheCapability } from "@/app/avalanche/capability-registry";
 import { getAgentConversation, sendAgentMessage } from "@/app/agent-chat-store";
 import { getAgentMcpContext } from "@/app/mcp/agent-context";
 import {
@@ -84,6 +85,41 @@ function getHandler() {
           } catch (error) {
             return fail(error);
           }
+        },
+      );
+      server.registerTool(
+        "list_avalanche_capabilities",
+        {
+          title: "List Avalanche capabilities",
+          description: "List Carmelita's verified Avalanche capabilities, status, requirements and approval boundary.",
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        },
+        async (extra) => {
+          try {
+            requireMcpSubject(extra.authInfo, "user", "userId", "agent:read");
+            return ok({ capabilities: listAvalancheCapabilities() });
+          } catch (error) { return fail(error); }
+        },
+      );
+
+      server.registerTool(
+        "plan_avalanche_capability",
+        {
+          title: "Plan an Avalanche capability",
+          description: "Return blockers and approval requirements without preparing, signing or submitting a transaction.",
+          inputSchema: {
+            capabilityId: avalancheCapabilityIdSchema,
+            evmWallet: z.boolean().default(false), stellarWallet: z.boolean().default(false),
+            fujiAvax: z.boolean().default(false), fujiUsdc: z.boolean().default(false),
+            stellarUsdcTrustline: z.boolean().default(false),
+          },
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        },
+        async (input, extra) => {
+          try {
+            requireMcpSubject(extra.authInfo, "user", "userId", "agent:read");
+            return ok(planAvalancheCapability(input.capabilityId, { ...input, authenticated: true }));
+          } catch (error) { return fail(error); }
         },
       );
 
