@@ -48,3 +48,25 @@ test("capability parser supports English, Spanish and Portuguese", async () => {
   assert.equal(parseAvalancheCapabilitiesIntent("O que posso fazer na Avalanche?")?.operation, "capabilities");
   assert.equal(parseAvalancheCapabilitiesIntent("Show my Stellar wallet"), null);
 });
+
+test("a Dexalot quote is not advertised as live while the upstream circuit breaker is active", () => {
+  const quote = listAvalancheCapabilities().find((item) => item.id === "dexalot.quote.read")!;
+
+  assert.notEqual(quote.status, "live");
+  assert.match(quote.evidence, /QP-002|Circuit Breaker/);
+  assert.match(quote.nextAction, /Blocked upstream/);
+  // The nextAction must not invite the user to run the call that is known to fail.
+  assert.doesNotMatch(quote.nextAction, /Ask Carmelita to quote/);
+});
+
+test("the pair catalog is not taken down with the quote endpoint", () => {
+  const markets = listAvalancheCapabilities().find((item) => item.id === "dexalot.markets.list")!;
+  assert.equal(markets.status, "live");
+});
+
+test("a planned capability is never executable, even with every requirement satisfied", () => {
+  const plan = planAvalancheCapability("dexalot.quote.read", { authenticated: true });
+
+  assert.deepEqual(plan.blockers, []);
+  assert.equal(plan.executable, false, "status alone must gate execution");
+});
