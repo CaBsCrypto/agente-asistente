@@ -45,3 +45,31 @@ export function assertAvalancheX402Localhost(url: string) {
   ) throw new Error("avalanche_x402_localhost_required");
   return parsed;
 }
+
+export function getAvalancheX402MerchantDemoConfig(
+  env: Record<string, string | undefined> = process.env,
+) {
+  const payTo = (env.AVALANCHE_X402_MERCHANT_DEMO_PAY_TO ?? "").toLowerCase();
+  const baseUrlValue = env.AVALANCHE_X402_MERCHANT_DEMO_BASE_URL ?? "";
+  let baseUrl: string | null = null;
+  try {
+    const parsed = new URL(baseUrlValue);
+    const local = parsed.protocol === "http:" &&
+      ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
+    if (
+      (parsed.protocol === "https:" || local) &&
+      !parsed.username && !parsed.password && !parsed.search && !parsed.hash &&
+      ["", "/"].includes(parsed.pathname)
+    ) baseUrl = parsed.origin;
+  } catch {
+    baseUrl = null;
+  }
+  const enabled = env.AVALANCHE_X402_MERCHANT_DEMO_ENABLED === "true" &&
+    EVM_ADDRESS.test(payTo) && payTo !== ZERO_ADDRESS && baseUrl !== null;
+  return {
+    enabled,
+    payTo: enabled ? payTo : null,
+    baseUrl: enabled ? baseUrl : null,
+    reason: enabled ? null : "avalanche_x402_merchant_demo_config_required",
+  } as const;
+}
