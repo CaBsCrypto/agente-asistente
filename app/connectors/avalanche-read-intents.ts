@@ -3,6 +3,8 @@ export type AvalancheKnowledgeIntent = {
   query: string;
 };
 
+export type AvalancheCapabilitiesIntent = { operation: "capabilities" };
+
 export type DexalotReadIntent =
   | { operation: "pairs" }
   | {
@@ -39,6 +41,16 @@ export function parseAvalancheKnowledgeIntent(
   return { operation: "search", query: message.trim().slice(0, 200) };
 }
 
+export function parseAvalancheCapabilitiesIntent(message: string): AvalancheCapabilitiesIntent | null {
+  const query = normalized(message);
+  if (!["avalanche", "fuji", "avax"].some((term) => query.includes(term))) return null;
+  const asksCapabilities = [
+    "what can i do", "what is available", "available features", "capabilities",
+    "que puedo hacer", "que tenemos", "funciones disponibles", "capacidades",
+    "o que posso fazer", "o que temos", "funcoes disponiveis",
+  ].some((term) => query.includes(term));
+  return asksCapabilities ? { operation: "capabilities" } : null;
+}
 export function parseDexalotReadIntent(message: string): DexalotReadIntent | null {
   const query = normalized(message);
   if (!query.includes("dexalot")) return null;

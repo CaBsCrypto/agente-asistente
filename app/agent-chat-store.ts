@@ -55,6 +55,7 @@ import { handleUnblckChatIntent } from "@/app/unblck-chat-runtime";
 import { parseAvalancheChatIntent } from "@/app/wallets/avalanche-intents";
 import { searchAvalancheDocs } from "@/app/connectors/avalanche-mcp";
 import {
+  parseAvalancheCapabilitiesIntent,
   parseAvalancheKnowledgeIntent,
   parseDexalotReadIntent,
 } from "@/app/connectors/avalanche-read-intents";
@@ -64,6 +65,7 @@ import {
 } from "@/app/connectors/dexalot";
 import { parseCctpBridgeIntent } from "@/app/connectors/circle-cctp-intents";
 import { handleCctpBridgeIntent } from "@/app/connectors/circle-cctp-chat";
+import { listAvalancheCapabilities } from "@/app/avalanche/capability-registry";
 
 export type StoredAgentMessage = {
   id: string;
@@ -427,6 +429,7 @@ export async function sendAgentMessage(userId: string, content: string) {
     language === "pt" ? portuguese : english;
   const setupIntent = parseTestnetSetupIntent(content);
   const avalancheIntent = parseAvalancheChatIntent(content);
+  const avalancheCapabilitiesIntent = parseAvalancheCapabilitiesIntent(content);
   const avalancheKnowledgeIntent = parseAvalancheKnowledgeIntent(content);
   const dexalotReadIntent = parseDexalotReadIntent(content);
   const cctpBridgeIntent = parseCctpBridgeIntent(content);
@@ -492,6 +495,7 @@ export async function sendAgentMessage(userId: string, content: string) {
       unblckIntent ||
       setupIntent ||
       avalancheIntent ||
+      avalancheCapabilitiesIntent ||
       avalancheKnowledgeIntent ||
       dexalotReadIntent ||
       requestsNotionSearch ||
@@ -575,6 +579,28 @@ export async function sendAgentMessage(userId: string, content: string) {
     });
   } else if (setupIntent) {
     reply = await buildTestnetSetupReply(userId, setupIntent, wallet, language);
+  } else if (avalancheCapabilitiesIntent) {
+    const capabilities = listAvalancheCapabilities();
+    const live = capabilities.filter((item) => item.status === "live");
+    const pending = capabilities.filter((item) => item.status === "ready_to_test");
+    const labels = {
+      en: { heading: "**What Carmelita can do on Avalanche**", live: "Usable now", pending: "Built, pending live acceptance", boundary: "Discovery and planning never sign or move funds. Financial actions open a separate Privy approval.", details: "Plan x402", quote: "Quote on Dexalot" },
+      es: { heading: "**Lo que Carmelita puede hacer en Avalanche**", live: "Utilizable ahora", pending: "Construido, pendiente de validación en vivo", boundary: "Descubrir y planificar nunca firma ni mueve fondos. Las acciones financieras abren una aprobación Privy separada.", details: "Planificar x402", quote: "Cotizar en Dexalot" },
+      pt: { heading: "**O que Carmelita pode fazer na Avalanche**", live: "Utilizável agora", pending: "Construído, aguardando validação ao vivo", boundary: "Descoberta e planejamento nunca assinam nem movem fundos. Ações financeiras abrem uma aprovação Privy separada.", details: "Planejar x402", quote: "Cotar na Dexalot" },
+    }[language];
+    reply = {
+      content: [
+        labels.heading,
+        `**${labels.live} (${live.length})**\n${live.map((item) => `- ${item.title} · ${item.provider}`).join("\n")}`,
+        `**${labels.pending} (${pending.length})**\n${pending.map((item) => `- ${item.title} · approval: ${item.approval}`).join("\n")}`,
+        labels.boundary,
+      ].join("\n\n"),
+      connection: { name: "Avalanche Capability Registry", stage: "Connected", priority: "P0" },
+      actions: [
+        { label: labels.quote, message: language === "es" ? "Cotiza 1 AVAX a USDC en Dexalot" : language === "pt" ? "Cote 1 AVAX para USDC na Dexalot" : "Quote 1 AVAX to USDC on Dexalot" },
+        { label: labels.details, message: language === "es" ? "Prepara mi pago x402 en Avalanche" : language === "pt" ? "Prepare meu pagamento x402 na Avalanche" : "Prepare my Avalanche x402 payment" },
+      ],
+    };
   } else if (avalancheKnowledgeIntent) {
     try {
       const result = await searchAvalancheDocs({
