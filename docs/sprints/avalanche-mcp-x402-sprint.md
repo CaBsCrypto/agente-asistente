@@ -117,14 +117,17 @@ If any item is missing or ambiguous, the flow remains discovery-only.
 | X402-01 | x402 | Fuji facilitator/token/scheme evidence | Complete |
 | X402-02 | x402 | Privy EIP-712 adapter without key export | Complete |
 | X402-03 | x402 | Frozen intent, expiry, nonce and replay guard | Complete |
-| X402-04 | x402 | Prepare/sign/settle state machine | Blocked before settlement |
-| X402-05 | x402 | Settlement and independent on-chain evidence | Blocked on X402-04 |
+| X402-04 | x402 | Prepare/sign/settle state machine | Complete: settled 2026-07-31 |
+| X402-05 | x402 | Settlement and independent on-chain evidence | Complete: verified against the Fuji RPC |
 | X402-QA | x402 | Pure/static tests; no payment | Complete |
 | LOCAL-01 | Scrum Master | Local doctor/build and browser acceptance | Pending |
 
 ## Evidence ledger
 
-Completion below means the discovery, preparation or read-only test stated in the backlog passed. It does **not** mean x402 settlement or a payment succeeded.
+Rows marked "Passed discovery only" mean exactly that: the discovery, preparation
+or read-only test passed, and no payment was made. Those rows are the state as of
+`0158762` and are kept unchanged. The settlement row at the end of this table
+records the first payment that actually moved funds.
 
 | Area | Evidence | Result | Commit |
 | --- | --- | --- | --- |
@@ -135,6 +138,26 @@ Completion below means the discovery, preparation or read-only test stated in th
 | RPC/token metadata | Fuji RPC chain `0xa869` (`43113`); read-only calls returned `name = USD Coin`, `version = 2`, `decimals = 6` | Passed read-only verification | `0158762` |
 | Privy compatibility | Interactive EIP-1193 / `eth_signTypedData_v4` adapter prepared without private-key export | Passed preparation only | `0158762` |
 | x402 QA | Pure fixtures for supported-scheme validation, frozen payment binding, expiry/nonce/replay and Privy adapter | 6/6 passed; no signature submitted or funds moved | `0158762` |
+| **x402 settlement** | **First real payment. Fuji transaction `0x3c03d58756d93da7b8a1409cf621d859c853ed54d710974229e5183cfd9b70ad`, block `57475367`, 2026-07-31T08:27:50Z. Verified directly against `api.avax-test.network`, not against this application: status success, chain `43113`, exactly one `Transfer` log on USDC `0x5425890298aed601595a70AB815c96711a31Bc65` carrying `10000` atomic units from the payer to the frozen `payTo`, and one EIP-3009 `AuthorizationUsed` log burning nonce `0x503799fd…`. Payer balance moved 19.99 → 19.98 USDC.** | **Settled and independently verified** | this sprint |
+
+Two facts about that settlement are worth separating from the happy path.
+
+**Gas sponsorship is now measured, not assumed.** The transaction was submitted by
+`0x4b9e841a…7202`, not by the payer. The payer wallet held zero AVAX and the
+payment still went through, which is what EIP-3009 plus a sponsoring facilitator
+is supposed to do and had never been observed here before.
+
+**The application did not verify this settlement — a human did.** `settlement.ts`
+makes no RPC call; it marks a payment settled on the facilitator's word and
+delivers on a well-formed hash. The verification recorded above was run by hand
+against the RPC. Until `getEvmTransactionEvidence` is ported into `settlement.ts`,
+a `200` from this endpoint is a facilitator claim, not on-chain proof.
+
+The facilitator named in the discovery row above, `facilitator.ultravioletadao.xyz`,
+is **not** the one this settlement used. The code points at
+`https://x402.0xgasless.com` (`app/x402-avalanche/config.ts:6`), which is what the
+doctor validated and what settled the payment. The discovery row is left as the
+historical record of a different host.
 
 ## Explicit blockers
 

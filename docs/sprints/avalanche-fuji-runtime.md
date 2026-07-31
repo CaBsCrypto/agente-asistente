@@ -43,4 +43,23 @@ Expected: runtime/install pass; environment checks may warn when secrets are int
 - Earlier focused tests run with the main worktree's tsx produced 6/8 passes; two failures were missing worktree packages (`zod/index.js` and `@stellar/stellar-sdk/index.js`) during the incomplete install, not assertion failures. Those package files are present after the second partial install, but the suite was not rerun because Next remains incomplete.
 - Localhost/build/lint: BLOCKED by incomplete Next.js installation. No application failure is claimed, and no server was launched.
 
-The deterministic remediation remains a completed `npm ci` in this worktree (ideally after investigating Windows antivirus/I/O or migrating the repository to pnpm in a separate change). Do not create an external `node_modules` junction.
+The deterministic remediation was a completed `npm ci` in this worktree. Do not create an external `node_modules` junction.
+
+## Runtime resolved (2026-07-31)
+
+The install blocker above is closed. Every claim in this section was re-run on the
+date given, on branch `feat/avalanche-x402-merchant-sdk`:
+
+- `npm run runtime:doctor`: **7 PASS, 4 WARN, 0 FAIL**. Next.js, tsx and Privy all
+  resolve inside this worktree. The four warnings are environment variables read
+  from `process.env`, which the doctor does not load from `.env.local`; all four
+  are in fact present there.
+- Next.js **16.2.6** boots (`npm run dev -- --port 3001`, ready in 23.6s) and
+  `GET /` returns **200**. A server was launched, contrary to the 2026-07-28 note.
+- `npm run lint`: **passes clean**, exit 0, no findings.
+- `npm run build`: **succeeds**, exit 0, full route table emitted.
+- `npm test`: **269 tests, 267 pass, 0 fail, 2 skipped.**
+- Fuji RPC live at chain ID `43113`.
+
+The 2026-07-28 section above is kept as the historical record of the install
+failure and is no longer a description of current state.

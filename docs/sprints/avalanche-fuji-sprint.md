@@ -32,15 +32,15 @@ repeated.
 | ID | Work item | Owner | Depends on | Expected result | Status |
 | --- | --- | --- | --- | --- | --- |
 | AVAX-001 | Audit branch, network registry and isolation | Scrum Master | - | Fuji is `43113`; main is untouched | Done |
-| AVAX-002 | Repair local dependency/runtime workflow | Runtime team | AVAX-001 | clean install and localhost boot instructions | Blocked: Next install incomplete |
+| AVAX-002 | Repair local dependency/runtime workflow | Runtime team | AVAX-001 | clean install and localhost boot instructions | Done 2026-07-31: Next 16.2.6 boots, `GET /` returns 200 |
 | AVAX-003 | Add deterministic local health/acceptance checks | Runtime team | AVAX-002 | one command checks app and Fuji RPC readiness | Done |
 | AVAX-004 | Parse multilingual Fuji activation/balance/funding/send intents | Wallet team | AVAX-001 | chat emits typed, testable intents | Done |
 | AVAX-005 | Render approval cards inside Carmelita chat | Wallet team | AVAX-004 | activation/funding and transaction approvals are visible in-chat | Code complete; localhost acceptance pending |
 | AVAX-006 | Implement Testnet distributor policy | Wallet team | AVAX-004 | optional `0.005 AVAX`, once per user, rate-limited and idempotent | Policy only; automatic route deferred |
 | AVAX-007 | Build `0.001 AVAX` preview and Privy confirmation flow | Wallet team | AVAX-005 | frozen chain/from/to/value/gas/expiry before signing | Code complete; Privy acceptance pending |
 | AVAX-008 | Persist receipt and reject/replay duplicates safely | Wallet team | AVAX-007 | same intent returns same receipt and never sends twice | Code complete; live replay pending |
-| AVAX-009 | Automated integration and regression suite | Scrum Master | AVAX-003, AVAX-008 | focused tests, lint and build evidence | 18 focused tests pass; lint/build blocked |
-| AVAX-010 | Two-user localhost acceptance | Founder + Scrum Master | AVAX-009 | real Fuji hash, explorer proof, duplicate replay proof | Pending |
+| AVAX-009 | Automated integration and regression suite | Scrum Master | AVAX-003, AVAX-008 | focused tests, lint and build evidence | Done 2026-07-31: 267/269 tests pass, lint clean, production build succeeds |
+| AVAX-010 | Two-user localhost acceptance | Founder + Scrum Master | AVAX-009 | real Fuji hash, explorer proof, duplicate replay proof | Partial 2026-07-31: one real Fuji hash verified on-chain via x402. Second user and duplicate-replay proof still pending |
 
 ## Definition of Done
 
@@ -105,14 +105,14 @@ repeated.
 | --- | --- | --- |
 | Branch isolation | `git status --branch` | `feat/multichain-wallet-foundation`, ahead of `origin/main` |
 | Network contract | registry/test output | Fuji RPC and `43113` present |
-| Existing focused tests | test output | prior wallet/Fuji unit evidence exists; rerun required |
-| Runtime | install, dev and health output | pending |
-| Static quality | lint output | blocked by incomplete dependency install; `git diff --check` passes |
-| Build | production build output | blocked by incomplete dependency install |
-| Activation | local screenshot/API response | pending |
-| Funding | Fuji hash or explicit manual-fallback proof | pending |
-| Transfer | Fuji hash and explorer receipt | pending |
-| Replay | stored hash plus unchanged nonce/transaction count | pending |
+| Existing focused tests | test output | 2026-07-31: 269 tests, 267 pass, 0 fail, 2 skipped |
+| Runtime | install, dev and health output | 2026-07-31: Next 16.2.6 ready in 23.6s, `GET /` returns 200, doctor 7 PASS / 0 FAIL |
+| Static quality | lint output | 2026-07-31: `npm run lint` passes clean, exit 0, no findings |
+| Build | production build output | 2026-07-31: `npm run build` succeeds, exit 0, full route table emitted |
+| Activation | local screenshot/API response | 2026-07-31: authenticated session reached `/api/agent/wallets/avalanche` with 200 |
+| Funding | Fuji hash or explicit manual-fallback proof | manual fallback: wallet `0x7A33b7…9d07` funded externally to 19.99 Fuji USDC. No internal distributor path for USDC exists |
+| Transfer | Fuji hash and explorer receipt | x402 settlement `0x3c03d587…70ad`, block `57475367`, verified against the RPC. A plain AVAX transfer is still unexercised and cannot run: this wallet holds 0 AVAX |
+| Replay | stored hash plus unchanged nonce/transaction count | on-chain half proven: EIP-3009 `AuthorizationUsed` burned nonce `0x503799fd…`, so that authorization can never execute again. The application-level replay path is still unexercised |
 | Second user | two distinct Privy user/wallet records | pending |
 
 ## Risks, controls and blockers

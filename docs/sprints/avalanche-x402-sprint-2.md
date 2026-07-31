@@ -1,6 +1,8 @@
 # Sprint 2: Avalanche x402 on Fuji
 
-Status: implemented; authenticated regression acceptance pending
+Status: settled for real on Fuji on 2026-07-31 and independently verified on-chain.
+See "Settlement evidence" at the end of this document for the transaction and the
+checks that were run against it.
 Branch: `feat/multichain-wallet-foundation`  
 Runtime target: localhost and Avalanche Fuji only
 
@@ -148,3 +150,60 @@ Terminal alternatives:
 - Custody of user or facilitator keys.
 - Production deployment.
 - Refactoring the existing Stellar x402 implementation.
+
+## Settlement evidence (2026-07-31)
+
+The sprint objective — `prepare -> approve in Privy -> verify -> settle -> deliver`
+— completed for real. One payment of exactly `0.01 USDC` moved on Avalanche Fuji.
+
+| Field | Value |
+| --- | --- |
+| Transaction | `0x3c03d58756d93da7b8a1409cf621d859c853ed54d710974229e5183cfd9b70ad` |
+| Block | `57475367` |
+| Timestamp | 2026-07-31T08:27:50Z |
+| Chain | `43113` (Fuji) |
+| Status | success |
+| Asset | USDC `0x5425890298aed601595a70AB815c96711a31Bc65`, 6 decimals |
+| Value | `10000` atomic units = `0.01 USDC` |
+| Payer | `0x7A33b72BddF1d6D01c279b6cC9049c5E751f9d07` |
+| Recipient | `0x2BAa52fA82FBFd5d103eb30181bD0Fa11a04C0d0` (the frozen `payTo`) |
+| Submitted by | `0x4b9e841a…7202` — the facilitator, not the payer |
+| Payer balance | 19.99 → 19.98 USDC |
+
+### How it was verified
+
+Directly against `https://api.avax-test.network/ext/bc/C/rpc`, not against this
+application. `eth_getTransactionReceipt` returned status success on chain `43113`
+with exactly **one** `Transfer` log on the expected USDC contract, carrying
+`10000` units from the payer to the frozen `payTo`, and **one** EIP-3009
+`AuthorizationUsed` log emitted by the token itself, burning nonce
+`0x503799fd9533b66a1d03108341b92e550feffad750482ab0b21b1fd75fb16e62`.
+
+That second log is the stronger of the two. Exactly-once is not asserted by our
+database here; it is written on chain by the USDC contract, and that
+authorization can never be executed again.
+
+### Two things this run establishes that testing could not
+
+**Gas sponsorship is measured.** The transaction was submitted by the facilitator
+address, not the payer. The payer wallet held **zero AVAX** and the payment still
+settled, which is exactly what EIP-3009 plus a sponsoring facilitator promises and
+what no unit test could demonstrate.
+
+**The application did not verify this payment.** `app/x402-avalanche/settlement.ts`
+makes no RPC call. `settlementBindingProblem` checks that the returned hash is
+well-formed `BYTES32` and compares `network` and `payer` only when the facilitator
+chooses to send them; delivery then requires nothing beyond status `settled` and a
+non-null hash. Every field in the table above was confirmed by hand. Until
+`getEvmTransactionEvidence` — already used by the transfer, distributor and
+merchant paths — is ported into `settlement.ts`, a `200` from this endpoint is the
+facilitator's claim and not proof of settlement.
+
+### Still not done
+
+- On-chain verification inside `settlement.ts` (above).
+- The merchant side has never run. Its receipt reader calls
+  `getTransactionReceipt` without waiting for the block, and any transient error
+  parks the record in `reconciliation_required`, a terminal state with no rescue
+  path. Do not enable the merchant demo before that is fixed.
+- No balance precheck: the prepare step will ask for a signature at zero balance.
