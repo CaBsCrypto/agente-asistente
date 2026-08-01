@@ -253,8 +253,18 @@ export function evaluateExecutionPolicies(
     }
     if (policy.kind === "spend_limit" && typeof action.amount === "number") {
       const maximum = Number(policy.config.amount);
-      const asset = String(policy.config.asset ?? action.asset ?? "").toUpperCase();
-      if (!Number.isNaN(maximum) && (!action.asset || asset === action.asset.toUpperCase())) {
+      // Symbol matching must be network-agnostic and alias-aware. "AVAX" and
+      // "WAVAX" are the same unit of value on the C-Chain, and a global limit
+      // saved without an asset must constrain any chain, not silently apply
+      // only to the Stellar default the parser happened to assume.
+      const normalizedAsset = (symbol: string | undefined) =>
+        symbol?.toUpperCase().replace(/\s+/g, "").replace(/^WAVAX$/, "AVAX") ?? "";
+      const actionAsset = normalizedAsset(action.asset);
+      const limitAsset = normalizedAsset(
+        typeof policy.config.asset === "string" ? policy.config.asset : undefined,
+      );
+      const applies = limitAsset === "" || actionAsset === "" || actionAsset === limitAsset;
+      if (!Number.isNaN(maximum) && applies) {
         applied.push(policy.label);
         if (action.amount > maximum) reasons.push("spend_limit_exceeded");
       }

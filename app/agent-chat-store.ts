@@ -56,6 +56,7 @@ import { parseAvalancheChatIntent } from "@/app/wallets/avalanche-intents";
 import { searchAvalancheDocs } from "@/app/connectors/avalanche-mcp";
 import {
   parseAvalancheCapabilitiesIntent,
+  parseAvalancheEcosystemReadIntent,
   parseAvalancheKnowledgeIntent,
   parseDexalotReadIntent,
 } from "@/app/connectors/avalanche-read-intents";
@@ -63,6 +64,18 @@ import {
   getDexalotTestnetQuote,
   listDexalotTestnetPairs,
 } from "@/app/connectors/dexalot";
+import {
+  getAaveFujiMarketRead,
+  getAaveFujiPositionRead,
+  getDefiLlamaYieldsRead,
+  getLfjQuoteRead,
+  getNftCollectionRead,
+  getNftHolderDistribution,
+  getNftProvenanceRead,
+  getNftVenueStatus,
+  getPredictionMarketsRead,
+  getPredictionSectorRead,
+} from "@/app/connectors/avalanche-ecosystem";
 import { parseCctpBridgeIntent } from "@/app/connectors/circle-cctp-intents";
 import { handleCctpBridgeIntent } from "@/app/connectors/circle-cctp-chat";
 import { listAvalancheCapabilities } from "@/app/avalanche/capability-registry";
@@ -432,6 +445,7 @@ export async function sendAgentMessage(userId: string, content: string) {
   const avalancheCapabilitiesIntent = parseAvalancheCapabilitiesIntent(content);
   const avalancheKnowledgeIntent = parseAvalancheKnowledgeIntent(content);
   const dexalotReadIntent = parseDexalotReadIntent(content);
+  const ecosystemReadIntent = parseAvalancheEcosystemReadIntent(content);
   const cctpBridgeIntent = parseCctpBridgeIntent(content);
   const vaultCommand = parseVaultCommand(content);
   const unblckIntent = parseUnblckChatIntent(content);
@@ -498,6 +512,7 @@ export async function sendAgentMessage(userId: string, content: string) {
       avalancheCapabilitiesIntent ||
       avalancheKnowledgeIntent ||
       dexalotReadIntent ||
+      ecosystemReadIntent ||
       requestsNotionSearch ||
       requestsWatchlistAdd ||
       requestsWatchlist ||
@@ -748,6 +763,178 @@ export async function sendAgentMessage(userId: string, content: string) {
           en: `Dexalot Testnet could not return verified read-only data (**${code}**). No transaction was prepared and no funds moved.`,
           es: `Dexalot Testnet no pudo devolver datos verificados de solo lectura (**${code}**). No se preparó ninguna transacción ni se movieron fondos.`,
           pt: `A Dexalot Testnet não conseguiu retornar dados verificados somente para leitura (**${code}**). Nenhuma transação foi preparada e nenhum saldo foi movimentado.`,
+        }[language],
+        actions: [{
+          label: language === "es" ? "Reintentar" : language === "pt" ? "Tentar novamente" : "Retry",
+          message: content,
+        }],
+      };
+    }
+  } else if (ecosystemReadIntent) {
+    try {
+      const boundary = {
+        en: "Read-only, keyless, verified against the live source or Fuji chain. No signature, approval, trade or transaction was requested.",
+        es: "Solo lectura, sin API key, verificado contra la fuente viva o la cadena Fuji. No se solicitó firma, aprobación, trade ni transacción.",
+        pt: "Somente leitura, sem API key, verificado contra a fonte viva ou a cadeia Fuji. Nenhuma assinatura, aprovação, trade ou transação foi solicitada.",
+      }[language];
+      let result: Record<string, unknown>;
+      let title = "";
+      switch (ecosystemReadIntent.operation) {
+        case "predictions.sector": {
+          const data = await getPredictionSectorRead();
+          result = {
+            totalPredictionTvl: data.totalPredictionTvl,
+            protocolCount: data.protocolCount,
+            byChain: data.byChain.slice(0, 10),
+            avalanche: data.avalanche,
+            source: data.source,
+          };
+          title = "Prediction-market TVL by chain";
+          break;
+        }
+        case "predictions.markets": {
+          const data = await getPredictionMarketsRead();
+          result = {
+            venue: data.venue,
+            markets: data.markets.slice(0, 10),
+            source: data.source,
+          };
+          title = "Live prediction prices (mainnet, read-only)";
+          break;
+        }
+        case "aave.market": {
+          const data = await getAaveFujiMarketRead();
+          result = {
+            pool: data.pool,
+            reserves: data.reserves,
+            source: data.source,
+          };
+          title = "Aave V3 Fuji market state";
+          break;
+        }
+        case "aave.position": {
+          const data = await getAaveFujiPositionRead(ecosystemReadIntent.wallet);
+          result = {
+            wallet: data.wallet,
+            supplied: data.supplied,
+            rows: data.rows,
+            source: data.source,
+          };
+          title = "Aave V3 Fuji position";
+          break;
+        }
+        case "nft.collection": {
+          const data = await getNftCollectionRead(ecosystemReadIntent.collection);
+          result = {
+            collection: data.collection,
+            name: data.name,
+            symbol: data.symbol,
+            totalSupply: data.totalSupply,
+            owners: data.owners,
+            source: data.source,
+          };
+          title = "Fuji NFT collection";
+          break;
+        }
+        case "nft.holders": {
+          const data = await getNftHolderDistribution(ecosystemReadIntent.collection);
+          result = {
+            collection: data.collection,
+            holderCount: data.holderCount,
+            top: data.top,
+            source: data.source,
+          };
+          title = "Fuji NFT holder distribution";
+          break;
+        }
+        case "nft.provenance": {
+          const data = await getNftProvenanceRead(
+            ecosystemReadIntent.collection,
+            ecosystemReadIntent.tokenId,
+          );
+          result = {
+            collection: data.collection,
+            tokenId: data.tokenId,
+            owner: data.owner,
+            routescanOwner: data.routescanOwner,
+            indexersAgree: data.indexersAgree,
+            history: data.history,
+            source: data.source,
+          };
+          title = "Fuji NFT provenance (cross-checked)";
+          break;
+        }
+        case "nft.venue_status": {
+          const data = await getNftVenueStatus();
+          result = {
+            seaport1_6: data.seaport1_6,
+            joepegs: data.joepegs,
+            source: data.source,
+          };
+          title = "Fuji NFT venue status";
+          break;
+        }
+        case "nft.floor": {
+          result = {
+            status: "no_source",
+            reason: "OpenSea 401, joepegs 401, Reservoir closed 2025-10-15, SimpleHash closed 2025-03-27. A floor-price source on Avalanche requires a human-provided key.",
+          };
+          title = "Fuji NFT floor price";
+          break;
+        }
+        case "defillama.yields": {
+          const data = await getDefiLlamaYieldsRead();
+          result = {
+            chain: data.chain,
+            pools: data.pools,
+            source: data.source,
+          };
+          title = "Avalanche yields (mainnet, labeled)";
+          break;
+        }
+        case "lfj.liveness": {
+          const data = await getLfjQuoteRead({
+            amountIn: ecosystemReadIntent.amount,
+            assetIn: ecosystemReadIntent.assetIn,
+            assetOut: ecosystemReadIntent.assetOut,
+          });
+          result = {
+            assetIn: data.assetIn,
+            assetOut: data.assetOut,
+            amountIn: data.amountIn,
+            price: data.price,
+            livenessNote: data.livenessNote,
+            source: data.source,
+          };
+          title = "LFJ liveness check";
+          break;
+        }
+      }
+      reply = {
+        content: [
+          `**${title}**`,
+          "```json\n" + JSON.stringify(result, null, 2).slice(0, 6_000) + "\n```",
+          boundary,
+        ].join("\n\n"),
+        connection: {
+          name: "Avalanche ecosystem read",
+          stage: "Read-only connected",
+          priority: "P1",
+        },
+        actions: [
+          {
+            label: language === "es" ? "Reintentar lectura" : language === "pt" ? "Tentar novamente" : "Retry read",
+            message: content,
+          },
+        ],
+      };
+    } catch (error) {
+      const code = error instanceof Error ? error.message.split(":")[0] : "ecosystem_read_failed";
+      reply = {
+        content: {
+          en: `The read did not complete (**${code}**). I did not invent or cache an answer; nothing was signed or moved.`,
+          es: `La lectura no completó (**${code}**). No inventé ni presenté una respuesta en caché; no se firmó ni movió nada.`,
+          pt: `A leitura não concluiu (**${code}**). Não inventei nem apresentei uma resposta em cache; nada foi assinado ou movimentado.`,
         }[language],
         actions: [{
           label: language === "es" ? "Reintentar" : language === "pt" ? "Tentar novamente" : "Retry",

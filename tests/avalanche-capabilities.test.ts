@@ -5,7 +5,7 @@ import { listAvalancheCapabilities, planAvalancheCapability } from "../app/avala
 
 test("Avalanche registry separates reads from approval-bound financial actions", () => {
   const capabilities = listAvalancheCapabilities();
-  assert.equal(capabilities.length, 7);
+  assert.equal(capabilities.length, 18);
   assert.equal(capabilities.find((item) => item.id === "dexalot.quote.read")?.approval, "none");
   assert.equal(capabilities.find((item) => item.id === "x402.report.purchase")?.approval, "privy_single");
   assert.equal(capabilities.find((item) => item.id === "circle.cctp.fuji_to_stellar")?.approval, "privy_dual");
@@ -69,4 +69,42 @@ test("a planned capability is never executable, even with every requirement sati
 
   assert.deepEqual(plan.blockers, []);
   assert.equal(plan.executable, false, "status alone must gate execution");
+});
+
+test("Wave 1 read capabilities are planned-free reads that never require approval", () => {
+  const reads = [
+    "predictions.sector.read",
+    "predictions.markets.read",
+    "avalanche.aave.market.read",
+    "avalanche.aave.position.read",
+    "avalanche.nft.collection_read",
+    "avalanche.nft.holder_distribution",
+    "avalanche.nft.provenance_read",
+    "avalanche.nft.venue_status",
+    "defillama.yields.read",
+    "lfj.swap.quote.read",
+  ] as const;
+  for (const id of reads) {
+    const context = id === "avalanche.aave.position.read" ? { authenticated: true, evmWallet: true } : { authenticated: true };
+    const plan = planAvalancheCapability(id, context);
+    assert.equal(plan.approvalRequired, false, `${id} must be approval-free`);
+    assert.equal(plan.boundary, "read_only", `${id} must stay in the read boundary`);
+    assert.equal(plan.executable, true, `${id} must be executable when authenticated`);
+  }
+});
+
+test("mainnet-scoped reads disclose their data scope instead of claiming Fuji", () => {
+  const capabilities = listAvalancheCapabilities();
+  const mainnetScoped = capabilities.filter((item) => item.dataScope !== "fuji_onchain");
+  assert.ok(mainnetScoped.length >= 3, "mainnet/offchain reads must be labeled");
+  for (const item of mainnetScoped) {
+    assert.equal(item.operation, "read", `${item.id} must be read-only`);
+  }
+});
+
+test("floor price row is honest about having no source", () => {
+  const floor = listAvalancheCapabilities().find((item) => item.id === "avalanche.nft.floor_read")!;
+  assert.equal(floor.status, "planned");
+  assert.match(floor.evidence, /Reservoir|SimpleHash|401/);
+  assert.match(floor.nextAction, /key|Blocked/);
 });

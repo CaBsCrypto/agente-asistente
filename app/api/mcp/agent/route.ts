@@ -111,6 +111,7 @@ function getHandler() {
             capabilityId: avalancheCapabilityIdSchema,
             evmWallet: z.boolean().default(false), stellarWallet: z.boolean().default(false),
             fujiAvax: z.boolean().default(false), fujiUsdc: z.boolean().default(false),
+            fujiWavax: z.boolean().default(false), fujiNftOwned: z.boolean().default(false),
             stellarUsdcTrustline: z.boolean().default(false),
           },
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },

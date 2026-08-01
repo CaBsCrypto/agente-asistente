@@ -1,5 +1,6 @@
 import { connections, type Connection } from "@/app/connections/data";
 import { parseAvalancheChatIntent } from "@/app/wallets/avalanche-intents";
+import { parseAvalancheEcosystemReadIntent } from "@/app/connectors/avalanche-read-intents";
 
 export type AgentLanguage = "en" | "es" | "pt";
 
@@ -404,6 +405,35 @@ export function buildAgentReply(message: string, context: AgentChatContext = {})
             destination: avalancheIntent.destination,
           } : {}),
         },
+      }],
+    };
+  }
+
+  const ecosystemReadIntent = parseAvalancheEcosystemReadIntent(message);
+  if (ecosystemReadIntent) {
+    const labels = {
+      en: { predictions: "Prediction-market data", aave: "Aave V3 Fuji state", nft: "Fuji NFT read", yields: "Avalanche yields", lfj: "LFJ liveness check" },
+      es: { predictions: "Datos de mercados de predicción", aave: "Estado Aave V3 Fuji", nft: "Lectura NFT Fuji", yields: "Rendimientos Avalanche", lfj: "Chequeo de liveness LFJ" },
+      pt: { predictions: "Dados de mercados de previsão", aave: "Estado Aave V3 Fuji", nft: "Leitura NFT Fuji", yields: "Rendimentos Avalanche", lfj: "Verificação de liveness LFJ" },
+    }[language];
+    const copy = {
+      en: "I will run a keyless, read-only check of the live source or the Fuji chain and show you the verified result. Nothing will be signed, approved or moved.",
+      es: "Ejecutaré una verificación sin API key, de solo lectura, contra la fuente viva o la cadena Fuji, y te mostraré el resultado verificado. Nada se firmará, aprobará ni moverá.",
+      pt: "Vou executar uma verificação sem API key, somente leitura, contra a fonte viva ou a cadeia Fuji, e mostrar o resultado verificado. Nada será assinado, aprovado ou movimentado.",
+    }[language];
+    return {
+      content: copy,
+      actions: [{
+        label: labels[ecosystemReadIntent.operation.startsWith("predictions")
+          ? "predictions"
+          : ecosystemReadIntent.operation.startsWith("aave")
+            ? "aave"
+            : ecosystemReadIntent.operation.startsWith("nft")
+              ? "nft"
+              : ecosystemReadIntent.operation.startsWith("defillama")
+                ? "yields"
+                : "lfj"],
+        message,
       }],
     };
   }
