@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyPrivyAccessToken } from "@/app/privy-stellar";
+import { evaluateUserAction } from "@/app/agent-memory-store";
 import {
   prepareFujiDemoTransfer,
   recordFujiDemoTransfer,
@@ -47,18 +48,36 @@ export async function POST(request: Request) {
   try {
     const claims = await verifyPrivyAccessToken(bearerToken(request));
     const input = requestSchema.parse(await request.json());
-    const result = input.action === "prepare"
-      ? await prepareFujiDemoTransfer({
-          userId: claims.user_id,
-          requestId: input.requestId,
-          destination: input.destination,
-          amount: input.amount,
-        })
-      : await recordFujiDemoTransfer({
-          userId: claims.user_id,
-          previewId: input.previewId,
-          transactionHash: input.transactionHash,
-        });
+    if (input.action === "prepare") {
+      const decision = await evaluateUserAction(claims.user_id, {
+        actionType: "avalanche.transfer",
+        network: "avalanche:fuji",
+        asset: "AVAX",
+        amount: Number(input.amount),
+        financial: true,
+        irreversible: true,
+      });
+      if (!decision.allowed) {
+        return NextResponse.json(
+          { error: "fuji_transfer_policy_blocked", decision },
+          { status: 403, headers: { "Cache-Control": "no-store" } },
+        );
+      }
+      const prepared = await prepareFujiDemoTransfer({
+        userId: claims.user_id,
+        requestId: input.requestId,
+        destination: input.destination,
+        amount: input.amount,
+      });
+      return NextResponse.json(prepared, {
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
+    const result = await recordFujiDemoTransfer({
+      userId: claims.user_id,
+      previewId: input.previewId,
+      transactionHash: input.transactionHash,
+    });
     return NextResponse.json(result, {
       headers: { "Cache-Control": "no-store" },
     });
