@@ -154,21 +154,98 @@ export async function estimateEvmNativeTransfer(
   };
 }
 
+export type EvmContractPreview = {
+  chainId: number;
+  from: string;
+  to: string;
+  data: string;
+  valueWei: string;
+  valueHex: string;
+  gasLimit: string;
+  gasLimitHex: string;
+  gasPriceWei: string;
+  maxGasCostWei: string;
+  nonce: number;
+};
+
+export async function prepareEvmContractCall(
+  network: WalletNetwork,
+  from: string,
+  to: string,
+  data: string,
+  valueWei?: string,
+  fetcher: typeof fetch = fetch,
+) {
+  if (!EVM_ADDRESS.test(from) || !EVM_ADDRESS.test(to)) throw new Error("invalid_evm_address");
+  if (!/^0x(?:[0-9a-fA-F]{2})*$/.test(data)) throw new Error("invalid_evm_calldata");
+  let value = ZERO;
+  if (valueWei !== undefined) {
+    if (!/^[0-9]+$/.test(valueWei)) throw new Error("invalid_evm_amount");
+    value = BigInt(valueWei);
+    if (value <= ZERO) throw new Error("invalid_evm_amount");
+  }
+  const valueHex = hex(value);
+  const estimateParams: Record<string, string> = { from, to, data };
+  if (value > ZERO) estimateParams.value = valueHex;
+  const [chainIdHex, gasLimitHex, gasPriceHex, nonceHex, balanceHex] = await Promise.all([
+    rpc<string>(network, "eth_chainId", [], fetcher),
+    rpc<string>(network, "eth_estimateGas", [estimateParams], fetcher),
+    rpc<string>(network, "eth_gasPrice", [], fetcher),
+    rpc<string>(network, "eth_getTransactionCount", [from, "pending"], fetcher),
+    rpc<string>(network, "eth_getBalance", [from, "latest"], fetcher),
+  ]);
+  if (Number(BigInt(chainIdHex)) !== network.chainId) throw new Error("evm_chain_id_mismatch");
+  const gasLimit = BigInt(gasLimitHex);
+  const gasPrice = BigInt(gasPriceHex);
+  const maxGasCost = gasLimit * gasPrice;
+  if (BigInt(balanceHex) < value + maxGasCost) throw new Error("insufficient_avax_for_value_and_gas");
+  return {
+    chainId: network.chainId, from, to, data,
+    valueWei: value.toString(), valueHex,
+    gasLimit: gasLimit.toString(), gasLimitHex: hex(gasLimit),
+    gasPriceWei: gasPrice.toString(), maxGasCostWei: maxGasCost.toString(),
+    nonce: Number(BigInt(nonceHex)),
+  } satisfies EvmContractPreview;
+}
+
+type EvmTransactionByHash = {
+  hash: string; chainId: string; from: string; to: string | null; value: string;
+  nonce: string; gas: string; gasPrice: string; blockNumber: string | null; input: string;
+};
+
+export type EvmTransactionScope = {
+  chainId?: number;
+  from?: string;
+  to?: string;
+  valueWei?: string;
+  nonce?: number;
+  data?: string;
+};
+
+function assertTransactionScopeMatches(expected: EvmTransactionScope, transaction: EvmTransactionByHash) {
+  const mismatch = expected.chainId !== undefined && expected.chainId !== Number(BigInt(transaction.chainId))
+    || expected.from !== undefined && expected.from.toLowerCase() !== transaction.from.toLowerCase()
+    || expected.to !== undefined && expected.to.toLowerCase() !== transaction.to?.toLowerCase()
+    || expected.valueWei !== undefined && expected.valueWei !== BigInt(transaction.value).toString()
+    || expected.nonce !== undefined && expected.nonce !== Number(BigInt(transaction.nonce))
+    || expected.data !== undefined && expected.data.toLowerCase() !== transaction.input.toLowerCase();
+  if (mismatch) throw new Error("evm_transaction_scope_mismatch");
+}
+
 export async function getEvmTransactionEvidence(
   network: WalletNetwork,
   transactionHash: string,
   fetcher: typeof fetch = fetch,
+  expected?: EvmTransactionScope,
 ) {
   const [chainIdHex, transaction] = await Promise.all([
     rpc<string>(network, "eth_chainId", [], fetcher),
-    rpc<{
-      hash: string; chainId: string; from: string; to: string | null; value: string;
-      nonce: string; gas: string; gasPrice: string; blockNumber: string | null;
-    } | null>(network, "eth_getTransactionByHash", [transactionHash], fetcher),
+    rpc<EvmTransactionByHash | null>(network, "eth_getTransactionByHash", [transactionHash], fetcher),
   ]);
   const observedChainId = Number(BigInt(chainIdHex));
   if (observedChainId !== network.chainId) throw new Error("evm_chain_id_mismatch");
   if (!transaction) throw new Error("evm_transaction_not_found");
+  if (expected) assertTransactionScopeMatches(expected, transaction);
   const receipt = await rpc<{ status: string; blockNumber: string } | null>(
     network, "eth_getTransactionReceipt", [transactionHash], fetcher,
   );
@@ -186,5 +263,33 @@ export async function getEvmTransactionEvidence(
       ? Number(BigInt(receipt.blockNumber))
       : transaction.blockNumber ? Number(BigInt(transaction.blockNumber)) : null,
     receiptStatus: receipt?.status ?? null,
+  };
+}
+
+export async function verifyEvmContractCall(
+  network: WalletNetwork,
+  preview: EvmContractPreview,
+  transactionHash: string,
+  fetcher: typeof fetch = fetch,
+) {
+  const evidence = await getEvmTransactionEvidence(network, transactionHash, fetcher, {
+    chainId: preview.chainId,
+    from: preview.from,
+    to: preview.to,
+    valueWei: preview.valueWei,
+    nonce: preview.nonce,
+    data: preview.data,
+  });
+  if (
+    evidence.gasLimit !== preview.gasLimit ||
+    evidence.gasPriceWei !== preview.gasPriceWei
+  ) throw new Error("evm_transaction_scope_mismatch");
+  return {
+    ...evidence,
+    status: (evidence.receiptStatus === "0x1"
+      ? "confirmed"
+      : evidence.receiptStatus === "0x0"
+        ? "failed"
+        : "submitted") as "confirmed" | "failed" | "submitted",
   };
 }

@@ -58,9 +58,9 @@ export function parseAvalancheCapabilitiesIntent(message: string): AvalancheCapa
   const query = normalized(message);
   if (!["avalanche", "fuji", "avax"].some((term) => query.includes(term))) return null;
   const asksCapabilities = [
-    "what can i do", "what is available", "available features", "capabilities",
-    "que puedo hacer", "que tenemos", "funciones disponibles", "capacidades",
-    "o que posso fazer", "o que temos", "funcoes disponiveis",
+    "what can i do", "what can we do", "what is available", "available features", "capabilities",
+    "que puedo hacer", "que podemos hacer", "que tenemos", "funciones disponibles", "capacidades",
+    "o que posso fazer", "o que podemos fazer", "o que temos", "funcoes disponiveis",
   ].some((term) => query.includes(term));
   return asksCapabilities ? { operation: "capabilities" } : null;
 }
