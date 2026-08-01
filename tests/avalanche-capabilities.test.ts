@@ -5,9 +5,10 @@ import { listAvalancheCapabilities, planAvalancheCapability } from "../app/avala
 
 test("Avalanche registry separates reads from approval-bound financial actions", () => {
   const capabilities = listAvalancheCapabilities();
-  assert.equal(capabilities.length, 18);
+  assert.equal(capabilities.length, 19);
   assert.equal(capabilities.find((item) => item.id === "dexalot.quote.read")?.approval, "none");
   assert.equal(capabilities.find((item) => item.id === "x402.report.purchase")?.approval, "privy_single");
+  assert.equal(capabilities.find((item) => item.id === "pangolin.swap.avax_to_usdc")?.approval, "privy_single");
   assert.equal(capabilities.find((item) => item.id === "circle.cctp.fuji_to_stellar")?.approval, "privy_dual");
 });
 
