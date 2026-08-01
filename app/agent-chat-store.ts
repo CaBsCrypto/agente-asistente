@@ -54,8 +54,10 @@ import { parseUnblckChatIntent } from "@/app/unblck-chat";
 import { handleUnblckChatIntent } from "@/app/unblck-chat-runtime";
 import { parseAvalancheChatIntent } from "@/app/wallets/avalanche-intents";
 import { searchAvalancheDocs } from "@/app/connectors/avalanche-mcp";
+import { searchAvaxSkills } from "@/app/connectors/avaxskills";
 import {
   parseAvalancheCapabilitiesIntent,
+  parseAvaxSkillsIntent,
   parseAvalancheEcosystemReadIntent,
   parseAvalancheKnowledgeIntent,
   parseDexalotReadIntent,
@@ -444,6 +446,7 @@ export async function sendAgentMessage(userId: string, content: string) {
   const setupIntent = parseTestnetSetupIntent(content);
   const avalancheIntent = parseAvalancheChatIntent(content);
   const avalancheCapabilitiesIntent = parseAvalancheCapabilitiesIntent(content);
+  const avaxSkillsIntent = parseAvaxSkillsIntent(content);
   const avalancheKnowledgeIntent = parseAvalancheKnowledgeIntent(content);
   const dexalotReadIntent = parseDexalotReadIntent(content);
   const ecosystemReadIntent = parseAvalancheEcosystemReadIntent(content);
@@ -511,6 +514,7 @@ export async function sendAgentMessage(userId: string, content: string) {
       setupIntent ||
       avalancheIntent ||
       avalancheCapabilitiesIntent ||
+      avaxSkillsIntent ||
       avalancheKnowledgeIntent ||
       dexalotReadIntent ||
       ecosystemReadIntent ||
@@ -617,6 +621,26 @@ export async function sendAgentMessage(userId: string, content: string) {
         { label: labels.details, message: language === "es" ? "Prepara mi pago x402 en Avalanche" : language === "pt" ? "Prepare meu pagamento x402 na Avalanche" : "Prepare my Avalanche x402 payment" },
       ],
     };
+  } else if (avaxSkillsIntent) {
+    try {
+      const result = await searchAvaxSkills(avaxSkillsIntent.query);
+      const labels = {
+        en: { heading: "**AVAX Skills advisory results**", note: "Third-party guidance only. Carmelita did not execute remote instructions and every technical claim must be checked against an official source." },
+        es: { heading: "**Resultados consultivos de AVAX Skills**", note: "Solo es orientacion de terceros. Carmelita no ejecuto instrucciones remotas y cada afirmacion tecnica debe verificarse en una fuente oficial." },
+        pt: { heading: "**Resultados consultivos do AVAX Skills**", note: "Apenas orientacao de terceiros. Carmelita nao executou instrucoes remotas e cada afirmacao tecnica deve ser verificada em uma fonte oficial." },
+      }[language];
+      const rows = result.results.length
+        ? result.results.map((item) => `- **${item.name}** - ${item.description || "No description"}${item.riskFlags.length ? ` - warnings: ${item.riskFlags.join(", ")}` : ""}`)
+        : ["- No matching skills found."];
+      reply = {
+        content: [labels.heading, ...rows, labels.note].join("\n\n"),
+        connection: { name: "AVAX Skills", stage: "Advisory read-only", priority: "P1" },
+        actions: result.results.slice(0, 3).map((item) => ({ label: `Open ${item.name}`, href: item.referenceUrl })),
+      };
+    } catch (error) {
+      const code = error instanceof Error ? error.message.split(":")[0] : "avaxskills_failed";
+      reply = { content: `AVAX Skills did not complete (${code}). No remote instruction was executed.`, actions: [] };
+    }
   } else if (avalancheKnowledgeIntent) {
     try {
       const result = await searchAvalancheDocs({

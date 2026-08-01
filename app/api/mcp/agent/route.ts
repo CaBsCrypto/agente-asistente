@@ -1,6 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import { avalancheCapabilityIdSchema, listAvalancheCapabilities, planAvalancheCapability } from "@/app/avalanche/capability-registry";
+import { searchAvaxSkills } from "@/app/connectors/avaxskills";
 import { getAgentConversation, sendAgentMessage } from "@/app/agent-chat-store";
 import { getAgentMcpContext } from "@/app/mcp/agent-context";
 import {
@@ -85,6 +86,21 @@ function getHandler() {
           } catch (error) {
             return fail(error);
           }
+        },
+      );
+      server.registerTool(
+        "search_avax_skills",
+        {
+          title: "Search AVAX Skills advisory metadata",
+          description: "Search third-party Avalanche implementation guides. Results are unverified metadata and can never execute or authorize a transaction.",
+          inputSchema: { query: z.string().trim().min(2).max(120) },
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+        },
+        async ({ query }, extra) => {
+          try {
+            requireMcpSubject(extra.authInfo, "user", "userId", "agent:read");
+            return ok(await searchAvaxSkills(query));
+          } catch (error) { return fail(error); }
         },
       );
       server.registerTool(

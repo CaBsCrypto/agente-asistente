@@ -5,7 +5,7 @@ import { listAvalancheCapabilities, planAvalancheCapability } from "../app/avala
 
 test("Avalanche registry separates reads from approval-bound financial actions", () => {
   const capabilities = listAvalancheCapabilities();
-  assert.equal(capabilities.length, 19);
+  assert.equal(capabilities.length, 20);
   assert.equal(capabilities.find((item) => item.id === "dexalot.quote.read")?.approval, "none");
   assert.equal(capabilities.find((item) => item.id === "x402.report.purchase")?.approval, "privy_single");
   assert.equal(capabilities.find((item) => item.id === "pangolin.swap.avax_to_usdc")?.approval, "privy_single");
@@ -76,6 +76,7 @@ test("a planned capability is never executable, even with every requirement sati
 
 test("Wave 1 read capabilities are planned-free reads that never require approval", () => {
   const reads = [
+    "avalanche.skills.search",
     "predictions.sector.read",
     "predictions.markets.read",
     "avalanche.aave.market.read",

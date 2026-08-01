@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const avalancheCapabilityIdSchema = z.enum([
-  "avalanche.docs.search", "avalanche.wallet.status", "avalanche.wallet.transfer",
+  "avalanche.docs.search", "avalanche.skills.search", "avalanche.wallet.status", "avalanche.wallet.transfer",
   "dexalot.markets.list", "dexalot.quote.read", "x402.report.purchase",
   "pangolin.swap.avax_to_usdc",
   "circle.cctp.fuji_to_stellar",
@@ -27,6 +27,7 @@ export type AvalancheCapability = {
 
 const capabilities: readonly AvalancheCapability[] = [
   { id: "avalanche.docs.search", provider: "Avalanche Builder Hub MCP", title: "Search official Avalanche knowledge", description: "Search bounded official documentation from the agent.", status: "live", operation: "read", approval: "none", network: "avalanche:fuji", dataScope: "offchain_api", requires: ["privy_session"], evidence: "Read-only MCP adapter with an allowlisted docs_search tool.", nextAction: "Ask Carmelita to research an Avalanche integration." },
+  { id: "avalanche.skills.search", provider: "AVAX Skills", title: "Search third-party Avalanche implementation guides", description: "Search bounded AVAX Skills metadata with provenance and risk warnings; remote instructions are never executed.", status: "ready_to_test", operation: "read", approval: "none", network: "avalanche:fuji", dataScope: "offchain_api", requires: ["privy_session"], evidence: "Fixed-origin, JSON-only, schema-validated metadata connector. Every result is advisory_unverified and requires primary-source verification.", nextAction: "Ask Carmelita to find an Avalanche skill, then verify the proposal against official Builder Hub or protocol documentation." },
   { id: "avalanche.wallet.status", provider: "Privy", title: "Inspect the user's Fuji wallet", description: "Return the user-owned EVM address and verified balances.", status: "live", operation: "read", approval: "none", network: "avalanche:fuji", dataScope: "fuji_onchain", requires: ["privy_session", "evm_wallet"], evidence: "Privy ownership and Fuji RPC balance checks are implemented.", nextAction: "Ask Carmelita to show the Avalanche wallet and balances." },
   { id: "avalanche.wallet.transfer", provider: "Privy", title: "Send an exact Fuji AVAX amount", description: "Freeze an exact recipient and amount before user signing.", status: "ready_to_test", operation: "financial", approval: "privy_single", network: "avalanche:fuji", dataScope: "fuji_onchain", requires: ["privy_session", "evm_wallet", "fuji_avax"], evidence: "Prepared transaction, receipt verification and replay guards pass automated tests.", nextAction: "Run one small transfer between known Fuji wallets." },
   { id: "dexalot.markets.list", provider: "Dexalot", title: "List Dexalot Testnet markets", description: "Read the deployed Testnet market catalog without a key.", status: "live", operation: "read", approval: "none", network: "avalanche:fuji", dataScope: "offchain_api", requires: ["privy_session"], evidence: "Public Testnet catalog adapter is read-only and bounded.", nextAction: "Ask Carmelita to list Dexalot Testnet pairs." },

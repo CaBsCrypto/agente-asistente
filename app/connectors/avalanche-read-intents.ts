@@ -4,6 +4,7 @@ export type AvalancheKnowledgeIntent = {
 };
 
 export type AvalancheCapabilitiesIntent = { operation: "capabilities" };
+export type AvaxSkillsIntent = { operation: "skills"; query: string };
 
 export type DexalotReadIntent =
   | { operation: "pairs" }
@@ -54,6 +55,13 @@ export function parseAvalancheKnowledgeIntent(
   return { operation: "search", query: message.trim().slice(0, 200) };
 }
 
+export function parseAvaxSkillsIntent(message: string): AvaxSkillsIntent | null {
+  const query = normalized(message);
+  const namesSource = query.includes("avax skills") || query.includes("avaxskills");
+  const asksSkill = query.includes("skill") && ["avalanche", "fuji", "avax"].some((term) => query.includes(term));
+  if (!namesSource && !asksSkill) return null;
+  return { operation: "skills", query: message.trim().slice(0, 120) };
+}
 export function parseAvalancheCapabilitiesIntent(message: string): AvalancheCapabilitiesIntent | null {
   const query = normalized(message);
   if (!["avalanche", "fuji", "avax"].some((term) => query.includes(term))) return null;
