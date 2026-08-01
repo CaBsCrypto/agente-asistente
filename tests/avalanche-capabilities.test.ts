@@ -44,8 +44,10 @@ test("capability API is authenticated and same-origin", async () => {
 test("capability parser supports English, Spanish and Portuguese", async () => {
   const { parseAvalancheCapabilitiesIntent } = await import("../app/connectors/avalanche-read-intents");
   assert.equal(parseAvalancheCapabilitiesIntent("¿Qué puedo hacer en Avalanche?")?.operation, "capabilities");
+  assert.equal(parseAvalancheCapabilitiesIntent("¿Qué podemos hacer en Avalanche?")?.operation, "capabilities");
   assert.equal(parseAvalancheCapabilitiesIntent("What can I do on Fuji?")?.operation, "capabilities");
-  assert.equal(parseAvalancheCapabilitiesIntent("O que posso fazer na Avalanche?")?.operation, "capabilities");
+  assert.equal(parseAvalancheCapabilitiesIntent("What can we do on Avalanche?")?.operation, "capabilities");
+  assert.equal(parseAvalancheCapabilitiesIntent("O que podemos fazer na Avalanche?")?.operation, "capabilities");
   assert.equal(parseAvalancheCapabilitiesIntent("Show my Stellar wallet"), null);
 });
 
