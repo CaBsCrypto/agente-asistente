@@ -3,9 +3,21 @@ export type AvalancheChatIntent =
   | { operation: "status" }
   | { operation: "fund" }
   | { operation: "x402" }
+  | { operation: "swap"; amountInAtomic: "100000000000000000" }
   | { operation: "send"; amount: "0.001"; destination: `0x${string}` };
 
 const EVM_ADDRESS = /0x[a-fA-F0-9]{40}/;
+
+const DEMO_SWAP_AMOUNT_IN_ATOMIC = "100000000000000000";
+
+function swapAmountToWei(value: string) {
+  const [whole, fraction = ""] = value.replace(",", ".").split(".");
+  const padded = (fraction + "000000000000000000").slice(0, 18);
+  return (
+    BigInt(whole || "0") * BigInt("1000000000000000000") +
+    BigInt(padded || "0")
+  ).toString();
+}
 
 function normalized(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -29,6 +41,19 @@ export function parseAvalancheChatIntent(message: string): AvalancheChatIntent |
     return amount === "0.001"
       ? { operation: "send", amount: "0.001", destination }
       : null;
+  }
+
+  const wantsSwap = [
+    "cambia", "swapa", "cambiar", "swap", "change", "convert",
+    "trocar", "converter",
+  ].some((term) => query.includes(term));
+  if (wantsSwap) {
+    const amount = query.match(/(?:^|\s)(\d+(?:[.,]\d+)?)(?=\s*avax\b)/)?.[1];
+    const amountInAtomic = amount
+      ? swapAmountToWei(amount)
+      : DEMO_SWAP_AMOUNT_IN_ATOMIC;
+    if (amountInAtomic !== DEMO_SWAP_AMOUNT_IN_ATOMIC) return null;
+    return { operation: "swap", amountInAtomic };
   }
 
   // The x402 report is the only paid resource, so it is matched before the

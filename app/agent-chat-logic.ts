@@ -10,10 +10,11 @@ export type AgentChatAction = {
   href?: string;
   connect?: string;
   walletAction?: {
-    type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send" | "avalanche.x402";
+    type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send" | "avalanche.x402" | "avalanche.swap";
     network: "avalanche:fuji";
     amount?: "0.001";
     destination?: `0x${string}`;
+    amountInAtomic?: string;
     requestId?: string;
   } | {
     type: "cctp.bridge";
@@ -362,9 +363,9 @@ export function buildAgentReply(message: string, context: AgentChatContext = {})
 
   if (avalancheIntent) {
     const labels = {
-      en: { activate: "Activate Fuji", status: "Check Fuji wallet", fund: "Receive 0.005 Test AVAX", send: "Review and approve 0.001 AVAX", x402: "Review the 0.01 USDC x402 payment" },
-      es: { activate: "Activar Fuji", status: "Revisar wallet Fuji", fund: "Recibir 0.005 AVAX de prueba", send: "Revisar y aprobar 0.001 AVAX", x402: "Revisar el pago x402 de 0.01 USDC" },
-      pt: { activate: "Ativar Fuji", status: "Verificar wallet Fuji", fund: "Receber 0.005 AVAX de teste", send: "Revisar e aprovar 0.001 AVAX", x402: "Revisar o pagamento x402 de 0.01 USDC" },
+      en: { activate: "Activate Fuji", status: "Check Fuji wallet", fund: "Receive 0.005 Test AVAX", send: "Review and approve 0.001 AVAX", x402: "Review the 0.01 USDC x402 payment", swap: "Swap AVAX for USDC" },
+      es: { activate: "Activar Fuji", status: "Revisar wallet Fuji", fund: "Recibir 0.005 AVAX de prueba", send: "Revisar y aprobar 0.001 AVAX", x402: "Revisar el pago x402 de 0.01 USDC", swap: "Cambiar AVAX por USDC" },
+      pt: { activate: "Ativar Fuji", status: "Verificar wallet Fuji", fund: "Receber 0.005 AVAX de teste", send: "Revisar e aprovar 0.001 AVAX", x402: "Revisar o pagamento x402 de 0.01 USDC", swap: "Trocar AVAX por USDC" },
     }[language];
     const content = {
       activate: {
@@ -392,6 +393,11 @@ export function buildAgentReply(message: string, context: AgentChatContext = {})
         es: "El reporte de readiness es un recurso pago: exactamente 0.01 USDC en Fuji vía x402 v2. Primero congelo destinatario, monto, nonce y expiración; luego Privy te pide firmar esa autorización exacta una sola vez, y el reporte se entrega solo después de que el facilitador la liquide.",
         pt: "O relatório de readiness é um recurso pago: exatamente 0.01 USDC na Fuji via x402 v2. Primeiro congelo destinatário, valor, nonce e expiração; depois a Privy pede que você assine essa autorização exata uma única vez, e o relatório é entregue apenas após o facilitador liquidá-la.",
       },
+      swap: {
+        en: "I will freeze a 0.1 AVAX → USDC swap on Pangolin Fuji using the live route and quote. The in-chat card will show the current USDC/AVAX price and the minimum USDC you receive before Privy asks for a single transaction-specific signature. Because you swap native AVAX, no token approvals are needed.",
+        es: "Congelaré un swap de 0.1 AVAX → USDC en Pangolin Fuji usando la ruta y cotización en vivo. La tarjeta del chat mostrará el precio USDC/AVAX actual y el mínimo de USDC que recibirás antes de que Privy solicite una única firma específica. Como cambias AVAX nativo, no se requieren approvals de tokens.",
+        pt: "Vou congelar um swap de 0.1 AVAX → USDC na Pangolin Fuji usando a rota e cotação ao vivo. O cartão no chat mostrará o preço atual de USDC/AVAX e o mínimo de USDC que você receberá antes de a Privy solicitar uma única assinatura específica. Como você troca AVAX nativo, não são necessários approvals de tokens.",
+      },
     }[avalancheIntent.operation][language];
     return {
       content,
@@ -403,6 +409,9 @@ export function buildAgentReply(message: string, context: AgentChatContext = {})
           ...(avalancheIntent.operation === "send" ? {
             amount: avalancheIntent.amount,
             destination: avalancheIntent.destination,
+          } : {}),
+          ...(avalancheIntent.operation === "swap" ? {
+            amountInAtomic: avalancheIntent.amountInAtomic,
           } : {}),
         },
       }],

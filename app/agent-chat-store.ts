@@ -91,10 +91,11 @@ export type StoredAgentMessage = {
     href?: string;
     connect?: string;
     walletAction?: {
-      type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send" | "avalanche.x402";
+      type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send" | "avalanche.x402" | "avalanche.swap";
       network: "avalanche:fuji";
       amount?: "0.001";
       destination?: `0x${string}`;
+      amountInAtomic?: string;
       requestId?: string;
     } | {
       type: "cctp.bridge";

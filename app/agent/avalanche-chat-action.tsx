@@ -5,10 +5,11 @@ import { useUser, useWallets } from "@privy-io/react-auth";
 import type { Locale } from "@/app/language-toggle";
 
 export type AvalancheWalletAction = {
-  type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send";
+  type: "avalanche.activate" | "avalanche.status" | "avalanche.fund" | "avalanche.send" | "avalanche.swap";
   network: "avalanche:fuji";
   amount?: "0.001";
   destination?: `0x${string}`;
+  amountInAtomic?: string;
   requestId?: string;
 };
 
@@ -24,6 +25,33 @@ type Preview = {
   gasPriceWei: string;
   maxGasCostWei: string;
   nonce: number;
+  expiresAt: string;
+  transactionHash: string | null;
+  explorerUrl: string | null;
+};
+
+type SwapPreview = {
+  previewId: string;
+  status: string;
+  network: "avalanche:fuji";
+  chainId: 43113;
+  from: string;
+  to: string;
+  data: string;
+  valueWei: string;
+  valueHex: `0x${string}`;
+  gasLimitHex: `0x${string}`;
+  gasPriceWei: string;
+  maxGasCostWei: string;
+  nonce: number;
+  amountInAtomic: string;
+  amountIn: string;
+  minOutAtomic: string;
+  minOut: string;
+  amountOutAtomic?: string;
+  amountOut?: string;
+  priceUsdcPerAvax?: string;
+  quoteBlockNumber: number;
   expiresAt: string;
   transactionHash: string | null;
   explorerUrl: string | null;
@@ -101,6 +129,8 @@ const copy = {
     network: "Network", from: "From", to: "To", amount: "Amount", nonce: "Nonce",
     gas: "Maximum gas (wei)", expires: "Expires", ready: "Fuji wallet is active.",
     funded: "Live balance", retry: "Retry receipt verification", manual: "The official faucet opens separately and may require its own verification.",
+    swap: "Swap AVAX for USDC", approveSwap: "Approve swap with Privy", minOut: "Minimum to receive",
+    price: "USDC/AVAX price", pangolin: "Pangolin Fuji", block: "Quote block",
   },
   es: {
     activate: "Activar Fuji", status: "Revisar wallet Fuji", fund: "Abrir faucet oficial de Fuji",
@@ -108,6 +138,8 @@ const copy = {
     network: "Red", from: "Desde", to: "Destino", amount: "Monto", nonce: "Nonce",
     gas: "Gas máximo (wei)", expires: "Expira", ready: "La wallet Fuji está activa.",
     funded: "Saldo en vivo", retry: "Reintentar verificaci\u00f3n", manual: "El faucet oficial se abre por separado y puede solicitar su propia verificación.",
+    swap: "Cambiar AVAX por USDC", approveSwap: "Aprobar swap con Privy", minOut: "Mínimo a recibir",
+    price: "Precio USDC/AVAX", pangolin: "Pangolin Fuji", block: "Bloque de cotización",
   },
   pt: {
     activate: "Ativar Fuji", status: "Verificar wallet Fuji", fund: "Abrir faucet oficial da Fuji",
@@ -115,6 +147,8 @@ const copy = {
     network: "Rede", from: "Origem", to: "Destino", amount: "Valor", nonce: "Nonce",
     gas: "Gas máximo (wei)", expires: "Expira", ready: "A wallet Fuji está ativa.",
     funded: "Saldo ao vivo", retry: "Tentar verifica\u00e7\u00e3o novamente", manual: "O faucet oficial abre separadamente e pode exigir sua própria verificação.",
+    swap: "Trocar AVAX por USDC", approveSwap: "Aprovar swap com Privy", minOut: "Mínimo a receber",
+    price: "Preço USDC/AVAX", pangolin: "Pangolin Fuji", block: "Bloco da cotação",
   },
 };
 
@@ -141,6 +175,8 @@ export default function AvalancheChatAction({
   const [notice, setNotice] = useState<string | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [submittedHash, setSubmittedHash] = useState<string | null>(null);
+  const [swapPreview, setSwapPreview] = useState<SwapPreview | null>(null);
+  const [swapSubmittedHash, setSwapSubmittedHash] = useState<string | null>(null);
   const [fundingOpen, setFundingOpen] = useState(false);
   const [fundingStatus, setFundingStatus] = useState<FundingStatus | null>(null);
   const [fundingReceipt, setFundingReceipt] = useState<FundingReceipt | null>(null);
@@ -331,6 +367,115 @@ export default function AvalancheChatAction({
     }
   }
 
+  async function prepareSwap() {
+    if (!action.amountInAtomic) {
+      throw new Error("invalid_fuji_swap_action");
+    }
+    const response = await authorizedFetch("/api/agent/wallets/avalanche/pangolin-swap", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "prepare",
+        requestId: action.requestId,
+        amountInAtomic: action.amountInAtomic,
+        explicitUserConfirmation: true,
+      }),
+    });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error ?? "fuji_swap_prepare_failed");
+    const persistedHash = typeof body.transactionHash === "string" &&
+      /^0x[a-fA-F0-9]{64}$/.test(body.transactionHash)
+      ? body.transactionHash.toLowerCase()
+      : null;
+    if (body.status === "submitted" && !persistedHash) {
+      throw new Error("fuji_swap_submitted_hash_missing");
+    }
+    setSwapPreview(body);
+    setSwapSubmittedHash(persistedHash);
+  }
+
+  async function verifySubmittedSwap(transactionHash: string) {
+    if (!swapPreview) throw new Error("fuji_swap_preview_missing");
+    const response = await authorizedFetch("/api/agent/wallets/avalanche/pangolin-swap", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "record",
+        previewId: swapPreview.previewId,
+        transactionHash,
+      }),
+    });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error ?? "fuji_swap_receipt_verification_failed");
+    setSwapPreview(body);
+    onReceipt({
+      title: "Avalanche Fuji swap",
+      network: "Avalanche Fuji · 43113",
+      rows: [
+        { label: t.amount, value: `${body.amountIn} AVAX` },
+        { label: t.minOut, value: `${body.minOut} USDC` },
+        { label: t.nonce, value: String(body.nonce) },
+        { label: t.block, value: String(body.quoteBlockNumber) },
+      ],
+      transactionHash: body.transactionHash,
+      explorerUrl: body.explorerUrl,
+    });
+  }
+
+  async function approveSwap() {
+    if (
+      !swapPreview ||
+      swapPreview.status !== "prepared" ||
+      swapPreview.transactionHash ||
+      swapSubmittedHash ||
+      submissionLock.current
+    ) return;
+    if (new Date(swapPreview.expiresAt).getTime() <= Date.now()) {
+      throw new Error("fuji_swap_preview_expired");
+    }
+    submissionLock.current = true;
+    setLocked(true);
+    try {
+      const wallet = wallets.find(
+        (item) => item.walletClientType === "privy" &&
+          item.address.toLowerCase() === swapPreview.from.toLowerCase(),
+      );
+      if (!wallet) throw new Error("privy_evm_wallet_not_available_in_session");
+      await wallet.switchChain(43113);
+      const provider = await wallet.getEthereumProvider();
+      const providerChainId = await provider.request({ method: "eth_chainId" });
+      if (
+        typeof providerChainId !== "string" ||
+        Number(BigInt(providerChainId)) !== 43113
+      ) throw new Error("privy_provider_chain_mismatch");
+      const transactionHash = await provider.request({
+        method: "eth_sendTransaction",
+        params: [{
+          from: swapPreview.from,
+          to: swapPreview.to,
+          value: swapPreview.valueHex,
+          data: swapPreview.data,
+          gas: swapPreview.gasLimitHex,
+          gasPrice: hex(swapPreview.gasPriceWei),
+          nonce: hex(swapPreview.nonce),
+        }],
+      });
+      if (
+        typeof transactionHash !== "string" ||
+        !/^0x[a-fA-F0-9]{64}$/.test(transactionHash)
+      ) {
+        throw new Error("privy_transaction_hash_missing");
+      }
+      // Save the hash before verification. Retry can only verify this hash.
+      const normalizedHash = transactionHash.toLowerCase();
+      setSwapSubmittedHash(normalizedHash);
+      await verifySubmittedSwap(normalizedHash);
+    } finally {
+      submissionLock.current = false;
+      setLocked(false);
+    }
+  }
+
   async function run(task: () => Promise<unknown>) {
     if (busy) return;
     setBusy(true);
@@ -347,15 +492,17 @@ export default function AvalancheChatAction({
   const label = action.type === "avalanche.activate" ? t.activate
     : action.type === "avalanche.status" ? t.status
       : action.type === "avalanche.fund" ? t.fund
-        : t.prepare;
+        : action.type === "avalanche.swap" ? t.swap
+          : t.prepare;
   const task = action.type === "avalanche.activate" ? activate
     : action.type === "avalanche.status" ? status
       : action.type === "avalanche.fund" ? openFundingCenter
-        : prepare;
+        : action.type === "avalanche.swap" ? prepareSwap
+          : prepare;
 
   return (
     <div className="avalanche-chat-action">
-      {!preview && (
+      {!preview && !swapPreview && (
         <button type="button" className="primary" disabled={busy} onClick={() => void run(task)}>
           {busy ? t.working : label}
         </button>
@@ -382,6 +529,34 @@ export default function AvalancheChatAction({
           ) : preview.status === "prepared" ? (
             <button type="button" disabled={busy || locked} onClick={() => void run(approve)}>
               {busy ? t.working : t.approve}
+            </button>
+          ) : null}
+        </section>
+      )}
+      {action.type === "avalanche.swap" && swapPreview && (
+        <section className="defindex-approval prepared" aria-label="Pangolin Fuji swap approval">
+          <span>HIGH RISK · TRANSACTION-SPECIFIC APPROVAL</span>
+          <h4>{swapPreview.amountIn} AVAX → USDC · Pangolin</h4>
+          <dl>
+            <div><dt>{t.network}</dt><dd>{t.pangolin} · 43113</dd></div>
+            <div><dt>{t.from}</dt><dd>{swapPreview.from}</dd></div>
+            <div><dt>{t.to}</dt><dd>{swapPreview.to}</dd></div>
+            <div><dt>{t.amount}</dt><dd>{swapPreview.amountIn} AVAX</dd></div>
+            <div><dt>{t.minOut}</dt><dd>{swapPreview.minOut} USDC</dd></div>
+            <div><dt>{t.price}</dt><dd>{swapPreview.priceUsdcPerAvax ?? "n/a"} USDC/AVAX</dd></div>
+            <div><dt>{t.nonce}</dt><dd>{swapPreview.nonce}</dd></div>
+            <div><dt>{t.block}</dt><dd>{swapPreview.quoteBlockNumber}</dd></div>
+            <div><dt>{t.expires}</dt><dd>{swapPreview.expiresAt}</dd></div>
+          </dl>
+          {swapPreview.status === "submitted" ? (
+            swapSubmittedHash ? (
+              <button type="button" disabled={busy} onClick={() => void run(() => verifySubmittedSwap(swapSubmittedHash))}>
+                {busy ? t.working : t.retry}
+              </button>
+            ) : <span>SUBMITTED HASH UNAVAILABLE · BROADCAST DISABLED</span>
+          ) : swapPreview.status === "prepared" ? (
+            <button type="button" disabled={busy || locked} onClick={() => void run(approveSwap)}>
+              {busy ? t.working : t.approveSwap}
             </button>
           ) : null}
         </section>
