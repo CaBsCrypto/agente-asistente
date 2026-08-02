@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { listAvalancheCapabilities, planAvalancheCapability } from "../app/avalanche/capability-registry";
+import { groupAvalancheCapabilities, listAvalancheCapabilities, planAvalancheCapability } from "../app/avalanche/capability-registry";
 
 test("Avalanche registry separates reads from approval-bound financial actions", () => {
   const capabilities = listAvalancheCapabilities();
@@ -12,6 +12,15 @@ test("Avalanche registry separates reads from approval-bound financial actions",
   assert.equal(capabilities.find((item) => item.id === "circle.cctp.fuji_to_stellar")?.approval, "privy_dual");
 });
 
+test("Avalanche capabilities are grouped into complete product sections", () => {
+  const groups = groupAvalancheCapabilities();
+  const flattened = groups.flatMap((group) => group.capabilities);
+  assert.deepEqual(new Set(flattened.map((item) => item.id)), new Set(listAvalancheCapabilities().map((item) => item.id)));
+  assert.equal(flattened.length, listAvalancheCapabilities().length);
+  assert.equal(groups.find((group) => group.category === "payments")?.capabilities[0]?.id, "x402.report.purchase");
+  assert.equal(groups.find((group) => group.category === "cross_chain")?.capabilities[0]?.id, "circle.cctp.fuji_to_stellar");
+  assert.equal(listAvalancheCapabilities().find((item) => item.id === "pangolin.swap.avax_to_usdc")?.category, "trading");
+});
 test("x402 preflight requires Fuji USDC but not AVAX", () => {
   const plan = planAvalancheCapability("x402.report.purchase", { authenticated: true, evmWallet: true });
   assert.deepEqual(plan.blockers, ["fuji_usdc"]);

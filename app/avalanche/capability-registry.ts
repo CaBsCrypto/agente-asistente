@@ -12,6 +12,10 @@ export const avalancheCapabilityIdSchema = z.enum([
   "avalanche.nft.floor_read", "defillama.yields.read", "lfj.swap.quote.read",
 ]);
 export type AvalancheCapabilityId = z.infer<typeof avalancheCapabilityIdSchema>;
+export const avalancheCapabilityCategorySchema = z.enum([
+  "knowledge", "wallet", "payments", "trading", "cross_chain", "defi", "market_data", "nft",
+]);
+export type AvalancheCapabilityCategory = z.infer<typeof avalancheCapabilityCategorySchema>;
 type Requirement =
   | "privy_session" | "evm_wallet" | "fuji_avax" | "fuji_usdc" | "fuji_wavax"
   | "fuji_nft_owned" | "stellar_wallet" | "stellar_usdc_trustline";
@@ -48,13 +52,46 @@ const capabilities: readonly AvalancheCapability[] = [
   { id: "lfj.swap.quote.read", provider: "LFJ", title: "Read an LFJ quote (liveness only)", description: "Read a quote from the LFJ aggregator only as a liveness check, never as a price claim.", status: "ready_to_test", operation: "read", approval: "none", network: "avalanche:fuji", dataScope: "offchain_api", requires: ["privy_session"], evidence: "Second-opinion liveness for the Fuji DEX. LFJ quotes its own test USDC, not Circle USDC; a swap presented as buying \"USDC\" would be materially false, so this row never claims price.", nextAction: "Ask Carmelita for an LFJ liveness check, not a price." },
 ];
 
+const categoryByCapability = {
+  "avalanche.docs.search": "knowledge",
+  "avalanche.skills.search": "knowledge",
+  "avalanche.wallet.status": "wallet",
+  "avalanche.wallet.transfer": "wallet",
+  "dexalot.markets.list": "trading",
+  "dexalot.quote.read": "trading",
+  "x402.report.purchase": "payments",
+  "pangolin.swap.avax_to_usdc": "trading",
+  "circle.cctp.fuji_to_stellar": "cross_chain",
+  "predictions.sector.read": "market_data",
+  "predictions.markets.read": "market_data",
+  "avalanche.aave.market.read": "defi",
+  "avalanche.aave.position.read": "defi",
+  "avalanche.nft.collection_read": "nft",
+  "avalanche.nft.holder_distribution": "nft",
+  "avalanche.nft.provenance_read": "nft",
+  "avalanche.nft.venue_status": "nft",
+  "avalanche.nft.floor_read": "nft",
+  "defillama.yields.read": "defi",
+  "lfj.swap.quote.read": "trading",
+} as const satisfies Record<AvalancheCapabilityId, AvalancheCapabilityCategory>;
 export type AvalancheCapabilityContext = { authenticated?: boolean; evmWallet?: boolean; stellarWallet?: boolean; fujiAvax?: boolean; fujiUsdc?: boolean; fujiWavax?: boolean; fujiNftOwned?: boolean; stellarUsdcTrustline?: boolean };
 const contextKey = { privy_session: "authenticated", evm_wallet: "evmWallet", stellar_wallet: "stellarWallet", fuji_avax: "fujiAvax", fuji_usdc: "fujiUsdc", fuji_wavax: "fujiWavax", fuji_nft_owned: "fujiNftOwned", stellar_usdc_trustline: "stellarUsdcTrustline" } as const satisfies Record<Requirement, keyof AvalancheCapabilityContext>;
-export function listAvalancheCapabilities() { return capabilities.map((capability) => ({ ...capability })); }
+export function listAvalancheCapabilities() {
+  return capabilities.map((capability) => ({
+    ...capability,
+    category: categoryByCapability[capability.id],
+  }));
+}
+export function groupAvalancheCapabilities() {
+  return avalancheCapabilityCategorySchema.options.map((category) => ({
+    category,
+    capabilities: listAvalancheCapabilities().filter((capability) => capability.category === category),
+  })).filter((group) => group.capabilities.length > 0);
+}
 export function getAvalancheCapability(id: AvalancheCapabilityId) {
   const capability = capabilities.find((item) => item.id === id);
   if (!capability) throw new Error("avalanche_capability_not_found");
-  return { ...capability };
+  return { ...capability, category: categoryByCapability[capability.id] };
 }
 export function planAvalancheCapability(id: AvalancheCapabilityId, context: AvalancheCapabilityContext = {}) {
   const capability = getAvalancheCapability(id);

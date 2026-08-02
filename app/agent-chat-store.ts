@@ -80,7 +80,7 @@ import {
 } from "@/app/connectors/avalanche-ecosystem";
 import { parseCctpBridgeIntent } from "@/app/connectors/circle-cctp-intents";
 import { handleCctpBridgeIntent } from "@/app/connectors/circle-cctp-chat";
-import { listAvalancheCapabilities } from "@/app/avalanche/capability-registry";
+import { groupAvalancheCapabilities, listAvalancheCapabilities } from "@/app/avalanche/capability-registry";
 
 export type StoredAgentMessage = {
   id: string;
@@ -601,23 +601,24 @@ export async function sendAgentMessage(userId: string, content: string) {
     reply = await buildTestnetSetupReply(userId, setupIntent, wallet, language);
   } else if (avalancheCapabilitiesIntent) {
     const capabilities = listAvalancheCapabilities();
+    const groups = groupAvalancheCapabilities();
     const live = capabilities.filter((item) => item.status === "live");
     const pending = capabilities.filter((item) => item.status === "ready_to_test");
     const labels = {
-      en: { heading: "**What Carmelita can do on Avalanche**", live: "Usable now", pending: "Built, pending live acceptance", boundary: "Discovery and planning never sign or move funds. Financial actions open a separate Privy approval.", details: "Plan x402", quote: "Quote on Dexalot" },
-      es: { heading: "**Lo que Carmelita puede hacer en Avalanche**", live: "Utilizable ahora", pending: "Construido, pendiente de validación en vivo", boundary: "Descubrir y planificar nunca firma ni mueve fondos. Las acciones financieras abren una aprobación Privy separada.", details: "Planificar x402", quote: "Cotizar en Dexalot" },
-      pt: { heading: "**O que Carmelita pode fazer na Avalanche**", live: "Utilizável agora", pending: "Construído, aguardando validação ao vivo", boundary: "Descoberta e planejamento nunca assinam nem movem fundos. Ações financeiras abrem uma aprovação Privy separada.", details: "Planejar x402", quote: "Cotar na Dexalot" },
+      en: { heading: "**Carmelita's Avalanche ecosystem**", live: "usable", pending: "pending acceptance", boundary: "Discovery and planning never sign or move funds. Financial actions open a separate Privy approval.", details: "Plan x402", quote: "Prepare Pangolin swap" },
+      es: { heading: "**Ecosistema Avalanche de Carmelita**", live: "utilizable", pending: "pendiente de validacion", boundary: "Descubrir y planificar nunca firma ni mueve fondos. Las acciones financieras abren una aprobacion Privy separada.", details: "Planificar x402", quote: "Preparar swap en Pangolin" },
+      pt: { heading: "**Ecossistema Avalanche da Carmelita**", live: "utilizavel", pending: "aguardando validacao", boundary: "Descoberta e planejamento nunca assinam nem movem fundos. Acoes financeiras abrem uma aprovacao Privy separada.", details: "Planejar x402", quote: "Preparar swap na Pangolin" },
     }[language];
     reply = {
       content: [
         labels.heading,
-        `**${labels.live} (${live.length})**\n${live.map((item) => `- ${item.title} · ${item.provider}`).join("\n")}`,
-        `**${labels.pending} (${pending.length})**\n${pending.map((item) => `- ${item.title} · approval: ${item.approval}`).join("\n")}`,
+        ...groups.map((group) => `**${group.category.replace("_", " ")}**\n${group.capabilities.map((item) => `- ${item.title} - ${item.status === "live" ? labels.live : item.status === "ready_to_test" ? labels.pending : "planned"} - ${item.provider}`).join("\n")}`),
+        `**Summary** - ${live.length} live - ${pending.length} pending acceptance`,
         labels.boundary,
       ].join("\n\n"),
       connection: { name: "Avalanche Capability Registry", stage: "Connected", priority: "P0" },
       actions: [
-        { label: labels.quote, message: language === "es" ? "Cotiza 1 AVAX a USDC en Dexalot" : language === "pt" ? "Cote 1 AVAX para USDC na Dexalot" : "Quote 1 AVAX to USDC on Dexalot" },
+        { label: labels.quote, message: language === "es" ? "Prepara un swap de 0.1 AVAX a USDC en Pangolin" : language === "pt" ? "Prepare um swap de 0.1 AVAX para USDC na Pangolin" : "Prepare a 0.1 AVAX to USDC swap on Pangolin" },
         { label: labels.details, message: language === "es" ? "Prepara mi pago x402 en Avalanche" : language === "pt" ? "Prepare meu pagamento x402 na Avalanche" : "Prepare my Avalanche x402 payment" },
       ],
     };
