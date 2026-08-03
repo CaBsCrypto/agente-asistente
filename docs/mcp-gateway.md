@@ -1,5 +1,7 @@
 # Bidirectional MCP gateway
 
+> The external-agent implementation contract is defined in [Carmelita Agent Gateway v1](./agent-gateway-v1.md). It is Testnet-only and exposes reading and planning, never wallet signing through MCP or REST.
+
 Carmelita now has three MCP surfaces and one outbound connector layer.
 
 ~~~mermaid
@@ -49,12 +51,15 @@ Endpoint:
 https://agente-asistente.vercel.app/api/mcp/agent
 ~~~
 
-Authentication: bearer token containing the signed-in user's current Privy access token.
+Authentication: either the signed-in user's current Privy access token or a scoped personal token with the `carmelita_user_` prefix.
+
+Personal tokens are a Testnet bridge. They are hashed at rest, shown once, revocable and restricted to `agent:read`, `agent:chat` and optional `agent:plan`. OAuth 2.1 with PKCE remains the public-launch target.
 
 Current scopes:
 
 - agent:read
 - agent:chat
+- agent:plan
 
 Tools:
 
@@ -63,6 +68,9 @@ Tools:
 | get_agent_context | agent:read | Read profile, wallet metadata, connections and authority limits |
 | get_agent_conversation | agent:read | Read durable conversation history |
 | send_agent_message | agent:chat | Use the personal agent and its connected read-only tools |
+| list_capabilities | agent:read | Discover the versioned Testnet catalog and approval boundaries |
+| get_capability | agent:read | Inspect one capability without executing it |
+| plan_action | agent:plan | Create or replay an idempotent, non-executable Testnet plan |
 
 Example development configuration:
 
@@ -218,7 +226,7 @@ Implemented:
 Still required before public launch:
 
 1. OAuth 2.1 authorization for external personal-agent clients.
-2. Self-service token creation, rotation and revocation.
+2. OAuth account linking and refresh flows (self-service Testnet PAT creation and revocation are implemented).
 3. Provider ownership verification and self-service onboarding.
 4. Rate limits and abuse detection.
 5. Order, fulfillment, cancellation and refund tools.

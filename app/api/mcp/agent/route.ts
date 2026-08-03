@@ -1,5 +1,8 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
+import { getGatewayCapability, listGatewayCapabilities } from "@/app/agent-gateway/catalog";
+import { createGatewayPlan } from "@/app/agent-gateway/service";
+import { GATEWAY_API_VERSION, GATEWAY_ENVIRONMENT } from "@/app/agent-gateway/types";
 import { avalancheCapabilityIdSchema, listAvalancheCapabilities, planAvalancheCapability } from "@/app/avalanche/capability-registry";
 import { searchAvaxSkills } from "@/app/connectors/avaxskills";
 import { getAgentConversation, sendAgentMessage } from "@/app/agent-chat-store";
@@ -140,6 +143,57 @@ function getHandler() {
         },
       );
 
+      server.registerTool(
+        "list_capabilities",
+        {
+          title: "List Carmelita capabilities",
+          description: "Discover Testnet-only Stellar, Avalanche and offchain capabilities, including status and approval boundaries.",
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        },
+        async (extra) => {
+          try {
+            requireMcpSubject(extra.authInfo, "user", "userId", "agent:read");
+            return ok({ apiVersion: GATEWAY_API_VERSION, environment: GATEWAY_ENVIRONMENT, capabilities: listGatewayCapabilities() });
+          } catch (error) { return fail(error); }
+        },
+      );
+
+      server.registerTool(
+        "get_capability",
+        {
+          title: "Get one Carmelita capability",
+          description: "Inspect one capability's status, requirements, evidence and approval boundary without executing it.",
+          inputSchema: { capabilityId: z.string().trim().min(3).max(120) },
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        },
+        async ({ capabilityId }, extra) => {
+          try {
+            requireMcpSubject(extra.authInfo, "user", "userId", "agent:read");
+            return ok(getGatewayCapability(capabilityId));
+          } catch (error) { return fail(error); }
+        },
+      );
+
+      server.registerTool(
+        "plan_action",
+        {
+          title: "Plan a Carmelita action",
+          description: "Create or replay an idempotent Testnet plan. It never prepares, signs or submits a transaction; sensitive actions continue inside Carmelita with Privy.",
+          inputSchema: {
+            capabilityId: z.string().trim().min(3).max(120),
+            idempotencyKey: z.string().trim().min(8).max(128),
+            parameters: z.record(z.string(), z.unknown()).default({}),
+            context: z.object({ requirementsSatisfied: z.array(z.string().trim().min(1).max(80)).max(30) }).strict().optional(),
+          },
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        },
+        async (input, extra) => {
+          try {
+            const userId = requireMcpSubject(extra.authInfo, "user", "userId", "agent:plan");
+            return ok(createGatewayPlan(userId, input));
+          } catch (error) { return fail(error); }
+        },
+      );
       server.registerTool(
         "send_agent_message",
         {

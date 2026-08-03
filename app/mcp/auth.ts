@@ -1,6 +1,7 @@
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { verifyPrivyAccessToken } from "@/app/privy-stellar";
 import { verifyServiceProviderToken } from "@/app/services/provider-store";
+import { PERSONAL_MCP_TOKEN_PREFIX, verifyPersonalMcpToken } from "@/app/services/personal-mcp-token-store";
 
 type McpRequest = Request & { auth?: AuthInfo };
 
@@ -38,13 +39,30 @@ export async function authenticateMcp(
 }
 
 export async function verifyAgentMcpToken(token: string): Promise<AuthInfo> {
+  if (token.startsWith(PERSONAL_MCP_TOKEN_PREFIX)) {
+    const principal = await verifyPersonalMcpToken(token);
+    return { token, clientId: principal.userId, scopes: principal.scopes,
+      expiresAt: principal.expiresAt ? Math.floor(principal.expiresAt.getTime() / 1000) : undefined,
+      extra: { subjectType: "user", userId: principal.userId, tokenId: principal.tokenId } };
+  }
   const claims = await verifyPrivyAccessToken(token);
   return {
     token,
     clientId: claims.user_id,
-    scopes: ["agent:read", "agent:chat"],
+    scopes: ["agent:read", "agent:chat", "agent:plan"],
     extra: { subjectType: "user", userId: claims.user_id },
   };
+}
+
+export async function verifyAgentUserToken(token: string, requiredScope?: string) {
+  const authInfo = await verifyAgentMcpToken(token);
+  const userId = requireMcpSubject(
+    authInfo,
+    "user",
+    "userId",
+    requiredScope,
+  );
+  return { userId, scopes: authInfo.scopes, expiresAt: authInfo.expiresAt };
 }
 
 export async function verifyProviderMcpToken(token: string): Promise<AuthInfo> {
