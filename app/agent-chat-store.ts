@@ -635,7 +635,7 @@ export async function sendAgentMessage(userId: string, content: string) {
         : ["- No matching skills found."];
       reply = {
         content: [labels.heading, ...rows, labels.note].join("\n\n"),
-        connection: { name: "AVAX Skills", stage: "Advisory read-only", priority: "P1" },
+        connection: { name: "AVAX Skills", stage: "Read-only connected", priority: "P1" },
         actions: result.results.slice(0, 3).map((item) => ({ label: `Open ${item.name}`, href: item.referenceUrl })),
       };
     } catch (error) {

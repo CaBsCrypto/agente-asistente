@@ -60,3 +60,12 @@ test("personal MCP exposes advisory search as a read-only tool", async () => {
   assert.match(section, /searchAvaxSkills/);
   assert.doesNotMatch(section, /sendTransaction|signTypedData|privateKey/i);
 });
+
+test("chat reports AVAX Skills with a supported read-only connection stage", async () => {
+  const source = await readFile(new URL("../app/agent-chat-store.ts", import.meta.url), "utf8");
+  assert.match(
+    source,
+    /name: "AVAX Skills", stage: "Read-only connected", priority: "P1"/,
+  );
+  assert.doesNotMatch(source, /stage: "Advisory read-only"/);
+});
