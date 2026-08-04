@@ -2,7 +2,7 @@
 
 Status: normative Testnet target plus an explicit implementation-status ledger.
 
-Implemented now: public capability discovery, authenticated action planning, owned action/receipt reads, a non-custodial safety envelope and replay-safe planning, plus personal access tokens for Remote MCP and REST. Planned next: wallet endpoint, approval continuation URL, durable receipts and OAuth 2.1.
+Implemented now: public capability discovery, authenticated action planning, owned action/receipt reads, a non-custodial safety envelope, Neon-backed replay-safe planning and receipt storage, plus personal access tokens for Remote MCP and REST. Planned next: wallet endpoint, approval continuation URL and OAuth 2.1.
 
 The Agent Gateway lets a user reuse Carmelita from Codex, another remote MCP
 client, or a custom backend without exposing a wallet secret. Version 1 is a
@@ -74,6 +74,15 @@ use `Authorization: Bearer <token>`.
 | `GET` | `/api/v1/wallets` | Planned | Read public wallet metadata; never keys or signing material |
 
 `POST /api/v1/actions/plan` currently receives `idempotencyKey` in its JSON body. Reusing the key with different input MUST fail; reusing it with identical input MUST return the original action. An HTTP `Idempotency-Key` alias can be added later without changing these semantics.
+
+### Durable planning state
+
+When a database URL is configured, plans and verified receipts use Neon Postgres. The unique database constraint on `(actor_id, idempotency_key)` is the final concurrency boundary: two Vercel instances cannot claim the same user request twice. A replay with the same fingerprint returns the original plan; a different fingerprint fails closed with `gateway_idempotency_conflict`.
+
+Local test runs without a database use an injected in-memory store. Production and Preview MUST apply migration `0016_moaning_mastermind.sql` before enabling this Gateway version. The public Gateway still has no execution route; receipt writes are reserved for independently verified execution adapters.
+
+After migration, run `npm run gateway:neon:smoke`. It inserts one temporary plan and receipt, verifies replay, conflict and ownership behavior against Neon, and deletes the temporary record.
+
 
 ## Capability contract
 

@@ -190,7 +190,7 @@ function getHandler() {
         async (input, extra) => {
           try {
             const userId = requireMcpSubject(extra.authInfo, "user", "userId", "agent:plan");
-            return ok(createGatewayPlan(userId, input));
+            return ok(await createGatewayPlan(userId, input));
           } catch (error) { return fail(error); }
         },
       );

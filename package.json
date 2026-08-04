@@ -30,6 +30,7 @@
         "db:generate": "drizzle-kit generate",
         "test:build": "npm run test && npm run build",
         "db:migrate": "drizzle-kit migrate",
+        "gateway:neon:smoke": "tsx scripts/agent-gateway-neon-smoke.ts",
         "build:sites": "vinext build",
         "bridge:doctor": "tsx scripts/browser-bridge-doctor.ts",
         "graph:extract": "graphify extract . --code-only",

@@ -16,7 +16,7 @@ export async function GET(
   try {
     const actorId = await gatewayActor(request, "agent:read");
     const { id } = await context.params;
-    const result = readGatewayReceipt(actorId, id);
+    const result = await readGatewayReceipt(actorId, id);
     return NextResponse.json(result, {
       status: result.available ? 200 : 202,
       headers: gatewayHeaders(),

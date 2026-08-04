@@ -16,7 +16,7 @@ export async function GET(
   try {
     const actorId = await gatewayActor(request, "agent:read");
     const { id } = await context.params;
-    return NextResponse.json({ plan: readGatewayPlan(actorId, id) }, {
+    return NextResponse.json({ plan: await readGatewayPlan(actorId, id) }, {
       headers: gatewayHeaders(),
     });
   } catch (error) {

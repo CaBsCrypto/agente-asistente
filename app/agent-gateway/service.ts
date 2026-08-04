@@ -1,10 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import { getGatewayCapability } from "@/app/agent-gateway/catalog";
 import {
-  findGatewayPlanByKey,
-  getGatewayPlan,
-  getGatewayReceipt,
-  saveGatewayPlan,
+  getGatewayStore,
+  type GatewayStore,
 } from "@/app/agent-gateway/store";
 import {
   GATEWAY_API_VERSION,
@@ -41,20 +39,17 @@ function publicPlan(plan: GatewayPlan) {
     : plan;
 }
 
-export function createGatewayPlan(actorId: string, rawInput: unknown) {
+export async function createGatewayPlan(
+  actorId: string,
+  rawInput: unknown,
+  store: GatewayStore = getGatewayStore(),
+) {
   const input = gatewayPlanInputSchema.parse(rawInput);
   if (Buffer.byteLength(JSON.stringify(input.parameters), "utf8") > MAX_PARAMETERS_BYTES) {
     throw new Error("gateway_parameters_too_large");
   }
   const capability = getGatewayCapability(input.capabilityId);
   const requestFingerprint = fingerprint(actorId, input);
-  const existing = findGatewayPlanByKey(actorId, input.idempotencyKey);
-  if (existing) {
-    if (existing.requestFingerprint !== requestFingerprint) {
-      throw new Error("gateway_idempotency_conflict");
-    }
-    return { plan: publicPlan(existing), capability, replayed: true };
-  }
 
   const declared = new Set(input.context?.requirementsSatisfied ?? []);
   const blockers = capability.requirements
@@ -64,7 +59,7 @@ export function createGatewayPlan(actorId: string, rawInput: unknown) {
 
   const approvalRequired = capability.approval !== "none";
   const now = Date.now();
-  const plan: GatewayPlan = {
+  const candidate: GatewayPlan = {
     id: `gwp_${randomUUID()}`,
     apiVersion: GATEWAY_API_VERSION,
     environment: GATEWAY_ENVIRONMENT,
@@ -98,20 +93,33 @@ export function createGatewayPlan(actorId: string, rawInput: unknown) {
         : null,
     },
   };
-  saveGatewayPlan(plan);
-  return { plan, capability, replayed: false };
+
+  const claimed = await store.claimPlan(candidate);
+  return {
+    plan: publicPlan(claimed.plan),
+    capability,
+    replayed: claimed.replayed,
+  };
 }
 
-export function readGatewayPlan(actorId: string, id: string) {
-  const plan = getGatewayPlan(actorId, id);
+export async function readGatewayPlan(
+  actorId: string,
+  id: string,
+  store: GatewayStore = getGatewayStore(),
+) {
+  const plan = await store.getPlan(actorId, id);
   if (!plan) throw new Error("gateway_plan_not_found");
   return publicPlan(plan);
 }
 
-export function readGatewayReceipt(actorId: string, planId: string) {
-  const plan = getGatewayPlan(actorId, planId);
+export async function readGatewayReceipt(
+  actorId: string,
+  planId: string,
+  store: GatewayStore = getGatewayStore(),
+) {
+  const plan = await store.getPlan(actorId, planId);
   if (!plan) throw new Error("gateway_plan_not_found");
-  const receipt = getGatewayReceipt(actorId, planId);
+  const receipt = await store.getReceipt(actorId, planId);
   return receipt
     ? { available: true as const, receipt }
     : {
@@ -121,4 +129,3 @@ export function readGatewayReceipt(actorId: string, planId: string) {
         reason: "No verified execution receipt exists. The v1 gateway never signs or submits transactions server-side.",
       };
 }
-

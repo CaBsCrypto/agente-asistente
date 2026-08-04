@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const actorId = await gatewayActor(request, "agent:plan");
-    const result = createGatewayPlan(actorId, await request.json());
+    const result = await createGatewayPlan(actorId, await request.json());
     return NextResponse.json(result, {
       status: result.replayed ? 200 : 201,
       headers: gatewayHeaders(),

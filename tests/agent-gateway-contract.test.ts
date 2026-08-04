@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile, stat } from "node:fs/promises";
 import { listGatewayCapabilities } from "../app/agent-gateway/catalog";
+import { InMemoryGatewayStore } from "../app/agent-gateway/store";
 import { createGatewayPlan } from "../app/agent-gateway/service";
 
 test("gateway capability contract is explicit and Testnet-only", () => {
@@ -31,12 +32,12 @@ test("gateway capability contract is explicit and Testnet-only", () => {
   }
 });
 
-test("gateway plan serialization cannot contain signing material", () => {
-  const { plan } = createGatewayPlan("contract-user", {
+test("gateway plan serialization cannot contain signing material", async () => {
+  const { plan } = await createGatewayPlan("contract-user", {
     capabilityId: "stellar.x402.report.purchase",
     idempotencyKey: "contract-no-signing-001",
     parameters: { amount: "0.01", asset: "USDC" },
-  });
+  }, new InMemoryGatewayStore());
   const serialized = JSON.stringify(plan);
 
   assert.equal(plan.environment, "testnet");
@@ -52,12 +53,12 @@ test("gateway plan serialization cannot contain signing material", () => {
   );
 });
 
-test("blocked plans fail closed before approval", () => {
-  const { plan } = createGatewayPlan("blocked-user", {
+test("blocked plans fail closed before approval", async () => {
+  const { plan } = await createGatewayPlan("blocked-user", {
     capabilityId: "stellar.x402.report.purchase",
     idempotencyKey: "contract-blocked-001",
     parameters: { amount: "0.01", asset: "USDC" },
-  });
+  }, new InMemoryGatewayStore());
 
   assert.equal(plan.status, "blocked");
   assert.ok(plan.blockers.length > 0);
@@ -97,6 +98,21 @@ test("Gateway documentation names the authorization and approval boundaries", as
   assert.match(documentation, /Idempotency/i);
   assert.match(documentation, /Threat model/);
   assert.match(documentation, /Acceptance checklist/);
+});
+
+test("Gateway migration is additive and enforces durable idempotency", async () => {
+  const migration = await readFile(
+    new URL("../drizzle/0016_moaning_mastermind.sql", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(migration, /CREATE TABLE "agent_gateway_plans"/);
+  assert.match(migration, /CREATE TABLE "agent_gateway_receipts"/);
+  assert.match(
+    migration,
+    /CREATE UNIQUE INDEX "agent_gateway_plans_actor_idempotency_uidx"/,
+  );
+  assert.doesNotMatch(migration, /DROP TABLE|TRUNCATE|DELETE FROM|DROP COLUMN/i);
 });
 
 test("Gateway REST scopes follow least privilege", async () => {
