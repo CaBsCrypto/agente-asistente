@@ -37,3 +37,9 @@ test("agent MCP auth accepts personal credentials without weakening provider aut
   assert.match(source, /verifyPersonalMcpToken/); assert.match(source, /verifyPrivyAccessToken/);
   assert.match(source, /verifyServiceProviderToken/); assert.match(source, /subjectType: "provider"/);
 });
+
+test("personal MCP config follows the current deployment origin", async () => {
+  const source = await readFile(new URL("../app/agent/agent-external-access.tsx", import.meta.url), "utf8");
+  assert.match(source, /window\.location\.origin/);
+  assert.doesNotMatch(source, /https:\/\/agente-asistente\.vercel\.app\/api\/mcp\/agent/);
+});
