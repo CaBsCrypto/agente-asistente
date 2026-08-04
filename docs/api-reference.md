@@ -59,13 +59,15 @@ Demo only: no wallet signatures, no funds moved, 100 USDC demo cap.
 | `get_receipt` | Fetch execution evidence | No |
 
 ### `/api/mcp/agent` — personal agent (`agent-assistant-personal`)
-Privy bearer → scopes `agent:read`, `agent:chat`; subject `user`. **Payment signing is never exposed.**
+Privy bearer or scoped PAT → `agent:read` and optional `agent:plan`; subject `user`. External chat, approval, signing and submission are not exposed.
 
 | Tool | Purpose | Scope |
 | --- | --- | --- |
-| `get_agent_context` | Read profile, wallet metadata, connections, authority boundary | `agent:read` |
+| `get_agent_context` | Read profile, wallet metadata, connections and authority boundary | `agent:read` |
 | `get_agent_conversation` | Read the durable conversation | `agent:read` |
-| `send_agent_message` | Send a message to the user's agent (read-only tools only) | `agent:chat` |
+| `list_capabilities` / `get_capability` | Discover the versioned Testnet capability catalog | `agent:read` |
+| `list_avalanche_capabilities` / `plan_avalanche_capability` | Inspect Avalanche readiness without preparing a transaction | `agent:read` |
+| `plan_action` | Persist or replay an idempotent Testnet plan; never execute it | `agent:plan` |
 
 ### `/api/mcp/provider` — service provider (`agent-assistant-provider`)
 Scoped provider token (DB-verified); subject `provider`.

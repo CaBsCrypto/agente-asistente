@@ -112,4 +112,3 @@ export type GatewayReceipt = {
   evidence: Record<string, unknown>;
   createdAt: string;
 };
-

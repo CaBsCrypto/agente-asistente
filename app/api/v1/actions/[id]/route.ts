@@ -23,4 +23,3 @@ export async function GET(
     return gatewayError(error);
   }
 }
-

@@ -253,7 +253,7 @@ flowchart LR
 | Surface | Auth | For | Highlights |
 | --- | --- | --- | --- |
 | `POST /api/mcp` | None (public sandbox) | Any external agent | Seven commerce tools (see below) |
-| `POST /api/mcp/agent` | Privy bearer (`agent:read`, `agent:chat`) | A user's own agent | `get_agent_context`, `get_agent_conversation`, `send_agent_message`; read-only tools only, payment signing never exposed |
+| `POST /api/mcp/agent` | Privy bearer or scoped PAT (`agent:read`, optional `agent:plan`) | A user's external agent | Context, conversation, capability discovery and idempotent Testnet planning; chat mutation, approval, signing and submission are not exposed |
 | `POST /api/mcp/provider` | Scoped provider key (`aap_provider_…`) | Merchants / providers | `get_service_provider`, `list_service_offers`, `upsert_service_offer`, `set_service_offer_status`; keys issued at `/admin/providers`, stored only as SHA-256 hashes |
 
 Chrome **WebMCP** registers `search_agent_offers` and `prepare_commerce_intent`; wallet authorization and execution are intentionally excluded from the page context.

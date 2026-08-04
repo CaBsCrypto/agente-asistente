@@ -70,6 +70,21 @@ test("idempotency conflicts and cross-user reads fail closed", async () => {
   );
 });
 
+test("idempotency freezes requirement context as well as parameters", async () => {
+  const store = new InMemoryGatewayStore();
+  const input = { capabilityId: "stellar.wallet.status", idempotencyKey: "gateway-context-key-001", parameters: { detail: "summary" }, context: { requirementsSatisfied: [] as string[] } };
+  await createGatewayPlan("context-user", input, store);
+  await assert.rejects(
+    createGatewayPlan("context-user", { ...input, context: { requirementsSatisfied: ["stellar_wallet"] } }, store),
+    /gateway_idempotency_conflict/,
+  );
+  const ordered = { ...input, idempotencyKey: "gateway-context-key-002", context: { requirementsSatisfied: ["stellar_wallet", "privy_session"] } };
+  const first = await createGatewayPlan("context-user", ordered, store);
+  const replay = await createGatewayPlan("context-user", { ...ordered, context: { requirementsSatisfied: ["privy_session", "stellar_wallet", "stellar_wallet"] } }, store);
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.plan.id, first.plan.id);
+});
+
 test("planned capabilities remain blocked even when context is declared", async () => {
   const store = new InMemoryGatewayStore();
   const { plan } = await createGatewayPlan("user-d", {
@@ -128,6 +143,10 @@ test("verified receipts are plan-bound and immutable", async () => {
     createdAt: new Date().toISOString(),
   };
 
+  await assert.rejects(
+    store.saveVerifiedReceipt({ ...receipt, network: "avalanche:fuji" }),
+    /gateway_receipt_plan_mismatch/,
+  );
   await store.saveVerifiedReceipt(receipt);
   await store.saveVerifiedReceipt(receipt);
   assert.equal((await readGatewayReceipt(plan.actorId, plan.id, store)).available, true);

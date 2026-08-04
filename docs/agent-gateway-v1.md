@@ -154,15 +154,14 @@ If requirements are missing, the plan returns `status: "blocked"`, a stable mach
 
 A receipt is evidence, not success by assertion. It MUST contain:
 
-- `receiptId`, `actionId`, `userId` ownership binding and network.
-- `status`: `simulated`, `submitted`, `confirmed` or `failed`.
-- Transaction hash only when a network submission actually occurred.
-- Verification source and verification timestamp for confirmed transactions.
-- The original idempotency key hash or replay reference.
+- `id`, `planId`, `actorId`, `capabilityId` and exact capability network.
+- `status: verified`; this means an internal adapter supplied evidence, not that every receipt is an onchain payment.
+- Transaction hash only when independent network verification actually produced one.
+- Typed evidence describing the verifier and its result.
+- Immutable one-receipt-per-plan binding; replacements must conflict.
 - No access token, wallet key, raw authorization signature or private user data.
 
-Version 1 may return simulated receipts for sandbox commerce. It MUST label them
-`simulated` and MUST NOT present them as onchain confirmations.
+Version 1 does not expose a public receipt writer. Internal adapters may persist a `verified` receipt only after matching actor, capability and network to the plan. Evidence must state whether the proof is provider, sandbox or onchain; `verified` alone MUST NOT be presented as an onchain confirmation.
 
 ## Scope model
 
@@ -171,7 +170,6 @@ Minimum personal scopes:
 | Scope | Allows | Does not allow |
 | --- | --- | --- |
 | `agent:read` | Personal context, capabilities and owned state | Sending messages or planning |
-| `agent:chat` | Sending a message to Carmelita | Wallet signing |
 | `agent:plan` | Creating immutable Testnet plans | Approving, signing or submitting |
 
 Scopes MUST be checked at the tool or route boundary. User identity MUST always
@@ -179,7 +177,7 @@ come from the verified token; a caller-supplied `userId` is never authoritative.
 
 ## Testnet credential lifecycle
 
-The temporary self-service credential has the `carmelita_user_` prefix. Only its SHA-256 hash is stored; the raw value is returned once. The default scopes are `agent:read` and `agent:chat`; `agent:plan` must be requested explicitly.
+The temporary self-service credential has the `carmelita_user_` prefix. Only its SHA-256 hash is stored; the raw value is returned once. The default scope is `agent:read`; `agent:plan` must be requested explicitly. External chat is intentionally not exposed because the internal chat can reach approval workflows. Tokens expire after 30 days by default (365 maximum), and a user may keep at most ten active tokens.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
@@ -265,6 +263,11 @@ receipt. No call made exclusively through MCP or REST may sign or submit funds.
 
 ## Preview acceptance evidence
 
-For a protected Vercel Preview, run `npm run gateway:preview:acceptance -- https://<preview-url>`. The harness creates short-lived users and PATs, executes nine scope, replay, conflict, ownership, receipt and revocation checks through `vercel curl`, redacts credentials from errors and removes its exact fixtures in `finally`.
+For a protected Vercel Preview, run `npm run gateway:preview:acceptance -- https://<preview-url>`. The harness creates short-lived users and PATs, runs the nine established REST checks plus eleven MCP protocol, discovery, tool-safety, scope, ownership, planning and revocation checks through `vercel curl`, redacts credentials from errors and removes its exact fixtures in `finally`. The expanded 20-check run must pass before promotion.
 
 The first Preview acceptance passed on 2026-08-03 against deployment `dpl_5csMhcFZ1wXEsJtEbRgz37hcvGVj`: health and Postgres persistence were ready, the public catalog returned 32 Testnet capabilities, and all nine authenticated REST checks passed. Production and `main` were not modified.
+
+
+### Pending promotion gate
+
+The expanded MCP acceptance has been implemented but is not yet recorded as passing. The local Windows sandbox blocked the Node test runner with `EPERM`, and the permission reviewer could not grant an unsandboxed run because its approval quota was exhausted. Until a clean build, full test suite and the 20-check protected Preview acceptance complete, this branch remains **NO-GO for merge**. Deployment Protection also means this proves the protocol through authenticated `vercel curl`, not yet connectivity from an arbitrary external MCP client.

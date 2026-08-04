@@ -5,6 +5,7 @@ import {
   agentGatewayReceipts,
 } from "@/db/schema";
 import type { GatewayPlan, GatewayReceipt } from "@/app/agent-gateway/types";
+import { getGatewayCapability } from "@/app/agent-gateway/catalog";
 
 export type GatewayPlanClaim = {
   plan: GatewayPlan;
@@ -36,10 +37,14 @@ function stable(value: unknown): string {
 }
 
 function assertReceiptMatchesPlan(plan: GatewayPlan | undefined, receipt: GatewayReceipt) {
+  const expectedNetwork = plan
+    ? getGatewayCapability(plan.capabilityId).network
+    : undefined;
   if (
     !plan ||
     plan.actorId !== receipt.actorId ||
-    plan.capabilityId !== receipt.capabilityId
+    plan.capabilityId !== receipt.capabilityId ||
+    expectedNetwork !== receipt.network
   ) {
     throw new Error("gateway_receipt_plan_mismatch");
   }

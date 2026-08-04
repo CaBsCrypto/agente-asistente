@@ -224,4 +224,3 @@ export function getGatewayCapability(id: string) {
   if (!capability) throw new Error("gateway_capability_not_found");
   return capability;
 }
-

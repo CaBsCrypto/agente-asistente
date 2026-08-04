@@ -47,11 +47,11 @@ test("personal agent MCP requires a user principal", () => {
   const user: AuthInfo = {
     token: "hidden",
     clientId: "did:privy:user",
-    scopes: ["agent:read", "agent:chat"],
+    scopes: ["agent:read", "agent:plan"],
     extra: { subjectType: "user", userId: "did:privy:user" },
   };
   assert.equal(
-    requireMcpSubject(user, "user", "userId", "agent:chat"),
+    requireMcpSubject(user, "user", "userId", "agent:plan"),
     "did:privy:user",
   );
 });

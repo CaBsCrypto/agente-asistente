@@ -21,4 +21,3 @@ export async function POST(request: Request) {
     return gatewayError(error);
   }
 }
-

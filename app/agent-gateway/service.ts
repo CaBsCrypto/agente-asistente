@@ -27,8 +27,16 @@ function stable(value: unknown): string {
 }
 
 function fingerprint(actorId: string, input: GatewayPlanInput) {
+  const requirementsSatisfied = [...new Set(
+    input.context?.requirementsSatisfied ?? [],
+  )].sort();
   return createHash("sha256")
-    .update(stable({ actorId, capabilityId: input.capabilityId, parameters: input.parameters }))
+    .update(stable({
+      actorId,
+      capabilityId: input.capabilityId,
+      parameters: input.parameters,
+      context: { requirementsSatisfied },
+    }))
     .digest("hex");
 }
 

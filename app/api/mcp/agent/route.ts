@@ -5,7 +5,7 @@ import { createGatewayPlan } from "@/app/agent-gateway/service";
 import { GATEWAY_API_VERSION, GATEWAY_ENVIRONMENT } from "@/app/agent-gateway/types";
 import { avalancheCapabilityIdSchema, listAvalancheCapabilities, planAvalancheCapability } from "@/app/avalanche/capability-registry";
 import { searchAvaxSkills } from "@/app/connectors/avaxskills";
-import { getAgentConversation, sendAgentMessage } from "@/app/agent-chat-store";
+import { getAgentConversation } from "@/app/agent-chat-store";
 import { getAgentMcpContext } from "@/app/mcp/agent-context";
 import {
   authenticateMcp,
@@ -185,7 +185,7 @@ function getHandler() {
             parameters: z.record(z.string(), z.unknown()).default({}),
             context: z.object({ requirementsSatisfied: z.array(z.string().trim().min(1).max(80)).max(30) }).strict().optional(),
           },
-          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
         },
         async (input, extra) => {
           try {
@@ -194,34 +194,7 @@ function getHandler() {
           } catch (error) { return fail(error); }
         },
       );
-      server.registerTool(
-        "send_agent_message",
-        {
-          title: "Send a message to the personal agent",
-          description:
-            "Use the authenticated user's agent and connected read-only tools. Payment signing is not exposed.",
-          inputSchema: { message: z.string().trim().min(1).max(2000) },
-          annotations: {
-            readOnlyHint: false,
-            destructiveHint: false,
-            idempotentHint: false,
-            openWorldHint: true,
-          },
-        },
-        async ({ message }, extra) => {
-          try {
-            const userId = requireMcpSubject(
-              extra.authInfo,
-              "user",
-              "userId",
-              "agent:chat",
-            );
-            return ok(await sendAgentMessage(userId, message));
-          } catch (error) {
-            return fail(error);
-          }
-        },
-      );
+
     },
     { serverInfo: { name: "agent-assistant-personal", version: "0.1.0" } },
     {

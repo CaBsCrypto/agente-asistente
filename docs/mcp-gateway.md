@@ -53,12 +53,11 @@ https://agente-asistente.vercel.app/api/mcp/agent
 
 Authentication: either the signed-in user's current Privy access token or a scoped personal token with the `carmelita_user_` prefix.
 
-Personal tokens are a Testnet bridge. They are hashed at rest, shown once, revocable and restricted to `agent:read`, `agent:chat` and optional `agent:plan`. OAuth 2.1 with PKCE remains the public-launch target.
+Personal tokens are a Testnet bridge. They are hashed at rest, shown once, revocable and restricted to `agent:read` and optional `agent:plan`. Personal tokens expire after 30 days by default (365 maximum), and each user may keep at most ten active tokens. OAuth 2.1 with PKCE remains the public-launch target.
 
 Current scopes:
 
 - agent:read
-- agent:chat
 - agent:plan
 
 Tools:
@@ -67,7 +66,6 @@ Tools:
 | --- | --- | --- |
 | get_agent_context | agent:read | Read profile, wallet metadata, connections and authority limits |
 | get_agent_conversation | agent:read | Read durable conversation history |
-| send_agent_message | agent:chat | Use the personal agent and its connected read-only tools |
 | list_capabilities | agent:read | Discover the versioned Testnet catalog and approval boundaries |
 | get_capability | agent:read | Inspect one capability without executing it |
 | plan_action | agent:plan | Create or replay an idempotent, non-executable Testnet plan |

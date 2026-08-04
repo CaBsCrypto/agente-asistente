@@ -1,13 +1,16 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
 import { getDb } from "@/db";
 import { mcpAccessTokens } from "@/db/schema";
 import { ensureMcpProviderSchema } from "@/app/services/provider-migration";
 
 export const PERSONAL_MCP_TOKEN_PREFIX = "carmelita_user_";
-export const PERSONAL_MCP_SCOPES = ["agent:read", "agent:chat", "agent:plan"] as const;
+export const PERSONAL_MCP_SCOPES = ["agent:read", "agent:plan"] as const;
 export type PersonalMcpScope = (typeof PERSONAL_MCP_SCOPES)[number];
-const DEFAULT_SCOPES: PersonalMcpScope[] = ["agent:read", "agent:chat"];
+const DEFAULT_SCOPES: PersonalMcpScope[] = ["agent:read"];
+export const MAX_ACTIVE_PERSONAL_MCP_TOKENS = 10;
+const DEFAULT_EXPIRATION_MS = 30 * 24 * 60 * 60 * 1000;
+const MAX_EXPIRATION_MS = 365 * 24 * 60 * 60 * 1000;
 
 async function personalMcpDb() { await ensureMcpProviderSchema(); return getDb(); }
 export function hashPersonalMcpToken(token: string) { return createHash("sha256").update(token).digest("hex"); }
@@ -22,15 +25,26 @@ function publicTokenMetadata(token: { id: string; name: string; tokenPrefix: str
   return { id: token.id, name: token.name, tokenPrefix: token.tokenPrefix, scopes: token.scopes, status: token.status, expiresAt: token.expiresAt, lastUsedAt: token.lastUsedAt, createdAt: token.createdAt, updatedAt: token.updatedAt };
 }
 export async function issuePersonalMcpToken(input: { userId: string; name?: string; scopes?: string[]; expiresAt?: Date | null }) {
-  if (input.expiresAt && input.expiresAt.getTime() <= Date.now()) throw new Error("personal_mcp_expiration_invalid");
+  const now = Date.now();
+  const expiresAt = input.expiresAt ?? new Date(now + DEFAULT_EXPIRATION_MS);
+  if (expiresAt.getTime() <= now || expiresAt.getTime() > now + MAX_EXPIRATION_MS) throw new Error("personal_mcp_expiration_invalid");
+  const db = await personalMcpDb();
+  const active = await db.select({ id: mcpAccessTokens.id }).from(mcpAccessTokens)
+    .where(and(
+      eq(mcpAccessTokens.subjectType, "user"),
+      eq(mcpAccessTokens.subjectId, input.userId),
+      eq(mcpAccessTokens.status, "active"),
+      or(isNull(mcpAccessTokens.expiresAt), gt(mcpAccessTokens.expiresAt, new Date(now))),
+    ))
+    .limit(MAX_ACTIVE_PERSONAL_MCP_TOKENS);
+  if (active.length >= MAX_ACTIVE_PERSONAL_MCP_TOKENS) throw new Error("personal_mcp_token_limit_reached");
   const rawToken = createRawPersonalMcpToken();
-  const [record] = await (await personalMcpDb()).insert(mcpAccessTokens).values({
+  const [record] = await db.insert(mcpAccessTokens).values({
     id: "mcpk_" + randomUUID(), subjectType: "user", subjectId: input.userId,
     name: input.name?.trim().slice(0, 80) || "Personal agent connection",
     tokenPrefix: personalMcpTokenPrefix(rawToken), tokenHash: hashPersonalMcpToken(rawToken),
-    scopes: validatePersonalMcpScopes(input.scopes), expiresAt: input.expiresAt ?? null,
+    scopes: validatePersonalMcpScopes(input.scopes), expiresAt,
   }).returning();
-  // This is the only call that returns the raw credential.
   return { token: rawToken, credential: publicTokenMetadata(record) };
 }
 export async function listPersonalMcpTokens(userId: string) {

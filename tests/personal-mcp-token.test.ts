@@ -11,10 +11,11 @@ test("personal MCP credentials use a recognizable high-entropy prefix and SHA-25
   assert.ok(first.startsWith(personalMcpTokenPrefix(first)));
 });
 test("personal MCP scopes are allowlisted and deduplicated", () => {
-  assert.deepEqual(validatePersonalMcpScopes(), ["agent:read", "agent:chat"]);
+  assert.deepEqual(validatePersonalMcpScopes(), ["agent:read"]);
   assert.deepEqual(validatePersonalMcpScopes(["agent:read", "agent:read", "agent:plan"]), ["agent:read", "agent:plan"]);
+  assert.throws(() => validatePersonalMcpScopes(["agent:chat"]), /personal_mcp_scope_invalid/);
   assert.throws(() => validatePersonalMcpScopes(["wallet:secret:read"]), /personal_mcp_scope_invalid/);
-  assert.deepEqual(PERSONAL_MCP_SCOPES, ["agent:read", "agent:chat", "agent:plan"]);
+  assert.deepEqual(PERSONAL_MCP_SCOPES, ["agent:read", "agent:plan"]);
 });
 test("personal MCP token API is Privy authenticated, same-origin and no-store", async () => {
   const collection = await readFile(new URL("../app/api/agent/mcp-tokens/route.ts", import.meta.url), "utf8");
@@ -42,4 +43,26 @@ test("personal MCP config follows the current deployment origin", async () => {
   const source = await readFile(new URL("../app/agent/agent-external-access.tsx", import.meta.url), "utf8");
   assert.match(source, /window\.location\.origin/);
   assert.doesNotMatch(source, /https:\/\/agente-asistente\.vercel\.app\/api\/mcp\/agent/);
+});
+
+test("external MCP cannot reach the mutating chat runtime", async () => {
+  const route = await readFile(new URL("../app/api/mcp/agent/route.ts", import.meta.url), "utf8");
+  const auth = await readFile(new URL("../app/mcp/auth.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(route, /send_agent_message|sendAgentMessage|agent:chat/);
+  assert.doesNotMatch(auth, /"agent:chat"/);
+  const planStart = route.indexOf('"plan_action"');
+  const planEnd = route.indexOf("server.registerTool", planStart + 20);
+  const planTool = route.slice(planStart, planEnd < 0 ? undefined : planEnd);
+  assert.match(planTool, /readOnlyHint: false/);
+  assert.match(planTool, /destructiveHint: false/);
+});
+
+test("personal PATs have bounded expiry and active-token count", async () => {
+  const store = await readFile(new URL("../app/services/personal-mcp-token-store.ts", import.meta.url), "utf8");
+  const api = await readFile(new URL("../app/api/agent/mcp-tokens/route.ts", import.meta.url), "utf8");
+  assert.match(store, /MAX_ACTIVE_PERSONAL_MCP_TOKENS = 10/);
+  assert.match(store, /DEFAULT_EXPIRATION_MS/);
+  assert.match(store, /MAX_EXPIRATION_MS/);
+  assert.match(store, /personal_mcp_token_limit_reached/);
+  assert.match(api, /expiresInDays: z\.number\(\)\.int\(\)\.min\(1\)\.max\(365\)\.default\(30\)/);
 });
