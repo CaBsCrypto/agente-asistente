@@ -261,3 +261,10 @@ The slice is complete when a new user can create a scoped Testnet credential,
 connect Codex, list capabilities, create an Avalanche Fuji plan, open the
 first-party approval continuation, and read the resulting simulated or verified
 receipt. No call made exclusively through MCP or REST may sign or submit funds.
+
+
+## Preview acceptance evidence
+
+For a protected Vercel Preview, run `npm run gateway:preview:acceptance -- https://<preview-url>`. The harness creates short-lived users and PATs, executes nine scope, replay, conflict, ownership, receipt and revocation checks through `vercel curl`, redacts credentials from errors and removes its exact fixtures in `finally`.
+
+The first Preview acceptance passed on 2026-08-03 against deployment `dpl_5csMhcFZ1wXEsJtEbRgz37hcvGVj`: health and Postgres persistence were ready, the public catalog returned 32 Testnet capabilities, and all nine authenticated REST checks passed. Production and `main` were not modified.

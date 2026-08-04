@@ -31,6 +31,7 @@
         "test:build": "npm run test && npm run build",
         "db:migrate": "drizzle-kit migrate",
         "gateway:neon:smoke": "tsx scripts/agent-gateway-neon-smoke.ts",
+        "gateway:preview:acceptance": "tsx scripts/agent-gateway-preview-acceptance.ts",
         "build:sites": "vinext build",
         "bridge:doctor": "tsx scripts/browser-bridge-doctor.ts",
         "graph:extract": "graphify extract . --code-only",
