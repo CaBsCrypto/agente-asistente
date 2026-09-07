@@ -54,9 +54,14 @@ export default function WebMcpInspector({
   }
 
   useEffect(() => {
-    void syncRegistration();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    let active = true;
+    void registerCarmelitaWebMcpTools(getAccessToken).then((nextStatus) => {
+      if (active) setStatus(nextStatus);
+    });
+    return () => {
+      active = false;
+    };
+  }, [getAccessToken]);
 
   return (
     <aside className="webmcp-inspector-card" style={{
