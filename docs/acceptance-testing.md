@@ -6,6 +6,15 @@ This delivery validates an isolated Carmelita Preview: application contracts, de
 
 The commands below describe the current runner interfaces. They are not evidence that a deployment or human acceptance has passed. Save the actual dated output together with the reviewed commit and deployment.
 
+For the current PR #28 Preview, administrator access uses the server-verified
+Privy allowlist (`CARMELITA_ADMIN_EMAILS`). The password-based wallet-registry
+runner below is a legacy interface and cannot authenticate this configuration.
+Keep the allowlist enabled. Use the visible `/admin/login` flow and
+`/admin/wallets` for the registry check; `/preview-acceptance` supports the
+real-session ownership checks without exporting tokens. Close both Privy and
+administrator sessions when switching accounts. The completed two-user evidence
+and its limits are in [the dated report](real-user-preview-acceptance-2026-09-08.md).
+
 | Command | Effects and coverage |
 | --- | --- |
 | `npm run qa:local` | Local lint, tests and build; no deployment or migration |
@@ -14,7 +23,7 @@ The commands below describe the current runner interfaces. They are not evidence
 | `npm run acceptance:authenticated -- --url URL --deployment DEPLOYMENT --commit SHA40 --json` | Protected Preview contracts and authenticated persisted wallet status; no bootstrap by default |
 | Same authenticated command with `--allow-bootstrap` | Explicitly provisions the dedicated test user's records and wallets, repeats bootstrap, then compares all three addresses |
 | `npm run gateway:preview:acceptance -- --url URL --deployment DEPLOYMENT --commit SHA40` | Creates synthetic test PATs and planning fixtures in the isolated database; verifies REST/MCP authorization, idempotency and revocation; cleans up exact fixture IDs |
-| `npm run wallets:preview:acceptance -- --url URL --deployment DEPLOYMENT --commit SHA40 --email USER_A --second-email USER_B` | Authenticates the Preview administrator, inspects both registered test identities and closes that administrator session |
+| `npm run wallets:preview:acceptance -- --url URL --deployment DEPLOYMENT --commit SHA40 --email USER_A --second-email USER_B` | Legacy password-admin runner; unavailable with the current Privy allowlist. Use the visible administration flow above. |
 | `npm run acceptance:execute` | Disabled: exits before requests with `automatic_payment_execution_disabled_use_visible_application_approval` |
 
 `acceptance:doctor` and `acceptance:travala` have no default production URL. `qa:production` delegates to doctor, so it also needs an explicit URL through its arguments or `AGENT_ACCEPTANCE_BASE_URL`. `npm run qa` is not a self-contained release gate without that configuration. Keep external checks separate from local CI.
@@ -38,7 +47,7 @@ All three authenticated runners require a target URL, deployment and full 40-cha
 | `AGENT_ACCEPTANCE_BASE_URL` | URL fallback for `acceptance.ts`; `--url` must still match the isolated origin in authenticated mode |
 | `CARMELITA_PREVIEW_URL` | URL fallback for the Gateway and wallet-registry runners |
 | `AGENT_ACCEPTANCE_PRIVY_TOKEN` | Temporary token for one exclusive Privy test identity; authenticated runner only |
-| `CARMELITA_ADMIN_USERNAME`, `CARMELITA_ADMIN_PASSWORD` | Preview administrator credentials; wallet-registry runner only |
+| `CARMELITA_ADMIN_USERNAME`, `CARMELITA_ADMIN_PASSWORD` | Legacy password-admin credentials; not used or supported by the current Privy-only Preview |
 
 Provide secrets through the session's approved secret mechanism. These runners do not read `.env.migrate` or automatically load another environment file. A local variable declaration alone does not prove the remote deployment uses that database.
 
@@ -94,6 +103,11 @@ The runner invokes bootstrap twice and checks that Stellar Testnet, Avalanche Fu
 Repeat with the second dedicated test identity and keep the reports distinct. These token-based checks do not prove the visible login experience, recovery after logout, concurrent onboarding or isolation between both users. Remove temporary credentials from the process environment when finished.
 
 ### Gateway and registered wallets
+
+The wallet command shown here describes the legacy password-admin interface.
+Do not run it against the current Privy-only Preview or disable the allowlist to
+make it pass. Its registry assertions remain covered by local tests; live
+registry acceptance uses the visible administrator session.
 
 ```powershell
 npm run gateway:preview:acceptance -- --url "$previewUrl" --deployment "$deployment" --commit "$commit"
