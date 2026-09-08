@@ -20,6 +20,8 @@ Cada usuario conserva **tres identidades de billetera**: Stellar, EVM y Solana. 
 
 La ampliación añade registro, recuperación, visualización de dirección y consulta de saldo nativo de las redes EVM del catálogo. La búsqueda de billetera prioriza la identidad canónica persistida, exige coincidencia con Privy y rechaza identidades ambiguas. Activar BNB o Base no reemplaza la asociación de Avalanche.
 
+La prueba visual detectó que cambiar el selector de idioma no actualizaba el onboarding, porque cada componente conservaba su estado independiente. El idioma ahora utiliza una suscripción compartida, sincroniza componentes y pestañas, conserva un estado inicial seguro durante el renderizado del servidor y sigue funcionando si el navegador restringe el almacenamiento local.
+
 - El bootstrap conserva sus campos anteriores y añade información de la identidad EVM y sus redes.
 - `GET /api/agent/wallets` devuelve una fila por red; `id` y `walletId` mantienen el ID canónico. El mismo ID puede aparecer en varias filas: la clave de una asociación es billetera más red.
 - `GET /api/agent/wallets/evm?network=...` exige sesión y una red EVM habilitada del catálogo. Consulta saldo nativo y comprueba que el RPC responda con la cadena esperada. No acepta direcciones, propietarios ni RPC arbitrarios suministrados por el cliente.
@@ -49,14 +51,14 @@ La migración se aplicó únicamente a la base de Preview alrededor de **07:08 U
 | --- | --- | --- |
 | Instalación limpia | Aprobado | Node `24.14.0`, npm `11.6.1`; instalación completada sin modificar el lockfile. El log conserva advertencias de dependencias transitivas y limpieza. |
 | Lint | Aprobado | Sin errores ni advertencias en el corte local registrado. |
-| Suite local | Aprobado con dos omisiones explícitas | Corte final incluyendo interfaz de aceptación y compatibilidad administrativa: 503 pruebas, 501 aprobadas, 0 fallos y 2 omitidas. |
+| Suite local | Aprobado con dos omisiones explícitas | Corte final incluyendo interfaz de aceptación, compatibilidad administrativa e idioma compartido: 507 pruebas, 505 aprobadas, 0 fallos y 2 omitidas. |
 | Build | Aprobado | Compilación, verificación TypeScript y generación de páginas completadas. |
 | Persistencia en PostgreSQL real | Aprobado | 13/13 comprobaciones, incluidos backfill, repetición, conservación de identidad y rechazo de conflictos entre propietarios. |
 | Concurrencia en PostgreSQL real | Aprobado | Transacciones distintas `7204` y `7205`, con aproximadamente 768 ms de solapamiento; resultado de una identidad EVM y tres asociaciones. |
 | Limpieza de fixtures | Aprobado | Eliminación del esquema exclusivo de cada ejecución verificada; ambos intentos registraron limpieza aprobada. |
 | RPC oficiales | Aprobado | Comprobaciones de lectura a las 07:07:59.989 UTC: Fuji 43113, BNB Testnet 97 y Base Sepolia 84532. |
 | Preview protegida: versión, aislamiento y lectura pública | Aprobado | Corte 07:20:36 UTC sobre `1c5cbbd`: raíz, `/agent` y `/preview-acceptance` HTTP 200; APIs de billeteras y saldo EVM sin sesión HTTP 401. Recurso aislado verificado mediante fingerprint. |
-| GitHub Actions | Aprobado para `1c5cbbd` | [Ejecución 34198490098](https://github.com/CaBsCrypto/carmelita/actions/runs/34198490098): instalación limpia, lint, suite y build en Linux. La revisión administrativa se comprobará también en la siguiente ejecución. |
+| GitHub Actions | Aprobado para `ac7cba6` | [Ejecución 34199171635](https://github.com/CaBsCrypto/carmelita/actions/runs/34199171635): instalación limpia, lint, suite y build en Linux, incluida la revisión administrativa. Los controles del siguiente commit incluyen también la sincronización de idioma. |
 | Nueva Preview con dos usuarios | Pendiente | Falta repetir sesiones Privy con los códigos introducidos por el usuario y comprobar seis identidades y diez asociaciones reales en el despliegue final. |
 
 Las dos pruebas locales omitidas requieren activación externa explícita: el smoke del MCP oficial de Avalanche necesita `AVALANCHE_MCP_LIVE=1`; el smoke de Dexalot Testnet necesita `DEXALOT_LIVE=1`. No se ejecutaron como parte de la suite local y no se contabilizan como aceptación externa aprobada.
@@ -65,9 +67,9 @@ La instalación inicial usó accidentalmente npm global `11.9.0` y falló al val
 
 El primer intento SQL produjo **12/13**: las transacciones no se habían solapado, por lo que la comprobación de concurrencia falló correctamente. Se añadió una ventana de un segundo al fixture para hacer medible la ejecución simultánea. La repetición produjo **13/13**; el intervalo observado demuestra solapamiento de transacciones, no es una medición de rendimiento del servicio.
 
-Los registros completos se conservan localmente en `work/`, excluido de Git: `evm-clean-install-pinned.txt`, `evm-qa-reviewed.txt`, `evm-sql-acceptance.json`, `evm-sql-acceptance-final.json`, `evm-rpc-probe.json`, `evm-preview-code-health.json` y los snapshots `evm-preview-before.json` / `evm-preview-after.json`. Los cortes previos tenían 494 y 501 pruebas; el último añade la compatibilidad del contador y los estados independientes por red. Los fixtures reproducibles y su ejecutor están versionados. Este documento omite correos, identidades de usuario, direcciones de billetera y credenciales.
+Los registros completos se conservan localmente en `work/`, excluido de Git: `evm-clean-install-pinned.txt`, `evm-qa-delivery.txt`, `evm-sql-acceptance.json`, `evm-sql-acceptance-final.json`, `evm-rpc-probe.json`, `evm-preview-code-health.json` y los snapshots `evm-preview-before.json` / `evm-preview-after.json`. Los cortes previos tenían 494, 501 y 503 pruebas; el último añade las cuatro comprobaciones del idioma compartido. Los fixtures reproducibles y su ejecutor están versionados. Este documento omite correos, identidades de usuario, direcciones de billetera y credenciales.
 
-Graphify recibió la actualización AST final: 407 archivos analizados, 2.788 nodos, 6.517 relaciones y 127 comunidades. El analizador `tree_sitter_sql` no está instalado: 21 archivos SQL no aportaron relaciones al grafo; la migración se comprobó mediante SQL y pruebas. No se declara completa la cobertura SQL ni la extracción semántica de documentos.
+Graphify recibió la actualización AST final: 409 archivos analizados, 2.796 nodos, 6.528 relaciones y 140 comunidades. El analizador `tree_sitter_sql` no está instalado: 21 archivos SQL no aportaron relaciones al grafo; la migración se comprobó mediante SQL y pruebas. No se declara completa la cobertura SQL ni la extracción semántica de documentos.
 
 ## Cierre pendiente y reversión
 
