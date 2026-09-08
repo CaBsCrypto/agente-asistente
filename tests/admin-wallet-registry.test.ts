@@ -13,6 +13,7 @@ test("wallet registry identifies complete and incomplete Privy users", () => {
     ],
     [
       { userId: "did:privy:complete", address: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF", chainType: "stellar", network: "stellar:testnet", status: "active", createdAt: now, updatedAt: now },
+      { userId: "did:privy:complete", address: "11111111111111111111111111111111", chainType: "solana", network: "solana:devnet", status: "active", createdAt: now, updatedAt: now },
       { userId: "did:privy:complete", address: "0x1111111111111111111111111111111111111111", chainType: "ethereum", network: "avalanche:fuji", status: "active", createdAt: now, updatedAt: now },
       { userId: "did:privy:missing", address: "GMISSING", chainType: "stellar", network: "stellar:testnet", status: "active", createdAt: now, updatedAt: now },
     ],
@@ -20,17 +21,18 @@ test("wallet registry identifies complete and incomplete Privy users", () => {
 
   assert.deepEqual(registry.summary, {
     users: 2,
-    wallets: 3,
+    wallets: 4,
     completeUsers: 1,
     needsAttention: 1,
     missingStellar: 0,
     missingAvalanche: 1,
+    missingSolana: 1,
   });
   assert.equal(registry.users[0]?.complete, true);
   assert.equal(registry.users[0]?.registeredComplete, true);
-  assert.deepEqual(registry.users[1]?.missingNetworks, ["avalanche:fuji"]);
+  assert.deepEqual(registry.users[1]?.missingNetworks, ["avalanche:fuji", "solana:devnet"]);
   assert.match(registry.users[0]?.wallets[0]?.explorerUrl ?? "", /subnets-test\.avax\.network/);
-  assert.match(registry.users[0]?.wallets[1]?.explorerUrl ?? "", /stellar\.expert/);
+  assert.match(registry.users[0]?.wallets[2]?.explorerUrl ?? "", /stellar\.expert/);
 });
 
 test("wallet registry never marks malformed or inactive wallet records as ready", () => {
@@ -38,6 +40,7 @@ test("wallet registry never marks malformed or inactive wallet records as ready"
     [{ id: "did:privy:not-ready", email: null, status: "active", lastSeenAt: now, createdAt: now }],
     [
       { userId: "did:privy:not-ready", address: "NOT_A_STELLAR_ADDRESS", chainType: "stellar", network: "stellar:testnet", status: "pending", createdAt: now, updatedAt: now },
+      { userId: "did:privy:not-ready", address: "11111111111111111111111111111111", chainType: "solana", network: "solana:devnet", status: "active", createdAt: now, updatedAt: now },
       { userId: "did:privy:not-ready", address: "0x1111111111111111111111111111111111111111", chainType: "ethereum", network: "avalanche:fuji", status: "active", createdAt: now, updatedAt: now },
     ],
   );
@@ -78,4 +81,17 @@ test("founder navigation exposes the protected wallet registry", async () => {
   const page = await readFile(new URL("../app/admin/wallets/page.tsx", import.meta.url), "utf8");
   assert.match(dashboard, /href="\/admin\/wallets"/);
   assert.match(page, /requireAdminPage\("\/admin\/wallets"\)/);
+});
+
+test("Solana validation, explorer and readiness agree", () => {
+  const user = { id: "did:privy:solana", email: null, status: "active", lastSeenAt: now, createdAt: now };
+  const wallet = { userId: user.id, address: "11111111111111111111111111111111", chainType: "solana", network: "solana:devnet", status: "active", createdAt: now, updatedAt: now };
+  const valid = buildAdminWalletRegistry([user], [wallet]);
+  assert.equal(valid.users[0].wallets[0].validAddress, true);
+  assert.equal(valid.users[0].wallets[0].explorerUrl, "https://explorer.solana.com/address/11111111111111111111111111111111?cluster=devnet");
+  const invalid = buildAdminWalletRegistry([user], [{ ...wallet, address: "not-a-wallet" }]);
+  assert.deepEqual(invalid.users[0].invalidAddressNetworks, ["solana:devnet"]);
+  assert.equal(invalid.users[0].complete, false);
+  const missing = buildAdminWalletRegistry([user], []);
+  assert.equal(missing.summary.missingSolana, 1);
 });

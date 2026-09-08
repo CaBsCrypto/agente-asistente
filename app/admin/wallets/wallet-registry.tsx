@@ -15,6 +15,7 @@ type Registry = {
     needsAttention: number;
     missingStellar: number;
     missingAvalanche: number;
+    missingSolana: number;
   };
   users: AdminWalletUser[];
 };
@@ -43,7 +44,7 @@ export default function WalletRegistry({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [health, setHealth] = useState<"all" | "complete" | "attention">("all");
-  const [network, setNetwork] = useState<"all" | "stellar:testnet" | "avalanche:fuji">("all");
+  const [network, setNetwork] = useState<"all" | "stellar:testnet" | "avalanche:fuji" | "solana:devnet">("all");
   const [copied, setCopied] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -83,7 +84,7 @@ export default function WalletRegistry({
           <div>
             <p className="eyebrow">IDENTITY & WALLET INTEGRITY</p>
             <h1>Users and Testnet wallets.</h1>
-            <p>Inspect whether every persisted Privy identity has one Stellar wallet and one EVM wallet assigned to Avalanche Fuji. Public addresses only; Explorer links provide the on-chain check.</p>
+            <p>Inspect whether every persisted Privy identity has one wallet for Stellar Testnet, Avalanche Fuji and Solana Devnet. Public addresses only; Explorer links provide the on-chain check.</p>
           </div>
           <div className="admin-heading-actions">
             <button type="button" onClick={() => router.refresh()}>Refresh registry</button>
@@ -94,8 +95,8 @@ export default function WalletRegistry({
         <section className="wallet-registry-kpis" aria-label="Wallet integrity summary">
           <article><span>Privy users</span><strong>{initialRegistry.summary.users}</strong><small>Persisted identities</small></article>
           <article><span>Wallets</span><strong>{initialRegistry.summary.wallets}</strong><small>Public addresses indexed</small></article>
-          <article className="good"><span>Ready</span><strong>{initialRegistry.summary.completeUsers}</strong><small>Valid and active on both networks</small></article>
-          <article className={initialRegistry.summary.needsAttention ? "warning" : "good"}><span>Needs attention</span><strong>{initialRegistry.summary.needsAttention}</strong><small>{initialRegistry.summary.missingStellar} Stellar · {initialRegistry.summary.missingAvalanche} Avalanche</small></article>
+          <article className="good"><span>Ready</span><strong>{initialRegistry.summary.completeUsers}</strong><small>Valid and active on all three networks</small></article>
+          <article className={initialRegistry.summary.needsAttention ? "warning" : "good"}><span>Needs attention</span><strong>{initialRegistry.summary.needsAttention}</strong><small>{initialRegistry.summary.missingStellar} Stellar · {initialRegistry.summary.missingAvalanche} Avalanche · {initialRegistry.summary.missingSolana} Solana</small></article>
         </section>
 
         <section className="wallet-registry-workspace">
@@ -107,7 +108,7 @@ export default function WalletRegistry({
           <div className="wallet-registry-filters">
             <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Email, Privy DID or address…" /></label>
             <label><span>Integrity</span><select value={health} onChange={(event) => setHealth(event.target.value as typeof health)}><option value="all">All users</option><option value="complete">Complete</option><option value="attention">Needs attention</option></select></label>
-            <label><span>Network</span><select value={network} onChange={(event) => setNetwork(event.target.value as typeof network)}><option value="all">All networks</option><option value="stellar:testnet">Stellar Testnet</option><option value="avalanche:fuji">Avalanche Fuji</option></select></label>
+            <label><span>Network</span><select value={network} onChange={(event) => setNetwork(event.target.value as typeof network)}><option value="all">All networks</option><option value="stellar:testnet">Stellar Testnet</option><option value="avalanche:fuji">Avalanche Fuji</option><option value="solana:devnet">Solana Devnet</option></select></label>
             <button type="button" onClick={() => { setSearch(""); setHealth("all"); setNetwork("all"); }}>Clear</button>
           </div>
 

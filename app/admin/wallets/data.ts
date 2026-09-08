@@ -8,6 +8,7 @@ import type { WalletNetworkId } from "@/app/wallets/types";
 export const REQUIRED_ADMIN_WALLET_NETWORKS = [
   "stellar:testnet",
   "avalanche:fuji",
+  "solana:devnet",
 ] as const;
 
 export type AdminWalletRecord = {
@@ -60,7 +61,9 @@ function walletExplorerUrl(networkId: string, address: string) {
   if (!network) return null;
   if (network.family === "stellar") return `${network.explorerUrl}/account/${address}`;
   if (network.family === "evm") return `${network.explorerUrl}/address/${address}`;
-  return `${network.explorerUrl}&address=${address}`;
+  const url = new URL(network.explorerUrl);
+  url.pathname = `/address/${address}`;
+  return url.toString();
 }
 
 export function buildAdminWalletRegistry(users: UserRow[], wallets: WalletRow[]) {
@@ -88,6 +91,7 @@ export function buildAdminWalletRegistry(users: UserRow[], wallets: WalletRow[])
       .filter((wallet) => {
         if (wallet.network === "stellar:testnet") return !isValidWalletAddress("stellar", wallet.address);
         if (wallet.network === "avalanche:fuji") return !isValidWalletAddress("evm", wallet.address);
+        if (wallet.network === "solana:devnet") return !isValidWalletAddress("solana", wallet.address);
         return false;
       })
       .map((wallet) => wallet.network);
@@ -112,7 +116,9 @@ export function buildAdminWalletRegistry(users: UserRow[], wallets: WalletRow[])
               ? isValidWalletAddress("stellar", wallet.address)
               : wallet.network === "avalanche:fuji"
                 ? isValidWalletAddress("evm", wallet.address)
-                : false,
+                : wallet.network === "solana:devnet"
+                  ? isValidWalletAddress("solana", wallet.address)
+                  : false,
           explorerUrl: walletExplorerUrl(wallet.network, wallet.address),
           createdAt: wallet.createdAt.toISOString(),
           updatedAt: wallet.updatedAt.toISOString(),
@@ -135,6 +141,7 @@ export function buildAdminWalletRegistry(users: UserRow[], wallets: WalletRow[])
       completeUsers: records.filter((user) => user.complete).length,
       needsAttention: records.filter((user) => !user.complete).length,
       missingStellar: records.filter((user) => user.missingNetworks.includes("stellar:testnet")).length,
+      missingSolana: records.filter((user) => user.missingNetworks.includes("solana:devnet")).length,
       missingAvalanche: records.filter((user) => user.missingNetworks.includes("avalanche:fuji")).length,
     },
     users: records,
