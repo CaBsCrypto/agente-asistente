@@ -2,6 +2,8 @@
 
 Fecha de evidencia: **8 de septiembre de 2026, UTC**. Propuesta: [PR #28](https://github.com/CaBsCrypto/carmelita/pull/28). Base funcional previa: `ce871e1`.
 
+**Seguimiento posterior:** este documento conserva los cortes iniciales de la ampliación. Los resultados de usuario A y usuario B sobre `ae96e70`, los ciclos de sesión y administración aún pendientes, y el nuevo código de recuperación Stellar se separan en [Cierre multichain y recuperación Stellar](MULTICHAIN-STELLAR-RECOVERY-2026-09-08.md). La evidencia histórica no se atribuye al código posterior `912db90`.
+
 **Estado: implementación con comprobaciones locales y de base de datos aprobadas; aceptación de usuarios de la nueva Preview pendiente.** La primera versión desplegada corresponde a `1c5cbbdec0cd549428cf98c98de010845762f057`, enviada a la misma PR mediante tres commits adicionales: `54bec0b` (identidad y persistencia), `e33cedf` (catálogo y APIs) y `1c5cbbd` (usuario, administración y aceptación). Este corte añade la revisión de compatibilidad administrativa: `summary.wallets` conserva el número de identidades y cada asociación mantiene su estado independiente del estado antiguo de Fuji.
 
 Alias de la rama: [Preview multichain](https://agente-asistente-git-f-22838e-cabscryptocontacto-6028s-projects.vercel.app/). Pantalla de aceptación: `/preview-acceptance`, modo **Solo billeteras multichain**. El usuario completa los códigos en Privy; la pantalla no solicita ni exporta tokens. El primer resultado de persistencia queda pendiente hasta recargar y repetir las lecturas.
