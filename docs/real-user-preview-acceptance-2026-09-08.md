@@ -21,13 +21,23 @@ in required networks, address validity, missing-network counts and the selector,
 and constructs the address explorer URL correctly. This is wallet provisioning
 acceptance only; it does not establish Solana transfers, SPL tokens or bridges.
 
-A Preview-only `/preview-acceptance` page runs authenticated read comparisons
+A Preview-only `/preview-acceptance` page runs authenticated query comparisons
 against the existing chat, memory and wallet APIs with an attempted foreign owner
 selector. It uses Privy in the visible application without exporting access tokens,
 and is unavailable outside a verified isolated Preview. No new API is added.
 Each real identity must run it with distinct own/foreign test markers. A passed
-check proves these reads remain scoped to the authenticated user, not arbitrary
-mutation or receipt access. Those limits must remain explicit in final evidence.
+check proves these reads remain scoped to the authenticated user. The GET routes
+can initialize storage or update conversation metadata; they are not strictly
+free of database writes. The page also attempts to pause one explicitly identified
+foreign test memory and expects 404, followed by a database snapshot comparison.
+It does not validate receipt access or arbitrary mutations.
+
+Review found that memory UPDATE/DELETE already scoped changes to ID and owner but
+returned success for zero affected rows. They now return 404 for both nonexistent
+and foreign records, without disclosing which case occurred.
+
+On commit 20cf12a, account A passed chat/memory/wallet own-scope query comparisons
+and administrative rejection (401). Refined mutation checks remain pending.
 
 Pending: live API read comparisons for both identities, final Solana registry
 verification after deployment, and exact cleanup of this run's messages/memories.
@@ -36,5 +46,6 @@ separate evidence, not a substitute for real-session acceptance.
 
 Graphify update remains blocked by its missing Python 3.12 interpreter.
 Solana Devnet operations are requested as the next multichain capability;
-transfers, SPL support and any bridge require separate implementation and acceptance.
+transfers and SPL support require separate implementation and acceptance. The
+user chose separate networks; bridges are explicitly deferred.
 No Mainnet or financial execution is authorized by this acceptance run.
