@@ -2,6 +2,7 @@
 
 import { usePrivy } from "@privy-io/react-auth";
 import { useState } from "react";
+import WalletAcceptancePanel from "./wallet-panel";
 
 export default function AcceptancePanel() {
   const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
@@ -11,6 +12,7 @@ export default function AcceptancePanel() {
   const [otherMemory, setOtherMemory] = useState("");
   const [report, setReport] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<"wallets" | "isolation">("wallets");
   async function run() {
     setBusy(true);
     setReport(null);
@@ -47,16 +49,20 @@ export default function AcceptancePanel() {
   }
   return <main className="shell" style={{ padding: "48px 24px" }}>
     <h1>Comprobación de aislamiento de Preview</h1>
-    <p>Consulta datos propios e intenta pausar una memoria ficticia ajena: debe ser rechazado. Las consultas pueden actualizar metadatos de sesión. No crea billeteras, fondos ni pagos.</p>
+    <p>Selecciona la comprobación que deseas ejecutar. Las pruebas solo están disponibles en la Preview aislada.</p>
     <p>Cuenta: {user?.email?.address ?? "Sin sesión"}</p>
     {!authenticated ? <button disabled={!ready} onClick={() => login()}>Iniciar sesión de prueba</button> : <>
       <button disabled={busy} onClick={async () => { await fetch("/api/admin/session", { method: "DELETE" }); await logout(); setReport(null); }}>Cerrar ambas sesiones</button>
+      <p><label>Modo de aceptación <select value={mode} disabled={busy} onChange={(event) => setMode(event.target.value as typeof mode)}><option value="wallets">Solo billeteras multichain</option><option value="isolation">Aislamiento de chat y memoria ficticios</option></select></label></p>
+      {mode === "wallets" && user?.id ? <WalletAcceptancePanel key={user.id} userId={user.id} getAccessToken={getAccessToken} /> : <>
+      <p>Consulta datos propios e intenta pausar una memoria ficticia ajena: debe ser rechazado. Las consultas pueden actualizar metadatos de sesión. Este modo no crea billeteras, fondos ni pagos.</p>
       <p><label>Identidad del otro usuario <input value={otherId} onChange={(e) => setOtherId(e.target.value)} /></label></p>
       <p><label>Marca propia <input value={ownMarker} onChange={(e) => setOwnMarker(e.target.value)} /></label></p>
       <p><label>Marca del otro usuario <input value={otherMarker} onChange={(e) => setOtherMarker(e.target.value)} /></label></p>
       <p><label>Memoria ficticia del otro usuario <input value={otherMemory} onChange={(e) => setOtherMemory(e.target.value)} /></label></p>
       <button disabled={busy} onClick={run}>{busy ? "Comprobando…" : "Verificar aislamiento"}</button>
+      </>}
     </>}
-    {report !== null && <pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(report, null, 2)}</pre>}
+    {mode === "isolation" && report !== null && <pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(report, null, 2)}</pre>}
   </main>;
 }

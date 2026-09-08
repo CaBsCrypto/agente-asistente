@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { buildAdminWalletRegistry } from "../app/admin/wallets/data";
+import { WALLET_NETWORKS } from "../app/wallets/networks";
 
 const now = new Date("2026-08-11T10:00:00.000Z");
 
@@ -22,17 +23,45 @@ test("wallet registry identifies complete and incomplete Privy users", () => {
   assert.deepEqual(registry.summary, {
     users: 2,
     wallets: 4,
+    uniqueWallets: 4,
+    networkAssociations: 4,
     completeUsers: 1,
     needsAttention: 1,
     missingStellar: 0,
     missingAvalanche: 1,
     missingSolana: 1,
+    missingBnb: 0,
+    missingBase: 0,
   });
   assert.equal(registry.users[0]?.complete, true);
   assert.equal(registry.users[0]?.registeredComplete, true);
   assert.deepEqual(registry.users[1]?.missingNetworks, ["avalanche:fuji", "solana:devnet"]);
   assert.match(registry.users[0]?.wallets[0]?.explorerUrl ?? "", /subnets-test\.avax\.network/);
   assert.match(registry.users[0]?.wallets[2]?.explorerUrl ?? "", /stellar\.expert/);
+});
+
+test("registry distinguishes one EVM wallet from three network associations", () => {
+  const user = { id: "did:privy:evm", email: null, status: "active", lastSeenAt: now, createdAt: now };
+  const networks = ["avalanche:fuji", "bnb:testnet", "base:sepolia"] as const;
+  const rows = networks.map((network) => ({ id: "evm-canonical", userId: user.id, address: `0x${"a".repeat(40)}`, chainType: "ethereum", network, status: "active", createdAt: now, updatedAt: now }));
+  const enabled = networks.map((network) => WALLET_NETWORKS[network]);
+  const registry = buildAdminWalletRegistry([user], rows, enabled);
+  assert.equal(registry.summary.wallets, 3, "legacy total remains associations");
+  assert.equal(registry.summary.uniqueWallets, 1);
+  assert.equal(registry.summary.networkAssociations, 3);
+  assert.equal(registry.users[0].complete, true);
+  assert.equal(registry.users[0].evmIdentityConflict, false);
+  assert.deepEqual(registry.users[0].duplicateNetworks, []);
+  assert.ok(registry.users[0].wallets.every((wallet) => wallet.validAddress));
+  assert.equal(registry.users[0].wallets.find((wallet) => wallet.network === "bnb:testnet")?.explorerUrl, `https://testnet.bscscan.com/address/0x${"a".repeat(40)}`);
+  assert.equal(registry.users[0].wallets.find((wallet) => wallet.network === "base:sepolia")?.explorerUrl, `https://sepolia.basescan.org/address/0x${"a".repeat(40)}`);
+  assert.doesNotMatch(JSON.stringify(registry), /evm-canonical/);
+  const invalid = buildAdminWalletRegistry([user], rows.map((row, index) => index === 1 ? { ...row, address: `0x${"b".repeat(40)}` } : row), enabled);
+  assert.equal(invalid.users[0].evmIdentityConflict, true);
+  assert.equal(invalid.users[0].complete, false);
+  const flagOff = buildAdminWalletRegistry([user], rows, [WALLET_NETWORKS["avalanche:fuji"]]);
+  assert.equal(flagOff.summary.networkAssociations, 1);
+  assert.deepEqual(flagOff.users[0].missingNetworks, []);
 });
 
 test("wallet registry never marks malformed or inactive wallet records as ready", () => {

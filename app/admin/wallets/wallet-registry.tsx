@@ -8,14 +8,19 @@ import type { AdminWalletUser } from "@/app/admin/wallets/data";
 
 type Registry = {
   generatedAt: string;
+  networks: { id: string; name: string }[];
   summary: {
     users: number;
     wallets: number;
+    uniqueWallets: number;
+    networkAssociations: number;
     completeUsers: number;
     needsAttention: number;
     missingStellar: number;
     missingAvalanche: number;
     missingSolana: number;
+    missingBnb: number;
+    missingBase: number;
   };
   users: AdminWalletUser[];
 };
@@ -44,7 +49,7 @@ export default function WalletRegistry({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [health, setHealth] = useState<"all" | "complete" | "attention">("all");
-  const [network, setNetwork] = useState<"all" | "stellar:testnet" | "avalanche:fuji" | "solana:devnet">("all");
+  const [network, setNetwork] = useState("all");
   const [copied, setCopied] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -84,7 +89,7 @@ export default function WalletRegistry({
           <div>
             <p className="eyebrow">IDENTITY & WALLET INTEGRITY</p>
             <h1>Users and Testnet wallets.</h1>
-            <p>Inspect whether every persisted Privy identity has one wallet for Stellar Testnet, Avalanche Fuji and Solana Devnet. Public addresses only; Explorer links provide the on-chain check.</p>
+            <p>Stellar, EVM and Solana wallet families. Each user shares one EVM address across the enabled test networks, with independent balances and fees. Explorer links provide the on-chain check.</p>
           </div>
           <div className="admin-heading-actions">
             <button type="button" onClick={() => router.refresh()}>Refresh registry</button>
@@ -94,9 +99,9 @@ export default function WalletRegistry({
 
         <section className="wallet-registry-kpis" aria-label="Wallet integrity summary">
           <article><span>Privy users</span><strong>{initialRegistry.summary.users}</strong><small>Persisted identities</small></article>
-          <article><span>Wallets</span><strong>{initialRegistry.summary.wallets}</strong><small>Public addresses indexed</small></article>
-          <article className="good"><span>Ready</span><strong>{initialRegistry.summary.completeUsers}</strong><small>Valid and active on all three networks</small></article>
-          <article className={initialRegistry.summary.needsAttention ? "warning" : "good"}><span>Needs attention</span><strong>{initialRegistry.summary.needsAttention}</strong><small>{initialRegistry.summary.missingStellar} Stellar · {initialRegistry.summary.missingAvalanche} Avalanche · {initialRegistry.summary.missingSolana} Solana</small></article>
+          <article><span>Unique wallets</span><strong>{initialRegistry.summary.uniqueWallets}</strong><small>{initialRegistry.summary.networkAssociations} network associations</small></article>
+          <article className="good"><span>Ready</span><strong>{initialRegistry.summary.completeUsers}</strong><small>Valid and active on all {initialRegistry.networks.length} enabled networks</small></article>
+          <article className={initialRegistry.summary.needsAttention ? "warning" : "good"}><span>Needs attention</span><strong>{initialRegistry.summary.needsAttention}</strong><small>{initialRegistry.summary.missingStellar} Stellar · {initialRegistry.summary.missingAvalanche} Avalanche · {initialRegistry.summary.missingSolana} Solana{initialRegistry.networks.some((item) => item.id === "bnb:testnet") && <> · {initialRegistry.summary.missingBnb} BNB · {initialRegistry.summary.missingBase} Base</>}</small></article>
         </section>
 
         <section className="wallet-registry-workspace">
@@ -108,7 +113,7 @@ export default function WalletRegistry({
           <div className="wallet-registry-filters">
             <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Email, Privy DID or address…" /></label>
             <label><span>Integrity</span><select value={health} onChange={(event) => setHealth(event.target.value as typeof health)}><option value="all">All users</option><option value="complete">Complete</option><option value="attention">Needs attention</option></select></label>
-            <label><span>Network</span><select value={network} onChange={(event) => setNetwork(event.target.value as typeof network)}><option value="all">All networks</option><option value="stellar:testnet">Stellar Testnet</option><option value="avalanche:fuji">Avalanche Fuji</option><option value="solana:devnet">Solana Devnet</option></select></label>
+            <label><span>Network</span><select value={network} onChange={(event) => setNetwork(event.target.value)}><option value="all">All networks</option>{initialRegistry.networks.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <button type="button" onClick={() => { setSearch(""); setHealth("all"); setNetwork("all"); }}>Clear</button>
           </div>
 
@@ -120,6 +125,8 @@ export default function WalletRegistry({
                   <div><span className="wallet-user-avatar">{(user.email || "P").charAt(0).toUpperCase()}</span><div><strong>{user.email || "Email unavailable"}</strong><code title={user.privyDid}>{shortDid(user.privyDid)}</code></div></div>
                   <div><span className={user.complete ? "wallet-health complete" : "wallet-health attention"}>{user.complete ? "Complete" : "Needs attention"}</span><small>Last seen {formatDate(user.lastSeenAt)}</small></div>
                 </header>
+                <p>{user.uniqueWallets} unique wallets · {user.networkAssociations} network associations</p>
+                {user.evmIdentityConflict && <div className="wallet-integrity-alert">EVM identity conflict: network associations must share one wallet and address.</div>}
                 {!user.complete && <div className="wallet-integrity-alert">{user.missingNetworks.map((item) => <span key={`missing:${item}`}>Missing {item}</span>)}{user.duplicateNetworks.map((item) => <span key={`duplicate:${item}`}>Duplicate {item}</span>)}{user.inactiveNetworks.map((item) => <span key={`inactive:${item}`}>Not active {item}</span>)}{user.invalidAddressNetworks.map((item) => <span key={`invalid:${item}`}>Invalid address {item}</span>)}</div>}
                 <div className="wallet-records">
                   <div className="wallet-record-head"><span>Network</span><span>Public address</span><span>Status</span><span>Created</span><span /></div>
