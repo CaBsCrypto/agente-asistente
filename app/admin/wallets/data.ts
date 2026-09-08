@@ -151,7 +151,8 @@ export function buildAdminWalletRegistry(users: UserRow[], wallets: WalletRow[],
     networks: enabledNetworks.map(({ id, name }) => ({ id, name })),
     summary: {
       users: records.length,
-      wallets: records.reduce((total, user) => total + user.wallets.length, 0),
+      // Preserve the legacy wallet-identity count; network bindings have their own metric.
+      wallets: records.reduce((total, user) => total + user.uniqueWallets, 0),
       uniqueWallets: records.reduce((total, user) => total + user.uniqueWallets, 0),
       networkAssociations: records.reduce((total, user) => total + user.networkAssociations, 0),
       completeUsers: records.filter((user) => user.complete).length,
@@ -182,12 +183,11 @@ export async function listAdminWalletRegistry() {
       userId: agentWallets.userId,
       address: agentWallets.address,
       chainType: agentWallets.chainType,
-      identityStatus: agentWallets.status,
       network: agentWalletNetworks.network,
       status: agentWalletNetworks.status,
       createdAt: agentWalletNetworks.createdAt,
       updatedAt: agentWalletNetworks.updatedAt,
     }).from(agentWallets).innerJoin(agentWalletNetworks, and(eq(agentWalletNetworks.walletId, agentWallets.id), eq(agentWalletNetworks.userId, agentWallets.userId))).orderBy(desc(agentWalletNetworks.updatedAt)),
   ]);
-  return buildAdminWalletRegistry(users, wallets.map((wallet) => ({ ...wallet, status: wallet.identityStatus === "active" ? wallet.status : wallet.identityStatus })));
+  return buildAdminWalletRegistry(users, wallets);
 }
