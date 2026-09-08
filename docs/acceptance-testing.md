@@ -29,9 +29,8 @@ All three authenticated runners require a target URL, deployment and full 40-cha
 | --- | --- |
 | `CARMELITA_PREVIEW_ISOLATED` | Must be exactly `true` |
 | `CARMELITA_PREVIEW_DATABASE_HOST` | Exact isolated database endpoint hostname; the guard normalizes Neon's `-pooler` suffix |
-| `DATABASE_URL` | Canonical runtime connection for the isolated resource, with TLS |
-| `DATABASE_URL_UNPOOLED` | Direct migration connection to the same database with the same identity; a pooled migration URL is rejected |
-| `DATABASE_URL_DATABASE_URL`, `DATABASE_URL_DATABASE_URL_UNPOOLED` | If present, must agree with the isolated canonical connections; stale production aliases are rejected |
+| `CARMELITA_PREVIEW_DATABASE_URL` | Required dedicated runtime connection for the isolated resource, with TLS |
+| `CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED` | Required dedicated direct migration connection to the same database with the same identity; a pooled migration URL is rejected |
 | `CARMELITA_PRODUCTION_DATABASE_HOST` | Optional explicit production-host comparison; if supplied, it must differ from the isolated host |
 | `CARMELITA_PREVIEW_ORIGIN` | Exact HTTPS application origin; no path, credentials, query or fragment |
 | `CARMELITA_PREVIEW_DEPLOYMENT` | Explicit selected Vercel deployment; `--deployment` must agree with it |
@@ -42,6 +41,8 @@ All three authenticated runners require a target URL, deployment and full 40-cha
 | `CARMELITA_ADMIN_USERNAME`, `CARMELITA_ADMIN_PASSWORD` | Preview administrator credentials; wallet-registry runner only |
 
 Provide secrets through the session's approved secret mechanism. These runners do not read `.env.migrate` or automatically load another environment file. A local variable declaration alone does not prove the remote deployment uses that database.
+
+Preview runtime, isolated migrations and authenticated acceptance use the two dedicated `CARMELITA_PREVIEW_DATABASE_URL*` connections. They ignore the legacy `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `DATABASE_URL_DATABASE_URL` and `DATABASE_URL_DATABASE_URL_UNPOOLED` variables in this workflow. Marketplace integrations can supply those legacy names with other values, so they are never a Preview fallback. If either dedicated connection is missing or invalid, the operation fails before authenticated work; it must not use an inherited production connection. Production retains its existing database configuration.
 
 Before issuing PATs, logging in as administrator or invoking bootstrap, the runners read the selected deployment's `/api/health` and require all of the following:
 
@@ -101,7 +102,7 @@ npm run wallets:preview:acceptance -- --url "$previewUrl" --deployment "$deploym
 
 Replace the example emails with the two exclusive test identities. They must differ. The wallet runner checks one valid registered address for each current bootstrap network, no duplicate identity records, no shared wallet address between the selected users and consistent registry totals. An unfunded wallet can pass registration checks; on-chain activation is not required. The runner does not create those users or log them into Privy. Providing fewer than two identities leaves that requirement pending.
 
-The Gateway uses synthetic actors, not actual Privy sessions. It checks read-only scope rejection, plan creation and exact replay, changed-input conflicts, cross-actor plan and receipt denial, MCP discovery and planning boundaries, and token revocation. It never exposes or invokes a signing or execution tool. Cleanup is restricted to this run's token IDs and actor/idempotency-key plan pairs; it does not delete the two Privy test users or their wallets.
+The Gateway uses synthetic actors, not actual Privy sessions. It checks read-only scope rejection, plan creation and exact replay, changed-input conflicts, cross-actor plan and receipt denial, MCP discovery and planning boundaries, and token revocation. It never exposes or invokes a signing or execution tool. Cleanup selects this run's token IDs, actor/idempotency-key plan pairs, exact request IDs for audit events and actor/token-specific rate-limit scopes and pseudonyms. The report includes the counts actually removed. Shared or historical rate buckets, unrelated audit events and the two Privy test users and wallets are not selected.
 
 Both commands print JSON directly. `--json` is needed only for the general `acceptance:*` runner's JSON output.
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createHash } from "node:crypto";
-import { assertPreviewIsolation, type PreviewIsolationEnvironment } from "../app/preview-isolation";
+import { assertPreviewIsolation, requiresPreviewDatabaseIsolation, type PreviewIsolationEnvironment } from "../app/preview-isolation";
 import { migratePreview } from "../scripts/preview-migrate";
 import { getDatabaseUrl, getDb, hasDatabase } from "../db";
 import { GET as health } from "../app/api/health/route";
@@ -13,8 +13,8 @@ function isolated(overrides: PreviewIsolationEnvironment = {}): PreviewIsolation
     CARMELITA_PRODUCTION_DATABASE_HOST: "ep-production.example.neon.tech",
     CARMELITA_PREVIEW_ORIGIN: "https://carmelita-git-preview.example.vercel.app/",
     CARMELITA_PREVIEW_DEPLOYMENT: "dpl_preview123",
-    DATABASE_URL: "postgresql://qa:fake-test-password@ep-qa-pooler.example.neon.tech/qa?sslmode=require",
-    DATABASE_URL_UNPOOLED: "postgresql://qa:fake-test-password@ep-qa.example.neon.tech/qa?sslmode=require",
+    CARMELITA_PREVIEW_DATABASE_URL: "postgresql://qa:fake-test-password@ep-qa-pooler.example.neon.tech/qa?sslmode=require",
+    CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED: "postgresql://qa:fake-test-password@ep-qa.example.neon.tech/qa?sslmode=require",
     ...overrides,
   };
 }
@@ -22,20 +22,28 @@ function isolated(overrides: PreviewIsolationEnvironment = {}): PreviewIsolation
 test("preview isolation accepts explicit pooled and direct connections to the same QA database", () => {
   const env = isolated();
   assert.deepEqual(assertPreviewIsolation(env), {
-    databaseUrl: env.DATABASE_URL,
-    migrationDatabaseUrl: env.DATABASE_URL_UNPOOLED,
+    databaseUrl: env.CARMELITA_PREVIEW_DATABASE_URL,
+    migrationDatabaseUrl: env.CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED,
     previewOrigin: "https://carmelita-git-preview.example.vercel.app",
     deployment: "dpl_preview123",
   });
-  assert.equal(assertPreviewIsolation(isolated({ DATABASE_URL_DATABASE_URL: env.DATABASE_URL })).deployment, "dpl_preview123");
+  assert.equal(assertPreviewIsolation(isolated({ DATABASE_URL_DATABASE_URL: env.CARMELITA_PREVIEW_DATABASE_URL })).deployment, "dpl_preview123");
 });
 
 test("preview isolation requires explicit opt-in and every connection/target field", () => {
-  for (const key of ["CARMELITA_PREVIEW_ISOLATED", "CARMELITA_PREVIEW_DATABASE_HOST", "CARMELITA_PREVIEW_ORIGIN", "CARMELITA_PREVIEW_DEPLOYMENT", "DATABASE_URL", "DATABASE_URL_UNPOOLED"]) {
+  for (const key of ["CARMELITA_PREVIEW_ISOLATED", "CARMELITA_PREVIEW_DATABASE_HOST", "CARMELITA_PREVIEW_ORIGIN", "CARMELITA_PREVIEW_DEPLOYMENT", "CARMELITA_PREVIEW_DATABASE_URL", "CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED"]) {
     assert.throws(() => assertPreviewIsolation(isolated({ [key]: undefined })), /preview_isolation_/);
   }
   assert.throws(() => assertPreviewIsolation(isolated({ CARMELITA_PREVIEW_ISOLATED: "TRUE" })), /not_enabled/);
-  assert.throws(() => assertPreviewIsolation(isolated({ DATABASE_URL: undefined, DATABASE_URL_DATABASE_URL: isolated().DATABASE_URL })), /missing_DATABASE_URL/);
+  for (const key of ["CARMELITA_PREVIEW_DATABASE_URL", "CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED"]) {
+    assert.throws(() => assertPreviewIsolation(isolated({
+      [key]: undefined,
+      DATABASE_URL: isolated().CARMELITA_PREVIEW_DATABASE_URL,
+      DATABASE_URL_UNPOOLED: isolated().CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED,
+      DATABASE_URL_DATABASE_URL: isolated().CARMELITA_PREVIEW_DATABASE_URL,
+      DATABASE_URL_DATABASE_URL_UNPOOLED: isolated().CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED,
+    })), new RegExp(`missing_${key}`));
+  }
 });
 
 test("preview isolation rejects production origins, production environment and production endpoint", () => {
@@ -58,20 +66,70 @@ test("preview isolation rejects URL and hostname tricks, TLS bypass and connecti
     "postgresql://qa:password@ep-qa.example.neon.tech/qa?sslmode=require&options=endpoint%3Dep-production",
     "https://qa:password@ep-qa.example.neon.tech/qa?sslmode=require",
   ]) {
-    assert.throws(() => assertPreviewIsolation(isolated({ DATABASE_URL: databaseUrl })), /preview_isolation_/);
+    assert.throws(() => assertPreviewIsolation(isolated({ CARMELITA_PREVIEW_DATABASE_URL: databaseUrl })), /preview_isolation_/);
   }
   assert.throws(() => assertPreviewIsolation(isolated({ CARMELITA_PREVIEW_DATABASE_HOST: "*.neon.tech" })), /invalid_CARMELITA_PREVIEW_DATABASE_HOST/);
-  assert.throws(() => assertPreviewIsolation(isolated({ DATABASE_URL_UNPOOLED: isolated().DATABASE_URL })), /migration_connection_pooled/);
+  assert.throws(() => assertPreviewIsolation(isolated({ CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED: isolated().CARMELITA_PREVIEW_DATABASE_URL })), /migration_connection_pooled/);
 });
 
-test("preview isolation rejects different databases, roles and contradictory runtime aliases", () => {
+test("preview isolation rejects dedicated connections to different databases or roles", () => {
   const env = isolated();
-  assert.throws(() => assertPreviewIsolation(isolated({ DATABASE_URL_UNPOOLED: env.DATABASE_URL_UNPOOLED!.replace("/qa?", "/production?") })), /database_connections_disagree/);
-  assert.throws(() => assertPreviewIsolation(isolated({ DATABASE_URL_UNPOOLED: env.DATABASE_URL_UNPOOLED!.replace("//qa:", "//other:") })), /database_connections_disagree/);
-  for (const key of ["DATABASE_URL_DATABASE_URL", "DATABASE_URL_DATABASE_URL_UNPOOLED"]) {
-    assert.throws(() => assertPreviewIsolation(isolated({ [key]: env.DATABASE_URL!.replace("ep-qa-pooler", "ep-production-pooler") })), /preview_isolation_/);
-    assert.throws(() => assertPreviewIsolation(isolated({ [key]: env.DATABASE_URL!.replace("/qa?", "/different?") })), /database_alias_disagrees/);
+  assert.throws(() => assertPreviewIsolation(isolated({ CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED: env.CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED!.replace("/qa?", "/production?") })), /database_connections_disagree/);
+  assert.throws(() => assertPreviewIsolation(isolated({ CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED: env.CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED!.replace("//qa:", "//other:") })), /database_connections_disagree/);
+});
+
+test("Preview ignores Marketplace production URLs and selects only the dedicated QA connection pair", async () => {
+  const production = "postgresql://production:fake-prod-password@ep-production.example.neon.tech/production?sslmode=require";
+  const env = isolated({
+    VERCEL_ENV: "preview",
+    DATABASE_URL: production,
+    DATABASE_URL_UNPOOLED: production,
+    DATABASE_URL_DATABASE_URL: production,
+    DATABASE_URL_DATABASE_URL_UNPOOLED: production,
+  });
+  const config = assertPreviewIsolation(env);
+  assert.equal(config.databaseUrl, env.CARMELITA_PREVIEW_DATABASE_URL);
+  assert.equal(config.migrationDatabaseUrl, env.CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED);
+  await withRuntimeEnvironment(env, async () => {
+    assert.equal(getDatabaseUrl(), env.CARMELITA_PREVIEW_DATABASE_URL);
+    assert.equal(hasDatabase(), true);
+    const response = health();
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.previewIsolation.databaseFingerprint,
+      createHash("sha256").update("ep-qa.example.neon.tech/qa").digest("hex"));
+    assert.equal(JSON.stringify(body).includes("ep-production"), false);
+  });
+});
+
+test("local acceptance database access uses dedicated QA URLs without needing VERCEL_ENV", async () => {
+  const production = "postgresql://production:fake-prod-password@ep-production.example.neon.tech/production?sslmode=require";
+  await withRuntimeEnvironment(isolated({
+    DATABASE_URL: production,
+    DATABASE_URL_UNPOOLED: production,
+    DATABASE_URL_DATABASE_URL: production,
+  }), async () => {
+    assert.equal(process.env.VERCEL_ENV, undefined);
+    assert.equal(requiresPreviewDatabaseIsolation(), true);
+    assert.equal(getDatabaseUrl(), isolated().CARMELITA_PREVIEW_DATABASE_URL);
+    assert.equal(hasDatabase(), true);
+    const { default: migrationConfig } = await import("../drizzle.config");
+    assert.equal(migrationConfig.dbCredentials.url, isolated().CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED);
+  });
+  for (const dedicated of [
+    { CARMELITA_PREVIEW_ISOLATED: "true" },
+    { CARMELITA_PREVIEW_DATABASE_URL: isolated().CARMELITA_PREVIEW_DATABASE_URL },
+    { CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED: isolated().CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED },
+  ]) {
+    await withRuntimeEnvironment({ DATABASE_URL: production, ...dedicated }, () => {
+      assert.equal(requiresPreviewDatabaseIsolation(), true);
+      assert.throws(getDatabaseUrl, /preview_isolation_/);
+      assert.throws(getDb, /preview_isolation_/);
+    });
   }
+  await withRuntimeEnvironment(isolated({ VERCEL_ENV: "production" }), () => {
+    assert.throws(getDatabaseUrl, /preview_isolation_production_environment/);
+  });
 });
 
 test("preview isolation requires an HTTPS origin and a safe explicit deployment", () => {
@@ -85,7 +143,7 @@ test("preview isolation requires an HTTPS origin and a safe explicit deployment"
 
 test("preview validation errors never expose supplied database credentials", () => {
   const secret = "unique-fake-test-secret";
-  assert.throws(() => assertPreviewIsolation(isolated({ DATABASE_URL: `postgresql://qa:${secret}@production.invalid/qa` })), (error: unknown) => {
+  assert.throws(() => assertPreviewIsolation(isolated({ CARMELITA_PREVIEW_DATABASE_URL: `postgresql://qa:${secret}@production.invalid/qa` })), (error: unknown) => {
     assert.ok(error instanceof Error);
     assert.match(error.message, /^preview_isolation_/);
     assert.equal(error.message.includes(secret), false);
@@ -96,11 +154,14 @@ test("preview validation errors never expose supplied database credentials", () 
 
 test("preview migrator rejects incomplete configuration before opening a database connection", async () => {
   await assert.rejects(migratePreview({}), /preview_isolation_not_enabled/);
-  await assert.rejects(migratePreview(isolated({ DATABASE_URL_UNPOOLED: undefined })), /missing_DATABASE_URL_UNPOOLED/);
+  await assert.rejects(migratePreview(isolated({
+    CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED: undefined,
+    DATABASE_URL_UNPOOLED: isolated().CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED,
+  })), /missing_CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED/);
 });
 
 async function withRuntimeEnvironment(env: PreviewIsolationEnvironment, run: () => void | Promise<void>) {
-  const keys = new Set([...Object.keys(isolated()), "DATABASE_URL_DATABASE_URL", "DATABASE_URL_DATABASE_URL_UNPOOLED", "VERCEL_ENV", "VERCEL_TARGET_ENV", "VERCEL_URL", "VERCEL_GIT_COMMIT_SHA", ...Object.keys(env)]);
+  const keys = new Set([...Object.keys(isolated()), "DATABASE_URL", "DATABASE_URL_UNPOOLED", "DATABASE_URL_DATABASE_URL", "DATABASE_URL_DATABASE_URL_UNPOOLED", "VERCEL_ENV", "VERCEL_TARGET_ENV", "VERCEL_URL", "VERCEL_GIT_COMMIT_SHA", ...Object.keys(env)]);
   const previous = Object.fromEntries([...keys].map((key) => [key, process.env[key]]));
   for (const key of keys) {
     if (env[key] === undefined) delete process.env[key];
@@ -119,8 +180,8 @@ async function withRuntimeEnvironment(env: PreviewIsolationEnvironment, run: () 
 test("all Preview runtime database entrypoints reject unverified configuration before connecting", async () => {
   for (const overrides of [
     { CARMELITA_PREVIEW_ISOLATED: undefined },
-    { DATABASE_URL: "postgresql://qa:fake-test-password@ep-production.example.neon.tech/qa?sslmode=require" },
-    { DATABASE_URL: undefined, DATABASE_URL_DATABASE_URL: isolated().DATABASE_URL },
+    { CARMELITA_PREVIEW_DATABASE_URL: "postgresql://qa:fake-test-password@ep-production.example.neon.tech/qa?sslmode=require" },
+    { CARMELITA_PREVIEW_DATABASE_URL: undefined, DATABASE_URL_DATABASE_URL: isolated().CARMELITA_PREVIEW_DATABASE_URL },
   ]) {
     await withRuntimeEnvironment(isolated({ VERCEL_ENV: "preview", ...overrides }), () => {
       assert.throws(getDatabaseUrl, /preview_isolation_/);
@@ -129,7 +190,7 @@ test("all Preview runtime database entrypoints reject unverified configuration b
     });
   }
   await withRuntimeEnvironment(isolated({ VERCEL_ENV: "preview" }), () => {
-    assert.equal(getDatabaseUrl(), isolated().DATABASE_URL);
+    assert.equal(getDatabaseUrl(), isolated().CARMELITA_PREVIEW_DATABASE_URL);
     assert.equal(hasDatabase(), true);
   });
 });
@@ -156,10 +217,10 @@ test("Preview health returns deployment identity and only a normalized database 
     for (const privateValue of ["fake-test-password", "ep-qa", "postgresql://"]) {
       assert.equal(JSON.stringify(body).includes(privateValue), false);
     }
-    process.env.DATABASE_URL = process.env.DATABASE_URL_UNPOOLED;
+    process.env.CARMELITA_PREVIEW_DATABASE_URL = process.env.CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED;
     assert.deepEqual((await health().json()).previewIsolation, body.previewIsolation);
-    process.env.DATABASE_URL = process.env.DATABASE_URL!.replace("/qa?", "/%71a?");
-    process.env.DATABASE_URL_UNPOOLED = process.env.DATABASE_URL;
+    process.env.CARMELITA_PREVIEW_DATABASE_URL = process.env.CARMELITA_PREVIEW_DATABASE_URL!.replace("/qa?", "/%71a?");
+    process.env.CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED = process.env.CARMELITA_PREVIEW_DATABASE_URL;
     assert.equal((await health().json()).previewIsolation.databaseFingerprint,
       createHash("sha256").update("ep-qa.example.neon.tech/%71a").digest("hex"));
   });

@@ -1,6 +1,6 @@
 ﻿import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { assertPreviewIsolation } from "../app/preview-isolation";
+import { assertPreviewIsolation, requiresPreviewDatabaseIsolation } from "../app/preview-isolation";
 import * as schema from "./schema";
 
 /**
@@ -9,7 +9,7 @@ import * as schema from "./schema";
  * DATABASE_URL_DATABASE_URL. Keep the standard name first for portability.
  */
 export function getDatabaseUrl() {
-  if (process.env.VERCEL_ENV === "preview") {
+  if (requiresPreviewDatabaseIsolation()) {
     return assertPreviewIsolation().databaseUrl;
   }
   return (

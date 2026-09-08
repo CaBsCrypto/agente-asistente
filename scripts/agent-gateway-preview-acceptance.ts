@@ -90,7 +90,7 @@ export function buildVercelCurlArgs(input: { deployment: string; path: string; t
   if (input.includeHeaders) tail.push("--include");
   for (const header of input.headers ?? []) tail.push("--header", header);
   if (input.body !== undefined) tail.push("--header", "Content-Type: application/json", "--data", JSON.stringify(input.body));
-  return ["curl", input.path, "--deployment", input.deployment, "--yes", "--no-color", "--", ...tail];
+  return ["curl", input.path, "--deployment", input.deployment, "--yes", "--", ...tail];
 }
 function vercelInvocation() {
   if (process.platform !== "win32") return { command: "vercel", prefix: [] as string[] };
@@ -100,7 +100,7 @@ function vercelInvocation() {
 export async function vercelCurl(input: Parameters<typeof buildVercelCurlArgs>[0], secrets: Set<string> = new Set()) {
   const invocation = vercelInvocation();
   return new Promise<ReturnType<typeof parseVercelCurlOutput>>((resolve, reject) => {
-    const child = spawn(invocation.command, [...invocation.prefix, ...buildVercelCurlArgs(input)], { cwd: process.cwd(), shell: false, windowsHide: true, env: { ...process.env, NO_UPDATE_NOTIFIER: "1" }, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(invocation.command, [...invocation.prefix, ...buildVercelCurlArgs(input)], { cwd: process.cwd(), shell: false, windowsHide: true, env: { ...process.env, NO_UPDATE_NOTIFIER: "1", NO_COLOR: "1" }, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = ""; let stderr = ""; let exceeded = false;
     const append = (current: string, chunk: Buffer) => { const next = current + chunk.toString("utf8"); if (Buffer.byteLength(next) > MAX_OUTPUT) { exceeded = true; child.kill(); } return next.slice(0, MAX_OUTPUT); };
     child.stdout.on("data", (chunk: Buffer) => { stdout = append(stdout, chunk); });

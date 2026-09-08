@@ -74,6 +74,12 @@ function sameDatabase(left: URL, right: URL): boolean {
   );
 }
 
+/** Local acceptance runners must use the same dedicated connections as Vercel Preview. */
+export function requiresPreviewDatabaseIsolation(env: PreviewIsolationEnvironment = process.env): boolean {
+  return env.VERCEL_ENV === "preview" || env.CARMELITA_PREVIEW_ISOLATED === "true" ||
+    env.CARMELITA_PREVIEW_DATABASE_URL !== undefined || env.CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED !== undefined;
+}
+
 /** Fail closed before acceptance writes or migrations. Does not read env files. */
 export function assertPreviewIsolation(
   env: PreviewIsolationEnvironment = process.env,
@@ -88,21 +94,16 @@ export function assertPreviewIsolation(
     if (host === productionHost) reject("production_database");
   }
 
-  const databaseUrl = required(env, "DATABASE_URL");
-  const migrationDatabaseUrl = required(env, "DATABASE_URL_UNPOOLED");
-  const runtime = databaseConnection(databaseUrl, host, "DATABASE_URL");
-  const migration = databaseConnection(migrationDatabaseUrl, host, "DATABASE_URL_UNPOOLED");
+  // Marketplace-managed DATABASE_URL* values can change during deployment. Preview
+  // runtime and migrations select only these dedicated branch-scoped connections.
+  const databaseUrl = required(env, "CARMELITA_PREVIEW_DATABASE_URL");
+  const migrationDatabaseUrl = required(env, "CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED");
+  const runtime = databaseConnection(databaseUrl, host, "CARMELITA_PREVIEW_DATABASE_URL");
+  const migration = databaseConnection(migrationDatabaseUrl, host, "CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED");
   if (migration.hostname.toLowerCase().split(".")[0].endsWith("-pooler")) {
     reject("migration_connection_pooled");
   }
   if (!sameDatabase(runtime, migration)) reject("database_connections_disagree");
-
-  for (const key of ["DATABASE_URL_DATABASE_URL", "DATABASE_URL_DATABASE_URL_UNPOOLED"]) {
-    if (env[key]?.trim()) {
-      const alias = databaseConnection(env[key].trim(), host, key);
-      if (!sameDatabase(runtime, alias)) reject("database_alias_disagrees");
-    }
-  }
 
   const originValue = required(env, "CARMELITA_PREVIEW_ORIGIN");
   let origin: URL;

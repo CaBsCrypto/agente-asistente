@@ -15,8 +15,8 @@ const env = {
   CARMELITA_PREVIEW_ORIGIN: preview,
   CARMELITA_PREVIEW_DEPLOYMENT: preview,
   CARMELITA_PREVIEW_COMMIT: commit,
-  DATABASE_URL: "postgresql://test:fixture@ep-test-pooler.neon.tech/preview?sslmode=require",
-  DATABASE_URL_UNPOOLED: "postgresql://test:fixture@ep-test.neon.tech/preview?sslmode=require",
+  CARMELITA_PREVIEW_DATABASE_URL: "postgresql://test:fixture@ep-test-pooler.neon.tech/preview?sslmode=require",
+  CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED: "postgresql://test:fixture@ep-test.neon.tech/preview?sslmode=require",
   AGENT_ACCEPTANCE_BASE_URL: preview,
   AGENT_ACCEPTANCE_PRIVY_TOKEN: "temporary-test-token",
 };
@@ -43,6 +43,15 @@ test("authenticated acceptance rejects missing URL, deployment and commit, produ
   assert.throws(() => acceptanceConfig(authenticatedArgs, { ...env, CARMELITA_PREVIEW_ISOLATED: "false" }), /not_enabled/);
   assert.throws(() => acceptanceConfig(authenticatedArgs, { ...env, AGENT_ACCEPTANCE_BASE_URL: "https://carmelita-agent.vercel.app" }), /origin_mismatch/);
   assert.throws(() => previewAcceptanceTarget({ url: preview, deployment: "https://other.vercel.app", commit }, env), /deployment_mismatch/);
+});
+test("authenticated acceptance requires dedicated Preview connections and cannot fall back to Marketplace variables", () => {
+  const marketplace = { DATABASE_URL: "postgresql://legacy:fixture@ep-production.neon.tech/production?sslmode=require", DATABASE_URL_UNPOOLED: "postgresql://legacy:fixture@ep-production.neon.tech/production?sslmode=require" };
+  const config = acceptanceConfig(authenticatedArgs, { ...env, ...marketplace });
+  assert.equal(config.preview?.databaseUrl, env.CARMELITA_PREVIEW_DATABASE_URL);
+  assert.equal(config.preview?.migrationDatabaseUrl, env.CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED);
+  for (const key of ["CARMELITA_PREVIEW_DATABASE_URL", "CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED"]) {
+    assert.throws(() => acceptanceConfig(authenticatedArgs, { ...env, ...marketplace, [key]: undefined }), /missing_CARMELITA_PREVIEW_DATABASE_URL/);
+  }
 });
 test("bootstrap requires a separate opt-in and sends the correct Origin", () => {
   const readOnly = acceptanceConfig(authenticatedArgs, env);
@@ -89,7 +98,7 @@ test("reports count actual outcomes and preserve pending human acceptance", () =
   assert.equal(acceptanceReport({ ...report, checks: [...report.checks, { name: "Request", status: "FAIL", durationMs: 1, detail: "HTTP 401" }] }).status, "FAIL");
 });
 test("failure reports redact database URLs as well as tokens", () => {
-  assert.equal(redactAcceptanceSecrets(`connection=${env.DATABASE_URL} token=temporary-test-token`, [env.AGENT_ACCEPTANCE_PRIVY_TOKEN]), "connection=[REDACTED_DATABASE_URL] token=[REDACTED]");
+  assert.equal(redactAcceptanceSecrets(`connection=${env.CARMELITA_PREVIEW_DATABASE_URL} token=temporary-test-token`, [env.AGENT_ACCEPTANCE_PRIVY_TOKEN]), "connection=[REDACTED_DATABASE_URL] token=[REDACTED]");
 });
 test("wallet acceptance requires every bootstrap network, unique records and valid registered addresses without funding", () => {
   const registry: Registry = { summary: { users: 1, wallets: 3, completeUsers: 0, needsAttention: 1 }, users: [{ email: "test@example.com", registeredComplete: true, missingNetworks: [], invalidAddressNetworks: [], duplicateNetworks: [], wallets: ["stellar:testnet", "avalanche:fuji", "solana:devnet"].map((network) => ({ network, address: "fixture", validAddress: true, status: "pending" })) }] };
