@@ -11,6 +11,7 @@ import AgentExternalAccess from "./agent-external-access";
 import AgentConnectedApps from "./agent-connected-apps";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Locale, useLocale } from "../language-toggle";
+import { sessionCloseCopy, useSessionClose } from "../use-session-close";
 
 const onboardingUi = {
   en: {
@@ -182,7 +183,8 @@ function PrivyAgent({
   autoLogin: boolean;
 }) {
   const t = onboardingUi[locale];
-  const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
+  const { ready, authenticated, user, login, getAccessToken } = usePrivy();
+  const session = useSessionClose();
   const userId = user?.id;
   const { refreshUser } = useUser();
   const [result, setResult] = useState<BootstrapResult | null>(null);
@@ -267,7 +269,7 @@ function PrivyAgent({
     bootstrapRequest.current?.abort();
     setResult(null);
     setStatus("idle");
-    await logout();
+    await session.close();
   }
 
 
@@ -322,10 +324,11 @@ function PrivyAgent({
           <p>
             {t.entryText}
           </p>
-          <button className="agent-primary" onClick={() => login()}>
+          <button className="agent-primary" disabled={session.closing || session.state === "failed"} onClick={() => login()}>
             {t.create}
           </button>
           <small>{t.boundary}</small>
+          {session.state === "failed" && <p role="alert">{sessionCloseCopy[locale].failed} <button onClick={() => void session.close()}>{sessionCloseCopy[locale].retry}</button></p>}
         </div>
         <aside className="agent-onboarding-preview">
           <header><span>{t.onboarding}</span><b>TESTNET</b></header>
@@ -348,8 +351,9 @@ function PrivyAgent({
           <h1>{status === "ready" ? t.ready : t.creating}</h1>
           <p>{result?.profile.email ?? user?.email?.address ?? t.authenticated}</p>
         </div>
-        <button className="agent-signout" onClick={() => void signOut()}>{t.signout}</button>
+        <button className="agent-signout" disabled={session.closing} onClick={() => void signOut()}>{session.closing ? sessionCloseCopy[locale].closing : t.signout}</button>
       </header>
+      {session.state === "failed" && <p role="alert">{sessionCloseCopy[locale].failed}</p>}
 
       {status === "creating" && (
         <div className="agent-provisioning">

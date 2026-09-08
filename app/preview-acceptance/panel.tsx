@@ -3,9 +3,11 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { useState } from "react";
 import WalletAcceptancePanel from "./wallet-panel";
+import { sessionCloseCopy, useSessionClose } from "@/app/use-session-close";
 
 export default function AcceptancePanel() {
-  const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
+  const { ready, authenticated, user, login, getAccessToken } = usePrivy();
+  const session = useSessionClose();
   const [otherId, setOtherId] = useState("");
   const [ownMarker, setOwnMarker] = useState("");
   const [otherMarker, setOtherMarker] = useState("");
@@ -51,8 +53,10 @@ export default function AcceptancePanel() {
     <h1>Comprobación de aislamiento de Preview</h1>
     <p>Selecciona la comprobación que deseas ejecutar. Las pruebas solo están disponibles en la Preview aislada.</p>
     <p>Cuenta: {user?.email?.address ?? "Sin sesión"}</p>
-    {!authenticated ? <button disabled={!ready} onClick={() => login()}>Iniciar sesión de prueba</button> : <>
-      <button disabled={busy} onClick={async () => { await fetch("/api/admin/session", { method: "DELETE" }); await logout(); setReport(null); }}>Cerrar ambas sesiones</button>
+    {session.state === "failed" && <p role="alert">{sessionCloseCopy.es.failed} <button onClick={() => void session.close()}>{sessionCloseCopy.es.retry}</button></p>}
+    {session.state === "closed" && !authenticated && <p role="status">{sessionCloseCopy.es.closed}</p>}
+    {!authenticated ? <button disabled={!ready || session.closing || session.state === "failed"} onClick={() => login()}>Iniciar sesión de prueba</button> : <>
+      <button disabled={busy || session.closing} onClick={async () => { if (await session.close()) setReport(null); }}>{session.closing ? sessionCloseCopy.es.closing : "Cerrar ambas sesiones"}</button>
       <p><label>Modo de aceptación <select value={mode} disabled={busy} onChange={(event) => setMode(event.target.value as typeof mode)}><option value="wallets">Solo billeteras multichain</option><option value="isolation">Aislamiento de chat y memoria ficticios</option></select></label></p>
       {mode === "wallets" && user?.id ? <WalletAcceptancePanel key={user.id} userId={user.id} getAccessToken={getAccessToken} /> : <>
       <p>Consulta datos propios e intenta pausar una memoria ficticia ajena: debe ser rechazado. Las consultas pueden actualizar metadatos de sesión. Este modo no crea billeteras, fondos ni pagos.</p>
