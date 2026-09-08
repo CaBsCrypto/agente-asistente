@@ -114,6 +114,7 @@ test("local acceptance database access uses dedicated QA URLs without needing VE
     assert.equal(getDatabaseUrl(), isolated().CARMELITA_PREVIEW_DATABASE_URL);
     assert.equal(hasDatabase(), true);
     const { default: migrationConfig } = await import("../drizzle.config");
+    assert.ok("dbCredentials" in migrationConfig && "url" in migrationConfig.dbCredentials);
     assert.equal(migrationConfig.dbCredentials.url, isolated().CARMELITA_PREVIEW_DATABASE_URL_UNPOOLED);
   });
   for (const dedicated of [

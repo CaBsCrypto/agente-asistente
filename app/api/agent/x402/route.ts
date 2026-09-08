@@ -41,10 +41,10 @@ import {
   agentActivities,
   agentStellarActions,
   agentTestnetFaucetClaims,
-  agentWallets,
   agentX402Events,
   agentX402Payments,
 } from "@/db/schema";
+import { listPersistedUserWallets } from "@/app/multichain-account";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -162,15 +162,14 @@ async function auth(request: Request) {
 async function userWallet(userId: string) {
   if (!hasDatabase()) throw new Error("database_not_configured");
   await ensureSchema();
-  const rows = await getDb()
-    .select({ id: agentWallets.id, address: agentWallets.address, network: agentWallets.network })
-    .from(agentWallets)
-    .where(and(eq(agentWallets.userId, userId), eq(agentWallets.chainType, "stellar")))
-    .limit(1);
-  if (!rows[0] || rows[0].network !== "stellar:testnet") {
+  const wallet = (await listPersistedUserWallets(userId)).find((candidate) =>
+    candidate.userId === userId && candidate.network === "stellar:testnet" && candidate.chainType === "stellar"
+    && (candidate.status === "active" || candidate.status === "pending"),
+  );
+  if (!wallet) {
     throw new Error("stellar_wallet_not_ready");
   }
-  return rows[0];
+  return { id: wallet.id, address: wallet.address, network: wallet.network };
 }
 function publicPayment(row: typeof agentX402Payments.$inferSelect) {
   const prepared = isPreparedX402Authorization(row.paymentRequired)
