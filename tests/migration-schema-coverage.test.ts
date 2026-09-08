@@ -12,7 +12,7 @@ test("journal migrations cover every runtime table, column and named index", asy
   const schema = await readFile(new URL("../db/schema.ts", import.meta.url), "utf8");
   const tables = new Map([...migrations.matchAll(/CREATE TABLE(?: IF NOT EXISTS)? "([^"]+)" \(([\s\S]*?)\n\);/g)]
     .map((match) => [match[1], new Set([...match[2].matchAll(/^\s*"([^"]+)"/gm)].map((column) => column[1]))]));
-  for (const match of migrations.matchAll(/ALTER TABLE "([^"]+)" ADD COLUMN "([^"]+)"/g)) {
+  for (const match of migrations.matchAll(/ALTER TABLE "([^"]+)" ADD COLUMN(?: IF NOT EXISTS)? "([^"]+)"/g)) {
     tables.get(match[1])?.add(match[2]);
   }
   const indexes = new Set([...migrations.matchAll(/CREATE (?:UNIQUE )?INDEX(?: IF NOT EXISTS)? "([^"]+)"/g)]

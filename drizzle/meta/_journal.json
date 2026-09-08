@@ -148,6 +148,13 @@
       "when": 1788840000000,
       "tag": "0020_wallet_networks",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1788854400000,
+      "tag": "0021_x402_recovery",
+      "breakpoints": true
     }
   ]
 }
