@@ -2,6 +2,8 @@
 
 Fecha: **8 de septiembre de 2026, UTC**. Propuesta existente: [PR #28](https://github.com/CaBsCrypto/carmelita/pull/28).
 
+La continuación fechada, sin reemplazar estos cortes históricos, está en [aceptación de sesiones y recibos del 9 de septiembre](ACCEPTANCE-SESSIONS-RECEIPTS-2026-09-09.md).
+
 **Estado: recuperación implementada, migración QA aplicada y aceptación visible pendiente.** Los controles locales y SQL se detallan por corte a continuación. La evidencia de la Preview `ae96e705c418f4b9dc1dcf34a5415fd8099e89cf` corresponde al hito multichain anterior y no acredita este nuevo recorrido Stellar.
 
 Código consolidado: `912db90115eef6ea29130b848b2f8132e7bd254a`, después de `caa0256` (cierre comprobado de sesiones) y `5891c6b` (persistencia, verificación y recuperación). La actualización documental posterior no cambia ese código. El nuevo despliegue y los recorridos visibles se registrarán con su propia versión; no se atribuyen a la Preview anterior.
