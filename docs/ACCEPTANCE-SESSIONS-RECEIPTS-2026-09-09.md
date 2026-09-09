@@ -2,7 +2,9 @@
 
 Fecha: **9 de septiembre de 2026, UTC**. Continuación de [PR #28](https://github.com/CaBsCrypto/carmelita/pull/28), sin reemplazar sus cortes históricos.
 
-**Estado: recuperación de ambas cuentas y ambos administradores aceptados; pago real pendiente.** La nueva pantalla de aislamiento está implementada y verificada localmente en `51f21e1f37cc003d39e57a60644864e14881c8b6`. No se ha enviado ningún pago durante este corte.
+**Corte histórico previo al pago.** El [cierre posterior del pago Stellar, entrega, repetición, recuperación y aislamiento](STELLAR-PAYMENT-ACCEPTANCE-2026-09-09.md) conserva su propia versión y evidencia; no reemplaza los resultados de este documento.
+
+**Estado en este corte: recuperación de ambas cuentas y ambos administradores aceptados; pago real pendiente.** La nueva pantalla de aislamiento está implementada y verificada localmente en `51f21e1f37cc003d39e57a60644864e14881c8b6`. No se ha enviado ningún pago durante este corte.
 
 ## Versión observada y sesiones
 
