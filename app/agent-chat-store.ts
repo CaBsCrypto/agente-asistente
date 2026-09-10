@@ -112,6 +112,7 @@ export type StoredAgentMessage = {
       completionMessage: string;
       permissions: string[];
     };
+    bazaarAction?: { query: string };
   }[];
   connection?: { name: string; stage: string; priority: string };
   defindexIntent?: AgentDefindexIntent & { requestId: string };

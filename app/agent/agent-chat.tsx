@@ -10,6 +10,7 @@ import { useLocale } from "../language-toggle";
 import AvalancheChatAction, { type AvalancheWalletAction } from "./avalanche-chat-action";
 import AvalancheX402Action, { type AvalancheX402Action as AvalancheX402WalletAction } from "./avalanche-x402-action";
 import CctpBridgeAction, { type CctpBridgeWalletAction } from "./cctp-bridge-action";
+import StellarBazaarActionCard, { type StellarBazaarAction } from "./stellar-bazaar-action";
 import ContextWalletSelector from "./context-wallet-selector";
 import {
   browserBridgePing,
@@ -69,6 +70,7 @@ type ChatAction = {
     completionMessage: string;
     permissions: string[];
   };
+  bazaarAction?: StellarBazaarAction;
 };
 
 type ExternalConnection = {
@@ -1346,6 +1348,13 @@ export default function AgentChat({
                           locale={locale}
                           getAccessToken={getAccessToken}
                           onReceipt={openReceipt}
+                        />
+                      ) : action.bazaarAction ? (
+                        <StellarBazaarActionCard
+                          key={action.label}
+                          action={action.bazaarAction}
+                          locale={locale}
+                          getAccessToken={getAccessToken}
                         />
                       ) : action.popup ? (
                         <button

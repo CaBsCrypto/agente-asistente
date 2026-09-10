@@ -95,3 +95,25 @@ Demostración esperada: «Busca en Stellar Bazaar un informe de prueba para exam
 ## Siguiente paso concreto
 
 Implementar la entrega 1 y preparar fixtures contractuales para la entrega 2. Para validar contra el servicio real falta confirmar qué URL desplegada de Stellar Bazaar debe usar Carmelita. Esa configuración no impide comenzar el conector con pruebas locales. El objetivo posterior es completar las cuatro entregas, no detener la integración en una búsqueda de catálogo.
+
+## Avance: entrega 1 (descubrimiento) implementada, 10 de septiembre de 2026
+
+La entrega 1 quedó implementada con el clon de Bazaar excluido de la compilación (`/stellar-bazaar-x402/` en `.gitignore`). La URL desplegada canónica del catálogo se resolvió leyendo la documentación del clon: `https://stellar-bazaar-x402.vercel.app`, fijada en `app/stellar-bazaar/config.ts` con un allowlist de proveedores independiente (`website-intelligence-provider.vercel.app`) y una sobrecrita opcional `STELLAR_BAZAAR_BASE_URL` (origen no derivable del host).
+
+Elementos entregados, todos de solo lectura (sin preparación, firma ni pago):
+
+| Pieza | Archivo |
+| --- | --- |
+| Config y allowlist de origen | `app/stellar-bazaar/config.ts` |
+| Conector con validación zod, timeout, decimales exactos y estado de ficha | `app/connectors/stellar-bazaar.ts` |
+| Ruta autenticada de búsqueda | `app/api/agent/stellar-bazaar/route.ts` |
+| Intención de chat multilingüe sin intención de pago | `app/agent-chat-logic.ts` (`parseStellarBazaarSearchIntent`) |
+| Persistencia de acción | `app/agent-chat-store.ts` (`bazaarAction`) |
+| Ficha de descubrimiento | `app/agent/stellar-bazaar-action.tsx` |
+| Capacidad de Gateway | `app/agent-gateway/catalog.ts` (`stellar.bazaar.discovery`, `ready_to_test`, operación `read`) |
+
+Comprobaciones locales: 16 pruebas nuevas en cuatro archivos (`stellar-bazaar-connector`, `stellar-bazaar-route`, `stellar-bazaar-chat`, más fixtures compartidos en `stellar-bazaar-fixtures.ts`). Lint sin errores ni advertencias. Suite completa: 589 de 591 pruebas pasan con dos omisiones externas conocidas (smokes de Avalanche MCP y Dexalot con flags). Build y graphify AST completos.
+
+La evidencia de las pruebas cubre: precio decimal→atómico exacto sin `parseFloat`, una sola llamada al catálogo fijado en código y cero llamadas a proveedores durante la búsqueda, propagación de `partialResults` y `dynamicRegistry: unavailable` sin disfrazarlas de éxito, recuento de fichas malformadas sin ocultar las válidas, rechazo de sobres inválidos y de fallos de origen como `stellar_bazaar_unavailable`, límites de consulta, fichas sin contrato de entrega o con esquema/importe/activo fuera de la política congelada marcadas como no consumibles, y rechazo de autorización Privy ausente, inválida o de origen cruzado antes de cualquier llamada.
+
+Los fixtures contractuales de la entrega 2 ya existen (`bazaarChallengeRequirements`, `bazaarFrozenWebsiteIntelligenceRequest`): ficha canónica, reto 402 `exact`/USDC Testnet y solicitud POST congelada para la futura `prepare_bazaar`. La entrega 2 (preparación de consumo), la 3 (aprobación, firma y consumo) y la 4 (resultado, recibo y recuperación) siguen pendientes, igual que la aceptación de la entrega 1 contra el catálogo real desplegado. Nada aquí afirma pago ni consumo aceptado.
