@@ -76,8 +76,9 @@ test("provisions one idempotent Privy wallet for each new family", async () => {
 
   try {
     for (const family of ["evm", "solana"] as const) {
-      const first = await getOrCreateUserWallet(userId, family);
-      const second = await getOrCreateUserWallet(userId, family);
+      const lookup = { canonicalEvmWallet: async () => null };
+      const first = await getOrCreateUserWallet(userId, family, lookup);
+      const second = await getOrCreateUserWallet(userId, family, lookup);
       assert.equal(first.created, true);
       assert.equal(second.created, false);
       assert.equal(first.id, second.id);
